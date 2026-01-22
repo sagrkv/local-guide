@@ -86,8 +86,8 @@ export default function LeadDetailPage() {
     if (!lead || lead.stage === newStage) return;
 
     try {
-      const updated = await apiClient.changeLeadStage(lead.id, newStage);
-      setLead({ ...lead, ...updated });
+      await apiClient.changeLeadStage(lead.id, newStage);
+      fetchLead();
     } catch (error) {
       console.error('Failed to change stage:', error);
     }
