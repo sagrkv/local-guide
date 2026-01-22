@@ -2,8 +2,8 @@ import { Prisma, LeadStage, LeadCategory, LeadPriority, LeadSource, LeadType } f
 import { prisma } from '../../lib/prisma.js';
 
 interface ListParams {
-  page: number;
-  limit: number;
+  page?: number;
+  limit?: number;
   stage?: LeadStage;
   category?: LeadCategory;
   priority?: LeadPriority;
@@ -13,8 +13,8 @@ interface ListParams {
   state?: string;
   hasWebsite?: boolean;
   minScore?: number;
-  sortBy: 'createdAt' | 'updatedAt' | 'score' | 'businessName';
-  sortOrder: 'asc' | 'desc';
+  sortBy?: 'createdAt' | 'updatedAt' | 'score' | 'businessName';
+  sortOrder?: 'asc' | 'desc';
 }
 
 interface CreateLeadData {
@@ -49,7 +49,7 @@ interface UpdateLeadData extends Partial<CreateLeadData> {
 
 export const leadsService = {
   async list(params: ListParams) {
-    const { page, limit, sortBy, sortOrder, ...filters } = params;
+    const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc', ...filters } = params;
     const skip = (page - 1) * limit;
 
     // Build where clause

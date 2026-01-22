@@ -42,7 +42,10 @@ export async function tagsRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Tag with this name already exists' });
     }
 
-    const tag = await tagsService.create(data);
+    const tag = await tagsService.create({
+      name: data.name,
+      color: data.color,
+    });
     return reply.status(201).send(tag);
   });
 

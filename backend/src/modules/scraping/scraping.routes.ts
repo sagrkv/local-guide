@@ -45,7 +45,12 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
     const data = createJobSchema.parse(request.body);
 
     const job = await scrapingService.createJob({
-      ...data,
+      type: data.type,
+      query: data.query,
+      location: data.location,
+      category: data.category,
+      regionId: data.regionId,
+      maxResults: data.maxResults,
       userId: request.user.userId,
     });
 

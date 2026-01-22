@@ -54,7 +54,12 @@ export async function activitiesRoutes(fastify: FastifyInstance) {
   fastify.post('/', async (request, reply) => {
     const data = createActivitySchema.parse(request.body);
     const activity = await activitiesService.create({
-      ...data,
+      leadId: data.leadId,
+      type: data.type,
+      title: data.title,
+      description: data.description,
+      outcome: data.outcome,
+      scheduledAt: data.scheduledAt,
       userId: request.user.userId,
     });
     return reply.status(201).send(activity);

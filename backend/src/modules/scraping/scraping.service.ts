@@ -5,8 +5,8 @@ import { lighthouseAnalyzer } from './utils/lighthouse.js';
 import { perplexityClient } from './utils/perplexity.js';
 
 interface ListJobsParams {
-  page: number;
-  limit: number;
+  page?: number;
+  limit?: number;
   status?: ScrapeJobStatus;
   type?: ScrapeJobType;
 }
@@ -17,13 +17,13 @@ interface CreateJobData {
   location?: string;
   category?: LeadCategory;
   regionId?: string;
-  maxResults: number;
+  maxResults?: number;
   userId: string;
 }
 
 export const scrapingService = {
   async listJobs(params: ListJobsParams) {
-    const { page, limit, ...filters } = params;
+    const { page = 1, limit = 20, ...filters } = params;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ScrapeJobWhereInput = {};

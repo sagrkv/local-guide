@@ -42,7 +42,13 @@ export async function regionsRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Region with this name already exists' });
     }
 
-    const region = await regionsService.create(data);
+    const region = await regionsService.create({
+      name: data.name,
+      cities: data.cities,
+      state: data.state,
+      country: data.country,
+      isActive: data.isActive,
+    });
     return reply.status(201).send(region);
   });
 

@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-extra';
+import type { Browser, Page } from 'playwright-core';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 // @ts-ignore
 import UserAgent from 'user-agents';

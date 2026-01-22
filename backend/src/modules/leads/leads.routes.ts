@@ -74,7 +74,24 @@ export async function leadsRoutes(fastify: FastifyInstance) {
   // Create lead
   fastify.post('/', async (request, reply) => {
     const data = createLeadSchema.parse(request.body);
-    const lead = await leadsService.create(data);
+    const lead = await leadsService.create({
+      businessName: data.businessName,
+      contactPerson: data.contactPerson,
+      email: data.email,
+      phone: data.phone,
+      website: data.website,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      country: data.country,
+      category: data.category,
+      priority: data.priority,
+      source: data.source,
+      leadType: data.leadType,
+      notes: data.notes,
+      assignedToId: data.assignedToId,
+      tags: data.tags,
+    });
     return reply.status(201).send(lead);
   });
 

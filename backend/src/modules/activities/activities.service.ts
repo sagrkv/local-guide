@@ -2,8 +2,8 @@ import { ActivityType, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 
 interface ListParams {
-  page: number;
-  limit: number;
+  page?: number;
+  limit?: number;
   leadId?: string;
   type?: ActivityType;
   userId?: string;
@@ -30,7 +30,7 @@ interface UpdateActivityData {
 
 export const activitiesService = {
   async list(params: ListParams) {
-    const { page, limit, ...filters } = params;
+    const { page = 1, limit = 20, ...filters } = params;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ActivityWhereInput = {};

@@ -15,8 +15,9 @@ export const lighthouseAnalyzer = {
       headless: true,
     });
 
-    const wsEndpoint = browser.wsEndpoint();
-    const port = parseInt(new URL(wsEndpoint).port, 10);
+    // Note: wsEndpoint() may not exist on all browser types - this requires Puppeteer-style browsers
+    const wsEndpoint = (browser as any).wsEndpoint?.() || '';
+    const port = wsEndpoint ? parseInt(new URL(wsEndpoint).port, 10) : 9222;
 
     try {
       const result = await lighthouse(url, {

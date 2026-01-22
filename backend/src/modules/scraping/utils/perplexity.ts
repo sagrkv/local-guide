@@ -54,8 +54,8 @@ export const perplexityClient = {
       throw new Error(`Perplexity API error: ${response.status}`);
     }
 
-    const data: PerplexityResponse = await response.json();
-    return data.choices[0]?.message?.content || '';
+    const data = await response.json() as PerplexityResponse;
+    return data.choices?.[0]?.message?.content || '';
   },
 
   async searchBusinesses(query: string, location?: string): Promise<BusinessResult[]> {
