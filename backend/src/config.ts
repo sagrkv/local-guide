@@ -13,8 +13,8 @@ export const config = {
   // Database
   databaseUrl: process.env.DATABASE_URL || 'postgresql://localhost:5432/summer_studios',
 
-  // Redis (optional in production)
-  redisUrl: process.env.REDIS_URL || (isDev ? 'redis://localhost:6379' : ''),
+  // Redis (only use if explicitly provided)
+  redisUrl: process.env.REDIS_URL || '',
 
   // CORS - allow frontend URL
   corsOrigins: process.env.CORS_ORIGINS

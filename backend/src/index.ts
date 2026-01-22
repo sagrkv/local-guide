@@ -12,17 +12,24 @@ import { regionsRoutes } from './modules/scraping/regions.routes.js';
 import { contactRoutes } from './modules/contact/contact.routes.js';
 import { config } from './config.js';
 
+// Only use pino-pretty in dev if available, otherwise use standard JSON logging
+let loggerTransport: any = undefined;
+if (config.isDev) {
+  try {
+    require.resolve('pino-pretty');
+    loggerTransport = {
+      target: 'pino-pretty',
+      options: { colorize: true },
+    };
+  } catch {
+    // pino-pretty not available, use default JSON logging
+  }
+}
+
 const fastify = Fastify({
   logger: {
     level: config.logLevel,
-    transport: config.isDev
-      ? {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-          },
-        }
-      : undefined,
+    transport: loggerTransport,
   },
 });
 
