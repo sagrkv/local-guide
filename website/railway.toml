@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+watchPatterns = ["website/**"]
+
+[deploy]
+startCommand = "npm run start"
+healthcheckPath = "/"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
