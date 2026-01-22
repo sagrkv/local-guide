@@ -92,6 +92,12 @@ export const scrapingService = {
   async createJob(data: CreateJobData) {
     const { userId, maxResults, ...jobData } = data;
 
+    // For queue-based scrapers (Google Maps, Google Search), check if Redis is available
+    const requiresQueue = jobData.type === 'GOOGLE_MAPS' || jobData.type === 'GOOGLE_SEARCH';
+    if (requiresQueue && !scrapeQueue) {
+      throw new Error('Scraping queue not available. Redis is not configured. Only Perplexity scraping is available.');
+    }
+
     // Create the job record
     const job = await prisma.scrapeJob.create({
       data: {
@@ -107,15 +113,17 @@ export const scrapingService = {
     });
 
     // Add to the queue for background processing
-    await scrapeQueue.add('scrape', {
-      jobId: job.id,
-      type: job.type,
-      query: job.query,
-      location: job.location,
-      category: job.category,
-      regionId: job.regionId,
-      maxResults,
-    });
+    if (scrapeQueue) {
+      await scrapeQueue.add('scrape', {
+        jobId: job.id,
+        type: job.type,
+        query: job.query,
+        location: job.location,
+        category: job.category,
+        regionId: job.regionId,
+        maxResults,
+      });
+    }
 
     return job;
   },

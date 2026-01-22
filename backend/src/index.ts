@@ -11,6 +11,7 @@ import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 import { regionsRoutes } from './modules/scraping/regions.routes.js';
 import { contactRoutes } from './modules/contact/contact.routes.js';
 import { config } from './config.js';
+import { scrapeQueue, worker } from './jobs/queue.js';
 
 // Only use pino-pretty in dev if available, otherwise use standard JSON logging
 // In production, always use JSON logging for better log aggregation
@@ -92,6 +93,13 @@ async function main() {
   try {
     await fastify.listen({ port: config.port, host: '0.0.0.0' });
     console.log(`Server running at http://localhost:${config.port}`);
+
+    // Log queue/worker status
+    if (scrapeQueue && worker) {
+      console.log('Scrape queue and worker initialized (Redis connected)');
+    } else {
+      console.warn('WARNING: Scrape queue not available - Redis not configured. Google Maps/Google Search scraping will not work.');
+    }
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

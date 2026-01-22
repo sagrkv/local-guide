@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { Toaster } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 
 interface User {
@@ -89,6 +90,17 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-background">
+      <Toaster
+        position="top-right"
+        theme="dark"
+        toastOptions={{
+          style: {
+            background: '#1f2937',
+            border: '1px solid #374151',
+            color: '#f3f4f6',
+          },
+        }}
+      />
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4 z-50">
         <button
