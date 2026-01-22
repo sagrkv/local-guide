@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authService } from './auth.service.js';
+import { config } from '../../config.js';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -20,7 +21,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
     const token = fastify.jwt.sign(
       { userId: result.user.id, email: result.user.email, role: result.user.role },
-      { expiresIn: '7d' }
+      { expiresIn: config.jwtExpiresIn }
     );
 
     return { token, user: result.user };
