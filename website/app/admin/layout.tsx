@@ -23,11 +23,13 @@ export default function AdminLayout({
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Don't check auth on login page
+  // Don't check auth on login and status pages
   const isLoginPage = pathname === '/admin/login';
+  const isStatusPage = pathname === '/admin/status';
+  const skipAuth = isLoginPage || isStatusPage;
 
   useEffect(() => {
-    if (isLoginPage) {
+    if (skipAuth) {
       setLoading(false);
       return;
     }
@@ -44,7 +46,7 @@ export default function AdminLayout({
     };
 
     checkAuth();
-  }, [router, isLoginPage]);
+  }, [router, skipAuth]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -54,6 +56,15 @@ export default function AdminLayout({
   // Show login page without layout
   if (isLoginPage) {
     return <>{children}</>;
+  }
+
+  // Show status page with minimal layout (no auth required)
+  if (isStatusPage) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-4xl mx-auto p-6 lg:p-8">{children}</div>
+      </div>
+    );
   }
 
   if (loading) {
@@ -73,6 +84,7 @@ export default function AdminLayout({
     { href: '/admin/leads', label: 'Leads', icon: LeadsIcon },
     { href: '/admin/scraping', label: 'Scraping', icon: ScrapingIcon },
     { href: '/admin/settings', label: 'Settings', icon: SettingsIcon },
+    { href: '/admin/status', label: 'System Status', icon: StatusIcon },
   ];
 
   return (
@@ -191,6 +203,14 @@ function SettingsIcon({ className }: { className?: string }) {
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function StatusIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );
 }
