@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 60" width="260" height="60">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&amp;display=swap');
+      .bracket { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 42px; font-weight: 400; }
+      .logo-text { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 42px; font-weight: 600; letter-spacing: 2px; }
+    </style>
+  </defs>
+  <text x="10" y="45" class="bracket" fill="#FF9500">{</text>
+  <text x="36.140594482421875" y="45" class="logo-text" fill="#FFFFFF">SUMMER</text>
+  <text x="231.46664428710938" y="45" class="bracket" fill="#FF9500">}</text>
+</svg>

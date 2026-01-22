@@ -1,0 +1,15 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm run db:migrate:deploy && npm run start"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[nixpacks]
+providers = ["node"]
+
+[nixpacks.apt]
+packages = ["chromium", "libnss3", "libatk-bridge2.0-0", "libdrm2", "libxcomposite1", "libxdamage1", "libxrandr2", "libgbm1", "libasound2"]

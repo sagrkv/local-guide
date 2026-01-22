@@ -1,14 +1,17 @@
 # Dependencies
 node_modules/
 
-# Build outputs
-.next/
+# Build output
 dist/
 
 # Environment variables
 .env
 .env.local
 .env.*.local
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
 
 # IDE
 .vscode/
@@ -21,10 +24,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
-
-# Prisma
-*.db
-*.db-journal
 
 # Testing
 coverage/

@@ -1,0 +1,263 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SALES_REP
+}
+
+enum LeadStage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum LeadCategory {
+  STARTUP
+  RESTAURANT
+  HOTEL
+  ECOMMERCE
+  SALON
+  CLINIC
+  GYM
+  RETAIL
+  EDUCATION
+  REAL_ESTATE
+  AGENCY
+  OTHER
+}
+
+enum LeadSource {
+  GOOGLE_SEARCH
+  GOOGLE_MAPS
+  WEBSITE_CONTACT
+  REFERRAL
+  MANUAL
+  PERPLEXITY
+}
+
+enum LeadType {
+  NO_WEBSITE
+  OUTDATED_WEBSITE
+  CONTACT_FORM
+  REFERRAL
+  MANUAL
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  TASK
+}
+
+enum ScrapeJobType {
+  GOOGLE_SEARCH
+  GOOGLE_MAPS
+  PERPLEXITY
+}
+
+enum ScrapeJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(SALES_REP)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  leads      Lead[]
+  activities Activity[]
+  scrapeJobs ScrapeJob[]
+
+  @@map("users")
+}
+
+model Lead {
+  id            String       @id @default(cuid())
+  businessName  String
+  contactPerson String?
+  email         String?
+  phone         String?
+  website       String?
+  address       String?
+  city          String?
+  state         String?
+  country       String       @default("India")
+  category      LeadCategory @default(OTHER)
+  stage         LeadStage    @default(NEW)
+  priority      LeadPriority @default(MEDIUM)
+  score         Int          @default(0) // 0-100
+  source        LeadSource   @default(MANUAL)
+  leadType      LeadType     @default(MANUAL)
+
+  // Website analysis
+  hasWebsite           Boolean @default(false)
+  lighthouseScore      Int? // Performance score 0-100
+  lighthouseSeo        Int? // SEO score 0-100
+  lighthouseAccessibility Int?
+  lighthouseBestPractices Int?
+  websiteNeedsRedesign Boolean @default(false)
+
+  // AI analysis
+  perplexityAnalysis String? @db.Text
+
+  // Contact status
+  emailVerified     Boolean   @default(false)
+  lastContactedAt   DateTime?
+  nextFollowUpAt    DateTime?
+
+  // Notes
+  notes String? @db.Text
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  assignedToId String?
+  assignedTo   User?      @relation(fields: [assignedToId], references: [id])
+  activities   Activity[]
+  tags         TagOnLead[]
+  scrapeJobId  String?
+  scrapeJob    ScrapeJob? @relation(fields: [scrapeJobId], references: [id])
+
+  @@index([stage])
+  @@index([category])
+  @@index([score])
+  @@index([assignedToId])
+  @@index([city, state])
+  @@map("leads")
+}
+
+model Tag {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  color     String      @default("#6366f1") // Indigo
+  createdAt DateTime    @default(now())
+  leads     TagOnLead[]
+
+  @@map("tags")
+}
+
+model TagOnLead {
+  leadId    String
+  tagId     String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([leadId, tagId])
+  @@map("tags_on_leads")
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  title       String
+  description String?      @db.Text
+  outcome     String?
+  scheduledAt DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([leadId])
+  @@index([type])
+  @@map("activities")
+}
+
+model ScrapingRegion {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  cities    String[] // Array of city names
+  state     String?
+  country   String   @default("India")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  scrapeJobs ScrapeJob[]
+
+  @@map("scraping_regions")
+}
+
+model ScrapeJob {
+  id       String          @id @default(cuid())
+  type     ScrapeJobType
+  query    String
+  location String?
+  category LeadCategory?
+  status   ScrapeJobStatus @default(PENDING)
+
+  // Results
+  leadsFound     Int @default(0)
+  leadsCreated   Int @default(0)
+  leadsDuplicate Int @default(0)
+
+  // Error tracking
+  errorMessage String? @db.Text
+  errorStack   String? @db.Text
+
+  // Timing
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  regionId  String?
+  region    ScrapingRegion? @relation(fields: [regionId], references: [id])
+  createdById String
+  createdBy User            @relation(fields: [createdById], references: [id])
+  leads     Lead[]
+
+  @@index([status])
+  @@index([type])
+  @@map("scrape_jobs")
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
