@@ -80,10 +80,7 @@ export const config = {
 
   // Google Places API (optional - Google Places search disabled if not provided)
   googlePlacesApiKey: getOptionalEnv("GOOGLE_PLACES_API_KEY", ""),
-  googlePlacesSearchRadius: parseInt(
-    getOptionalEnv("GOOGLE_PLACES_SEARCH_RADIUS", "2000"),
-    10,
-  ),
+  googlePlacesSearchRadius: 2000, // meters - covers most city areas well
 
   // Frontend
   frontendUrl,

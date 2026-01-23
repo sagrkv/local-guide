@@ -260,16 +260,21 @@ Format your response as a JSON array with objects containing: name, hasWebsite, 
 Only include businesses you are confident about. Return maximum 10 businesses.
 Response must be valid JSON array only, no other text.`;
 
+    // This will throw if API key is missing or API fails
+    const response = await this.query(prompt, {
+      businessName: query,
+      city: location,
+    });
+
+    // Try to parse JSON from response
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error(
+        "Failed to parse Perplexity response as JSON array. Response may be malformed.",
+      );
+    }
+
     try {
-      const response = await this.query(prompt);
-
-      // Try to parse JSON from response
-      const jsonMatch = response.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) {
-        console.error("Failed to parse Perplexity response as JSON");
-        return [];
-      }
-
       const businesses = JSON.parse(jsonMatch[0]);
       return businesses.map((b: any) => ({
         name: b.name || "",
@@ -282,9 +287,10 @@ Response must be valid JSON array only, no other text.`;
         hasWebsite:
           b.hasWebsite === true || b.hasWebsite === "yes" || !!b.website,
       }));
-    } catch (error) {
-      console.error("Error searching businesses with Perplexity:", error);
-      return [];
+    } catch (parseError) {
+      throw new Error(
+        `Failed to parse Perplexity JSON response: ${parseError instanceof Error ? parseError.message : "Unknown error"}`,
+      );
     }
   },
 

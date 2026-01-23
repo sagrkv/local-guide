@@ -71,9 +71,16 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
       const region = await prisma.scrapingRegion.findUnique({
         where: { id: regionId },
       });
-      if (region) {
+      if (region && region.cities.length > 0) {
         locations = region.cities;
       }
+    }
+
+    // Validate we have locations to scrape
+    if (locations.length === 0) {
+      throw new Error(
+        "No locations to scrape. Please provide a location or select a region with cities.",
+      );
     }
 
     // Scrape based on type
@@ -131,47 +138,17 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
         // HYBRID PIPELINE: Google Places API (Essentials) → Perplexity enrichment → Lighthouse qualification
         // This provides complete city coverage at lower cost
 
+        // Validate Google Places API is configured (should have been checked in service, but double-check)
+        if (!config.googlePlacesApiKey) {
+          throw new Error(
+            "DISCOVERY_PIPELINE requires Google Places API key. Please configure GOOGLE_PLACES_API_KEY environment variable.",
+          );
+        }
+
         for (const loc of locations) {
           console.log(
             `[DISCOVERY_PIPELINE] Starting hybrid discovery for ${loc}...`,
           );
-
-          // Check if Google Places API is configured
-          if (!config.googlePlacesApiKey) {
-            console.warn(
-              "[DISCOVERY_PIPELINE] Google Places API not configured, falling back to Google Maps scraping",
-            );
-            // Fallback to old method
-            const mapResults = await googleMapsScraper.scrape(
-              query,
-              loc,
-              maxResults,
-            );
-            for (const business of mapResults) {
-              // Skip businesses without websites (not our target)
-              if (!business.hasWebsite || !business.website) {
-                console.log(
-                  `[DISCOVERY_PIPELINE] Skipping ${business.businessName} - no website`,
-                );
-                leadsSkipped++;
-                continue;
-              }
-
-              const qualification = await qualificationService.qualifyBusiness({
-                website: business.website,
-                hasWebsite: business.hasWebsite,
-                businessName: business.businessName,
-              });
-
-              if (!qualification.isQualified) {
-                leadsSkipped++;
-                continue;
-              }
-
-              results.push({ ...business, qualification });
-            }
-            continue;
-          }
 
           // Step 1: Google Places API Discovery (complete city coverage via grid)
           console.log(

@@ -118,13 +118,51 @@ export const scrapingService = {
   async createJob(data: CreateJobData) {
     const { userId, maxResults, ...jobData } = data;
 
-    // For queue-based scrapers (Google Maps, Google Search), check if Redis is available
-    const requiresQueue =
-      jobData.type === "GOOGLE_MAPS" || jobData.type === "GOOGLE_SEARCH";
-    if (requiresQueue && !scrapeQueue) {
+    // Validate that we have a location or region
+    if (!jobData.location && !jobData.regionId) {
       throw new Error(
-        "Scraping queue not available. Redis is not configured. Only Perplexity scraping is available.",
+        "Either location or regionId is required to start a scrape job.",
       );
+    }
+
+    // If regionId provided, validate it exists and has cities
+    if (jobData.regionId) {
+      const region = await prisma.scrapingRegion.findUnique({
+        where: { id: jobData.regionId },
+      });
+      if (!region) {
+        throw new Error(`Region with id ${jobData.regionId} not found.`);
+      }
+      if (!region.cities || region.cities.length === 0) {
+        throw new Error(`Region "${region.name}" has no cities configured.`);
+      }
+    }
+
+    // All job types require Redis queue
+    if (!scrapeQueue) {
+      throw new Error(
+        "Scraping queue not available. Redis is not configured. Please configure REDIS_URL environment variable.",
+      );
+    }
+
+    // Validate API keys based on job type
+    if (jobData.type === "DISCOVERY_PIPELINE") {
+      // DISCOVERY_PIPELINE requires Google Places API
+      const { config } = await import("../../config.js");
+      if (!config.googlePlacesApiKey) {
+        throw new Error(
+          "DISCOVERY_PIPELINE requires Google Places API. Please configure GOOGLE_PLACES_API_KEY environment variable, or use GOOGLE_MAPS job type instead.",
+        );
+      }
+    }
+
+    if (jobData.type === "PERPLEXITY") {
+      const { config } = await import("../../config.js");
+      if (!config.perplexityApiKey) {
+        throw new Error(
+          "PERPLEXITY job type requires Perplexity API. Please configure PERPLEXITY_API_KEY environment variable.",
+        );
+      }
     }
 
     // Create the job record
@@ -259,11 +297,14 @@ export const scrapingService = {
         url,
         lighthouse,
         needsRedesign: lighthouse.performance < 50 || lighthouse.seo < 50,
+        error: null,
       };
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to analyze website";
       return {
         url,
-        error: "Failed to analyze website",
+        error: errorMessage,
         lighthouse: null,
         needsRedesign: null,
       };
@@ -271,14 +312,8 @@ export const scrapingService = {
   },
 
   async perplexitySearch(query: string, location?: string) {
-    try {
-      const results = await perplexityClient.searchBusinesses(query, location);
-      return { results };
-    } catch (error) {
-      return {
-        results: [],
-        error: "Failed to search with Perplexity",
-      };
-    }
+    // Let errors propagate to caller for proper handling
+    const results = await perplexityClient.searchBusinesses(query, location);
+    return { results, error: null };
   },
 };

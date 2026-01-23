@@ -190,17 +190,19 @@ export const googlePlacesClient = {
     }) => void,
   ): Promise<PlaceResult[]> {
     // Get zones that have this business type, sorted by priority
-    const allZonesForType = getZonesForBusinessType(city, businessType);
+    let allZonesForType = getZonesForBusinessType(city, businessType);
 
     if (allZonesForType.length === 0) {
-      console.error(`No zones found for ${businessType} in ${city}`);
+      console.warn(
+        `No specific zones found for "${businessType}" in ${city}, falling back to all zones`,
+      );
       // Fallback to all zones
-      const fallbackZones = getAllZones(city);
-      if (fallbackZones.length === 0) {
-        console.error(`City ${city} not supported`);
-        return [];
+      allZonesForType = getAllZones(city);
+      if (allZonesForType.length === 0) {
+        throw new Error(
+          `City "${city}" is not supported for Google Places discovery. Supported cities: ${getSupportedCities().join(", ")}`,
+        );
       }
-      allZonesForType.push(...fallbackZones);
     }
 
     // Get already-scraped zones for this business type in this city
