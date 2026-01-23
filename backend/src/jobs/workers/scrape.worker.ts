@@ -61,6 +61,8 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
 
   try {
     let results: ProcessedBusiness[] = [];
+    let leadsCreated = 0;
+    let leadsDuplicate = 0;
     let leadsSkipped = 0;
 
     // Get region cities if regionId is provided
