@@ -105,7 +105,12 @@ class ApiClient {
 
   // Auth
   async login(email: string, password: string) {
-    const data = await this.request<{ token: string; user: any }>(
+    // Clear any stale token before login attempt
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+    }
+
+    const data = await this.publicRequest<{ token: string; user: any }>(
       "/auth/login",
       {
         method: "POST",
