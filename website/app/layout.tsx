@@ -12,47 +12,45 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "Summer Studios | Web Development Agency",
-    template: "%s | Summer Studios",
+    default: "Leedo | Lead Generation SaaS",
+    template: "%s | Leedo",
   },
   description:
-    "We're a web development studio in South India building fast, beautiful sites for startups and growing businesses. No templates. No bloat. Just clean code that converts.",
+    "Powerful lead generation platform. Discover, qualify, and manage B2B leads with automated scraping, technical analysis, and sales intelligence.",
   keywords: [
-    "web development",
-    "web design",
-    "startup website",
-    "web agency",
-    "Bangalore",
-    "Hyderabad",
-    "Chennai",
-    "South India",
-    "Next.js",
-    "React",
+    "lead generation",
+    "B2B leads",
+    "sales intelligence",
+    "lead scraping",
+    "prospect discovery",
+    "website analysis",
+    "business leads",
+    "SaaS",
   ],
-  authors: [{ name: "Summer Studios" }],
-  creator: "Summer Studios",
+  authors: [{ name: "Leedo" }],
+  creator: "Leedo",
   openGraph: {
     type: "website",
-    locale: "en_IN",
-    url: "https://summerstudios.in",
-    siteName: "Summer Studios",
-    title: "Summer Studios | Web Development Agency",
+    locale: "en_US",
+    url: "https://leedo.io",
+    siteName: "Leedo",
+    title: "Leedo | Lead Generation SaaS",
     description:
-      "We're a web development studio in South India building fast, beautiful sites for startups and growing businesses.",
+      "Powerful lead generation platform. Discover, qualify, and manage B2B leads with automated scraping and sales intelligence.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Summer Studios",
+        alt: "Leedo",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Summer Studios | Web Development Agency",
+    title: "Leedo | Lead Generation SaaS",
     description:
-      "We're a web development studio in South India building fast, beautiful sites for startups and growing businesses.",
+      "Powerful lead generation platform. Discover, qualify, and manage B2B leads with automated scraping and sales intelligence.",
     images: ["/og-image.png"],
   },
   robots: {

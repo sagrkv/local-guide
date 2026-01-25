@@ -16,9 +16,8 @@ const navLinks = [
 ];
 
 const socialLinks = [
-  { href: "https://twitter.com/summerstudios", label: "X", icon: "𝕏" },
-  { href: "https://linkedin.com/company/summerstudios", label: "LinkedIn", icon: "in" },
-  { href: "https://instagram.com/summerstudios", label: "Instagram", icon: "◎" },
+  { href: "https://twitter.com/leedo_io", label: "X", icon: "𝕏" },
+  { href: "https://linkedin.com/company/leedo", label: "LinkedIn", icon: "in" },
 ];
 
 export default function Navigation() {
@@ -57,11 +56,11 @@ export default function Navigation() {
         <Link
           href="/"
           className="group flex flex-col items-center gap-1"
-          aria-label="Summer Studios Home"
+          aria-label="Leedo Home"
         >
           <span className="text-2xl font-semibold tracking-tight">
             <span className="bracket">{`{`}</span>
-            <span className="text-white">S</span>
+            <span className="text-white">L</span>
             <span className="bracket">{`}`}</span>
           </span>
         </Link>
@@ -127,7 +126,7 @@ export default function Navigation() {
         <div className="flex items-center justify-between px-5 py-4">
           <Link href="/" className="text-xl font-semibold tracking-tight">
             <span className="bracket">{`{`}</span>
-            <span className="text-white">SUMMER</span>
+            <span className="text-white">LEEDO</span>
             <span className="bracket">{`}`}</span>
           </Link>
 

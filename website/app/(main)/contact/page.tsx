@@ -240,10 +240,10 @@ export default function ContactPage() {
                         Email
                       </h3>
                       <a
-                        href="mailto:hello@summerstudios.in"
+                        href="mailto:hello@leedo.io"
                         className="text-[var(--accent)] hover:text-white transition-colors"
                       >
-                        hello@summerstudios.in
+                        hello@leedo.io
                       </a>
                     </div>
 
@@ -273,7 +273,7 @@ export default function ContactPage() {
                     </h3>
                     <div className="flex gap-4">
                       <a
-                        href="https://twitter.com/summerstudios"
+                        href="https://twitter.com/leedo_io"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[var(--gray-400)] hover:text-white transition-colors"
@@ -281,20 +281,12 @@ export default function ContactPage() {
                         Twitter / X
                       </a>
                       <a
-                        href="https://linkedin.com/company/summerstudios"
+                        href="https://linkedin.com/company/leedo"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[var(--gray-400)] hover:text-white transition-colors"
                       >
                         LinkedIn
-                      </a>
-                      <a
-                        href="https://instagram.com/summerstudios"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--gray-400)] hover:text-white transition-colors"
-                      >
-                        Instagram
                       </a>
                     </div>
                   </div>

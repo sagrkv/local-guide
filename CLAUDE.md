@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Summer Studios is a B2B lead generation platform that automates lead discovery through web scraping and manages leads through a sales pipeline. It consists of a Fastify backend with BullMQ job queues and a Next.js admin dashboard.
+Leedo is a B2B lead generation SaaS platform that automates lead discovery through web scraping and manages leads through a sales pipeline. It consists of a Fastify backend with BullMQ job queues and a Next.js frontend with user dashboard.
 
 ## Development Commands
 
@@ -35,7 +35,7 @@ npm run lint    # Run ESLint
 
 ### Local Database Setup
 ```bash
-createdb summer_studios
+createdb leedo
 cd backend && npm run db:push && npm run db:seed
 ```
 
@@ -61,14 +61,14 @@ Scrapers in `backend/src/modules/scraping/scrapers/`:
 - `google-search.scraper.ts` - Playwright + Cheerio HTML parsing
 - `perplexity.ts` (in utils) - AI-powered business research via Perplexity API
 
-**DISCOVERY_PIPELINE** job type combines all three: Google Maps discovery → Lighthouse qualification → Perplexity enrichment.
+**DISCOVERY_PIPELINE** job type combines all three: Google Maps discovery -> Lighthouse qualification -> Perplexity enrichment.
 
 ### Lead Qualification Logic
 
 Located in `backend/src/modules/qualification/`:
 - Uses Lighthouse CLI to analyze website quality
 - **NO_WEBSITE** or **POOR_WEBSITE** (score <70) = qualified lead (needs web services)
-- **WEBSITE_IS_GOOD** (score ≥70) = not qualified (already has good website)
+- **WEBSITE_IS_GOOD** (score >=70) = not qualified (already has good website)
 
 ### Frontend Structure
 
@@ -89,7 +89,7 @@ API calls go through `website/lib/api-client.ts` - centralized client that handl
 
 ### Backend Environment (`backend/.env`)
 ```env
-DATABASE_URL=postgresql://user@localhost:5432/summer_studios
+DATABASE_URL=postgresql://user@localhost:5432/leedo
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=<random-string>
 PERPLEXITY_API_KEY=<optional>
@@ -106,11 +106,11 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api
 
 Key models in `backend/prisma/schema.prisma`:
 - **Lead**: 45+ fields including Lighthouse scores, contact info, pipeline stage
-- **ScrapeJob**: Job tracking with status (PENDING→RUNNING→COMPLETED/FAILED)
+- **ScrapeJob**: Job tracking with status (PENDING->RUNNING->COMPLETED/FAILED)
 - **ScrapingRegion**: Geographic regions with city arrays for batch scraping
 - **Activity**: Audit trail (NOTE, CALL, EMAIL, MEETING, TASK)
 
-Lead pipeline stages: NEW → CONTACTED → QUALIFIED → PROPOSAL → NEGOTIATION → WON/LOST
+Lead pipeline stages: NEW -> CONTACTED -> QUALIFIED -> PROPOSAL -> NEGOTIATION -> WON/LOST
 
 ## API Endpoints
 
@@ -127,5 +127,5 @@ Swagger docs available at `http://localhost:3001/documentation`
 ## Default Credentials
 
 After running `npm run db:seed`:
-- **Email:** admin@summerstudios.in
+- **Email:** admin@leedo.io
 - **Password:** admin123

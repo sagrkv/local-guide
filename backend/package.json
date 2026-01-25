@@ -1,8 +1,8 @@
 {
-  "name": "summer-studios-backend",
+  "name": "leedo-backend",
   "version": "1.0.0",
   "type": "module",
-  "description": "Lead scraping and management backend for Summer Studios",
+  "description": "Lead generation SaaS platform backend",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

@@ -31,10 +31,9 @@ const footerLinks = [
 ];
 
 const socialLinks = [
-  { href: "https://twitter.com/summerstudios", label: "Twitter / X" },
-  { href: "https://linkedin.com/company/summerstudios", label: "LinkedIn" },
-  { href: "https://instagram.com/summerstudios", label: "Instagram" },
-  { href: "https://github.com/summerstudios", label: "GitHub" },
+  { href: "https://twitter.com/leedo_io", label: "Twitter / X" },
+  { href: "https://linkedin.com/company/leedo", label: "LinkedIn" },
+  { href: "https://github.com/sagrkv/Leedo", label: "GitHub" },
 ];
 
 export default function Footer() {
@@ -51,18 +50,18 @@ export default function Footer() {
                 className="inline-block text-2xl font-semibold tracking-tight mb-4"
               >
                 <span className="bracket">{`{`}</span>
-                <span className="text-white">SUMMER</span>
+                <span className="text-white">LEEDO</span>
                 <span className="bracket">{`}`}</span>
               </Link>
               <p className="text-[var(--gray-400)] text-sm leading-relaxed max-w-xs mb-6">
-                Building the web, one project at a time. A web development
-                studio based in South India.
+                Powerful lead generation platform. Discover, qualify, and manage
+                B2B leads with automated scraping and sales intelligence.
               </p>
               <a
-                href="mailto:hello@summerstudios.in"
+                href="mailto:hello@leedo.io"
                 className="text-[var(--accent)] hover:text-white transition-colors text-sm font-medium"
               >
-                hello@summerstudios.in
+                hello@leedo.io
               </a>
             </div>
 
@@ -92,7 +91,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="py-6 border-t border-[var(--gray-700)] flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-[var(--gray-500)] text-sm">
-            © {new Date().getFullYear()} Summer Studios. All rights reserved.
+            © {new Date().getFullYear()} Leedo. All rights reserved.
           </p>
 
           <div className="flex items-center gap-6">
@@ -128,7 +127,7 @@ export default function Footer() {
               key={i}
               className="text-[8vw] lg:text-[6vw] font-bold text-[var(--gray-800)] tracking-tighter mx-4"
             >
-              SUMMER STUDIOS •{" "}
+              LEEDO •{" "}
             </span>
           ))}
         </motion.div>

@@ -131,9 +131,9 @@ export default function AboutPage() {
               <h2 className="text-3xl lg:text-4xl font-bold mb-6">Our Story</h2>
               <div className="space-y-4 text-[var(--gray-400)] text-lg leading-relaxed">
                 <p>
-                  Summer Studios started with a simple frustration: too many
-                  businesses were getting ripped off by agencies delivering
-                  mediocre work at premium prices.
+                  Leedo started with a simple frustration: finding quality B2B
+                  leads was too expensive and time-consuming for growing
+                  businesses.
                 </p>
                 <p>
                   We&apos;re developers and designers who believe great websites

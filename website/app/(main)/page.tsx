@@ -68,7 +68,7 @@ const featuredWork = [
 const testimonials = [
   {
     quote:
-      "Summer Studios delivered our startup website in under 3 weeks. The attention to detail and performance optimization exceeded our expectations.",
+      "Leedo helped us find qualified leads in under a week. The scraping quality and lead qualification exceeded our expectations.",
     author: "Founder",
     company: "Tech Startup, Bangalore",
   },
