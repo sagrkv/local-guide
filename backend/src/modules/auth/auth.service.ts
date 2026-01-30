@@ -2,12 +2,22 @@ import bcrypt from 'bcrypt';
 import { prisma } from '../../lib/prisma.js';
 
 export const authService = {
+  /**
+   * Legacy login with email/password
+   * This is kept for backward compatibility during Clerk migration
+   * New users should use Clerk authentication
+   */
   async login(email: string, password: string) {
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user || !user.isActive) {
+      return null;
+    }
+
+    // If user has no password (Clerk-only user), reject legacy login
+    if (!user.password) {
       return null;
     }
 
@@ -30,6 +40,8 @@ export const authService = {
         name: true,
         role: true,
         isActive: true,
+        creditBalance: true,
+        imageUrl: true,
         createdAt: true,
       },
     });
@@ -37,12 +49,22 @@ export const authService = {
     return user;
   },
 
+  /**
+   * Legacy password change
+   * This is kept for backward compatibility during Clerk migration
+   * Clerk users should change password through Clerk's UI
+   */
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
 
     if (!user) {
+      return false;
+    }
+
+    // If user has no password (Clerk-only user), reject password change
+    if (!user.password) {
       return false;
     }
 

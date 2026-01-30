@@ -15,6 +15,31 @@ import {
 import { perplexityClient } from "./utils/perplexity.js";
 import { scanTechStack } from "./utils/tech-stack-scanner.js";
 
+/**
+ * Schema for pre-scrape filters.
+ * Users only pay credits for leads matching these criteria.
+ */
+const leadFiltersSchema = z
+  .object({
+    /** Filter by website presence (true = must have, false = must not have, undefined = any) */
+    hasWebsite: z.boolean().optional(),
+    /** Filter by email presence (true = must have, false = must not have, undefined = any) */
+    hasEmail: z.boolean().optional(),
+    /** Filter by phone presence (true = must have, false = must not have, undefined = any) */
+    hasPhone: z.boolean().optional(),
+    /** Minimum Google rating (1-5 stars) */
+    minRating: z.number().min(1).max(5).optional(),
+    /** Minimum number of Google reviews */
+    minReviews: z.number().min(0).int().optional(),
+  })
+  .optional();
+
+/** Schema for geographic bounds (map selection) */
+const boundsSchema = z.object({
+  ne: z.object({ lat: z.number(), lng: z.number() }),
+  sw: z.object({ lat: z.number(), lng: z.number() }),
+});
+
 const createJobSchema = z.object({
   type: z.enum([
     "GOOGLE_SEARCH",
@@ -24,6 +49,8 @@ const createJobSchema = z.object({
   ]),
   query: z.string().min(1),
   location: z.string().optional(),
+  /** Geographic bounds for map-based scraping */
+  bounds: boundsSchema.optional(),
   category: z
     .enum([
       "STARTUP",
@@ -42,6 +69,8 @@ const createJobSchema = z.object({
     .optional(),
   regionId: z.string().optional(),
   maxResults: z.number().min(1).max(100).default(25),
+  /** Pre-scrape filters - users only pay for leads matching these criteria */
+  filters: leadFiltersSchema,
 });
 
 const listQuerySchema = z.object({
@@ -61,14 +90,16 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
   // List scrape jobs
   fastify.get("/jobs", async (request, reply) => {
     const query = listQuerySchema.parse(request.query);
-    const result = await scrapingService.listJobs(query);
+    // Multi-tenancy: pass userId for data isolation
+    const result = await scrapingService.listJobs({ ...query, userId: request.user.userId });
     return result;
   });
 
   // Get scrape job by ID
   fastify.get("/jobs/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const job = await scrapingService.getJobById(id);
+    // Multi-tenancy: pass userId for data isolation (returns 404 if not owned)
+    const job = await scrapingService.getJobById(id, request.user.userId);
 
     if (!job) {
       return reply.status(404).send({ error: "Scrape job not found" });
@@ -85,9 +116,11 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
       type: data.type,
       query: data.query,
       location: data.location,
+      bounds: data.bounds as { ne: { lat: number; lng: number }; sw: { lat: number; lng: number } } | undefined,
       category: data.category,
       regionId: data.regionId,
       maxResults: data.maxResults,
+      filters: data.filters,
       userId: request.user.userId,
     });
 
@@ -98,7 +131,8 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
   fastify.post("/jobs/:id/cancel", async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    const job = await scrapingService.cancelJob(id);
+    // Multi-tenancy: pass userId for data isolation (returns 404 if not owned)
+    const job = await scrapingService.cancelJob(id, request.user.userId);
 
     if (!job) {
       return reply.status(404).send({ error: "Scrape job not found" });
@@ -124,7 +158,8 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
 
   // Get scraping statistics
   fastify.get("/stats", async (request, reply) => {
-    const stats = await scrapingService.getStats();
+    // Multi-tenancy: pass userId for data isolation
+    const stats = await scrapingService.getStats(request.user.userId);
     return stats;
   });
 
@@ -166,9 +201,9 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
 
     const { leadId } = schema.parse(request.body);
 
-    // Get the lead
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
+    // CRITICAL: Verify ownership for multi-tenancy (returns 404 if not owned)
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, userId: request.user.userId },
     });
 
     if (!lead) {
@@ -262,8 +297,9 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
 
     // If leadId provided, get the website URL
     if (leadId) {
-      const lead = await prisma.lead.findUnique({
-        where: { id: leadId },
+      // CRITICAL: Verify ownership for multi-tenancy (returns 404 if not owned)
+      const lead = await prisma.lead.findFirst({
+        where: { id: leadId, userId: request.user.userId },
       });
 
       if (!lead) {
@@ -612,8 +648,9 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
     // If prospectId provided, look up the prospect
     let businessData = data.business;
     if (data.prospectId) {
-      const prospect = await prisma.lead.findUnique({
-        where: { id: data.prospectId },
+      // CRITICAL: Verify ownership for multi-tenancy (returns 404 if not owned)
+      const prospect = await prisma.lead.findFirst({
+        where: { id: data.prospectId, userId: request.user.userId },
       });
       if (!prospect) {
         return reply.status(404).send({ error: "Prospect not found" });
@@ -695,8 +732,9 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
 
     let businessData = data.business;
     if (data.prospectId) {
-      const prospect = await prisma.lead.findUnique({
-        where: { id: data.prospectId },
+      // CRITICAL: Verify ownership for multi-tenancy (returns 404 if not owned)
+      const prospect = await prisma.lead.findFirst({
+        where: { id: data.prospectId, userId: request.user.userId },
       });
       if (!prospect) {
         return reply.status(404).send({ error: "Prospect not found" });
@@ -743,8 +781,9 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
 
     let businessData = data.business;
     if (data.prospectId) {
-      const prospect = await prisma.lead.findUnique({
-        where: { id: data.prospectId },
+      // CRITICAL: Verify ownership for multi-tenancy (returns 404 if not owned)
+      const prospect = await prisma.lead.findFirst({
+        where: { id: data.prospectId, userId: request.user.userId },
       });
       if (!prospect) {
         return reply.status(404).send({ error: "Prospect not found" });

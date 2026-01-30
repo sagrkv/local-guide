@@ -8,30 +8,45 @@ import { prisma } from "../../lib/prisma.js";
 import { scrapeQueue } from "../../jobs/queue.js";
 import { lighthouseAnalyzer } from "./utils/lighthouse.js";
 import { perplexityClient } from "./utils/perplexity.js";
+import type { LeadFilters } from "../../types/filters.js";
 
 interface ListJobsParams {
+  userId: string; // Required for multi-tenancy
   page?: number;
   limit?: number;
   status?: ScrapeJobStatus;
   type?: ScrapeJobType;
 }
 
+/** Geographic bounds for map-based scraping */
+interface Bounds {
+  ne: { lat: number; lng: number };
+  sw: { lat: number; lng: number };
+}
+
 interface CreateJobData {
   type: ScrapeJobType;
   query: string;
   location?: string;
+  /** Geographic bounds for map-based scraping */
+  bounds?: Bounds;
   category?: LeadCategory;
   regionId?: string;
   maxResults?: number;
+  /** Pre-scrape filters - users only pay for leads matching these criteria */
+  filters?: LeadFilters;
   userId: string;
 }
 
 export const scrapingService = {
   async listJobs(params: ListJobsParams) {
-    const { page = 1, limit = 20, ...filters } = params;
+    const { userId, page = 1, limit = 20, ...filters } = params;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ScrapeJobWhereInput = {};
+    // CRITICAL: Always filter by userId for multi-tenancy data isolation
+    const where: Prisma.ScrapeJobWhereInput = {
+      createdById: userId, // Multi-tenancy: users only see their own jobs
+    };
 
     if (filters.status) where.status = filters.status;
     if (filters.type) where.type = filters.type;
@@ -68,9 +83,13 @@ export const scrapingService = {
     };
   },
 
-  async getJobById(id: string) {
-    const dbJob = await prisma.scrapeJob.findUnique({
-      where: { id },
+  async getJobById(id: string, userId: string) {
+    // CRITICAL: Always include userId check for multi-tenancy (prevents enumeration)
+    const dbJob = await prisma.scrapeJob.findFirst({
+      where: {
+        id,
+        createdById: userId, // Multi-tenancy: users only see their own jobs
+      },
       include: {
         region: true,
         createdBy: {
@@ -116,13 +135,22 @@ export const scrapingService = {
   },
 
   async createJob(data: CreateJobData) {
-    const { userId, maxResults, ...jobData } = data;
+    const { userId, maxResults, filters, bounds, ...jobData } = data;
 
-    // Validate that we have a location or region
-    if (!jobData.location && !jobData.regionId) {
+    // Validate that we have a location, bounds, or region
+    if (!jobData.location && !bounds && !jobData.regionId) {
       throw new Error(
-        "Either location or regionId is required to start a scrape job.",
+        "Either location, bounds, or regionId is required to start a scrape job.",
       );
+    }
+
+    // If bounds provided, convert to a location string for storage
+    // The actual bounds will be passed to the queue job
+    if (bounds && !jobData.location) {
+      // Create a location string from bounds center for display purposes
+      const centerLat = (bounds.ne.lat + bounds.sw.lat) / 2;
+      const centerLng = (bounds.ne.lng + bounds.sw.lng) / 2;
+      jobData.location = `Map Area (${centerLat.toFixed(4)}, ${centerLng.toFixed(4)})`;
     }
 
     // If regionId provided, validate it exists and has cities
@@ -165,10 +193,11 @@ export const scrapingService = {
       }
     }
 
-    // Create the job record
+    // Create the job record with filters stored as JSON
     const job = await prisma.scrapeJob.create({
       data: {
         ...jobData,
+        filters: filters ? (filters as Prisma.InputJsonValue) : undefined,
         createdById: userId,
       },
       include: {
@@ -186,17 +215,22 @@ export const scrapingService = {
         type: job.type,
         query: job.query,
         location: job.location,
+        bounds, // Pass bounds for map-based scraping
         category: job.category,
         regionId: job.regionId,
         maxResults,
+        filters, // Pass filters to worker
       });
     }
 
     return job;
   },
 
-  async cancelJob(id: string) {
-    const job = await prisma.scrapeJob.findUnique({ where: { id } });
+  async cancelJob(id: string, userId: string) {
+    // CRITICAL: Verify ownership before cancellation (prevents enumeration)
+    const job = await prisma.scrapeJob.findFirst({
+      where: { id, createdById: userId },
+    });
     if (!job) return null;
 
     if (job.status !== "PENDING" && job.status !== "RUNNING") {
@@ -213,7 +247,10 @@ export const scrapingService = {
   },
 
   async retryJob(id: string, userId: string) {
-    const job = await prisma.scrapeJob.findUnique({ where: { id } });
+    // CRITICAL: Verify ownership before retry (prevents enumeration)
+    const job = await prisma.scrapeJob.findFirst({
+      where: { id, createdById: userId },
+    });
     if (!job || job.status !== "FAILED") return null;
 
     // Create a new job with the same parameters
@@ -252,26 +289,30 @@ export const scrapingService = {
     });
   },
 
-  async getStats() {
+  async getStats(userId: string) {
+    // CRITICAL: All stats should be filtered by userId for multi-tenancy
+    const userFilter = { createdById: userId };
+    const leadUserFilter = { userId };
+
     const [total, pending, running, completed, failed] = await Promise.all([
-      prisma.scrapeJob.count(),
-      prisma.scrapeJob.count({ where: { status: "PENDING" } }),
-      prisma.scrapeJob.count({ where: { status: "RUNNING" } }),
-      prisma.scrapeJob.count({ where: { status: "COMPLETED" } }),
-      prisma.scrapeJob.count({ where: { status: "FAILED" } }),
+      prisma.scrapeJob.count({ where: userFilter }),
+      prisma.scrapeJob.count({ where: { ...userFilter, status: "PENDING" } }),
+      prisma.scrapeJob.count({ where: { ...userFilter, status: "RUNNING" } }),
+      prisma.scrapeJob.count({ where: { ...userFilter, status: "COMPLETED" } }),
+      prisma.scrapeJob.count({ where: { ...userFilter, status: "FAILED" } }),
     ]);
 
-    // Get total leads created from scraping
+    // Get total leads created from scraping (for this user)
     const leadsFromScraping = await prisma.lead.count({
-      where: { scrapeJobId: { not: null } },
+      where: { ...leadUserFilter, scrapeJobId: { not: null } },
     });
 
-    // Get last 24h stats
+    // Get last 24h stats (for this user)
     const oneDayAgo = new Date();
     oneDayAgo.setHours(oneDayAgo.getHours() - 24);
 
     const last24h = await prisma.scrapeJob.aggregate({
-      where: { createdAt: { gte: oneDayAgo } },
+      where: { ...userFilter, createdAt: { gte: oneDayAgo } },
       _sum: { leadsCreated: true },
       _count: true,
     });

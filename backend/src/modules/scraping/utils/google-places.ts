@@ -24,6 +24,8 @@ interface PlaceResult {
   businessStatus?: string;
   websiteUri?: string; // Website URL if available
   phoneNumber?: string; // Phone number from Google
+  rating?: number; // Google rating (1-5 stars)
+  reviewCount?: number; // Number of Google reviews
   zone?: string; // Which zone this result came from
 }
 
@@ -37,6 +39,8 @@ interface GooglePlaceResponse {
   websiteUri?: string;
   nationalPhoneNumber?: string;
   internationalPhoneNumber?: string;
+  rating?: number;
+  userRatingCount?: number;
 }
 
 export const googlePlacesClient = {
@@ -74,6 +78,7 @@ export const googlePlacesClient = {
     try {
       // Using Places API (New) - Text Search with location bias
       // Including websiteUri to filter businesses with websites (Enterprise SKU)
+      // Also including rating and userRatingCount for filtering
       const response = await fetch(
         "https://places.googleapis.com/v1/places:searchText",
         {
@@ -82,7 +87,7 @@ export const googlePlacesClient = {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": config.googlePlacesApiKey,
             "X-Goog-FieldMask":
-              "places.id,places.displayName,places.formattedAddress,places.location,places.types,places.businessStatus,places.websiteUri,places.nationalPhoneNumber,places.internationalPhoneNumber",
+              "places.id,places.displayName,places.formattedAddress,places.location,places.types,places.businessStatus,places.websiteUri,places.nationalPhoneNumber,places.internationalPhoneNumber,places.rating,places.userRatingCount",
           },
           body: JSON.stringify({
             textQuery: query,
@@ -145,6 +150,8 @@ export const googlePlacesClient = {
           websiteUri: place.websiteUri,
           phoneNumber:
             place.nationalPhoneNumber || place.internationalPhoneNumber,
+          rating: place.rating,
+          reviewCount: place.userRatingCount,
           zone: zone.name,
         });
       }

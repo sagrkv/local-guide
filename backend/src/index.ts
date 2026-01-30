@@ -11,8 +11,17 @@ import { dashboardRoutes } from "./modules/dashboard/dashboard.routes.js";
 import { regionsRoutes } from "./modules/scraping/regions.routes.js";
 import { contactRoutes } from "./modules/contact/contact.routes.js";
 import { prospectsRoutes } from "./modules/prospects/prospects.routes.js";
+import { creditsRoutes } from "./modules/credits/credits.routes.js";
+import { auditRoutes } from "./modules/audit/audit.routes.js";
+import { couponsRoutes } from "./modules/coupons/coupons.routes.js";
+import { gdprRoutes } from "./modules/gdpr/gdpr.routes.js";
+import { adminRoutes } from "./modules/admin/admin.routes.js";
+import { analysisRoutes } from "./modules/analysis/analysis.routes.js";
+import { remindersRoutes } from "./modules/reminders/reminders.routes.js";
+import { savedRegionsRoutes } from "./modules/saved-regions/saved-regions.routes.js";
 import { config } from "./config.js";
 import { scrapeQueue, worker } from "./jobs/queue.js";
+import { clerkAuthenticate, isClerkConfigured } from "./middleware/clerk.js";
 
 // Only use pino-pretty in dev if available, otherwise use standard JSON logging
 // In production, always use JSON logging for better log aggregation
@@ -42,12 +51,20 @@ async function main() {
   });
 
   await fastify.register(rateLimit, {
-    max: 100,
+    max: config.nodeEnv === 'development' ? 1000 : 100, // Higher limit for dev/testing
     timeWindow: "1 minute",
   });
 
   // Decorate with authenticate method
+  // Uses Clerk authentication if configured, falls back to JWT for legacy support
   fastify.decorate("authenticate", async function (request: any, reply: any) {
+    // If Clerk is configured, use Clerk authentication
+    if (isClerkConfigured()) {
+      await clerkAuthenticate(request, reply);
+      return;
+    }
+
+    // Fall back to legacy JWT authentication
     try {
       await request.jwtVerify();
     } catch (err) {
@@ -90,6 +107,16 @@ async function main() {
   await fastify.register(dashboardRoutes, { prefix: "/api/dashboard" });
   await fastify.register(contactRoutes, { prefix: "/api/contact" });
   await fastify.register(prospectsRoutes, { prefix: "/api/prospects" });
+  await fastify.register(creditsRoutes, { prefix: "/api/credits" });
+  // Admin routes use obscure URL prefix for security
+  // SECURITY: The admin URL prefix should be kept secret and changed periodically
+  await fastify.register(auditRoutes, { prefix: `/api/${config.adminUrlPrefix}/audit-logs` });
+  await fastify.register(couponsRoutes, { prefix: "/api" });
+  await fastify.register(gdprRoutes, { prefix: "/api/user" });
+  await fastify.register(adminRoutes, { prefix: `/api/${config.adminUrlPrefix}` });
+  await fastify.register(analysisRoutes, { prefix: "/api/leads" });
+  await fastify.register(remindersRoutes, { prefix: "/api/reminders" });
+  await fastify.register(savedRegionsRoutes, { prefix: "/api/saved-regions" });
 
   // Start server
   try {

@@ -10,12 +10,45 @@ const API_BASE_URL = (() => {
   }
 
   // In production browser, warn and try to construct from current origin
-  console.error("⚠️ NEXT_PUBLIC_API_URL is not set. API calls may fail.");
+  console.error("NEXT_PUBLIC_API_URL is not set. API calls may fail.");
   return "/api"; // Fallback to relative path (requires proxy setup)
 })();
 
+// Admin API prefix - MUST match backend ADMIN_URL_PREFIX
+// SECURITY: This obscure URL prefix prevents unauthorized access attempts to admin endpoints
+// Change this periodically and keep it secret
+const ADMIN_API_PREFIX = process.env.NEXT_PUBLIC_ADMIN_PREFIX || "nucleus-admin-x7k9m2";
+
+// Clerk token getter - set by the auth provider
+let clerkGetToken: (() => Promise<string | null>) | null = null;
+
+/**
+ * Set the Clerk token getter function
+ * This should be called from a component that has access to Clerk's useAuth hook
+ */
+export function setClerkTokenGetter(getter: () => Promise<string | null>) {
+  clerkGetToken = getter;
+}
+
 class ApiClient {
-  private getToken(): string | null {
+  /**
+   * Get authentication token
+   * Prefers Clerk token if available, falls back to localStorage for legacy support
+   */
+  private async getToken(): Promise<string | null> {
+    // Try Clerk token first
+    if (clerkGetToken) {
+      try {
+        const clerkToken = await clerkGetToken();
+        if (clerkToken) {
+          return clerkToken;
+        }
+      } catch (error) {
+        console.error("Failed to get Clerk token:", error);
+      }
+    }
+
+    // Fall back to legacy localStorage token
     if (typeof window === "undefined") return null;
     return localStorage.getItem("token");
   }
@@ -24,7 +57,7 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {},
   ): Promise<T> {
-    const token = this.getToken();
+    const token = await this.getToken();
 
     // Only set Content-Type for requests with a body
     const hasBody = options.body !== undefined;
@@ -223,6 +256,52 @@ class ApiClient {
     return this.request(`/activities/${id}/complete`, {
       method: "POST",
       body: JSON.stringify({ outcome }),
+    });
+  }
+
+  async getLeadActivities(leadId: string, params?: { page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      data: Array<{
+        id: string;
+        type: string;
+        title: string;
+        description: string | null;
+        outcome: string | null;
+        scheduledAt: string | null;
+        completedAt: string | null;
+        createdAt: string;
+        user: { id: string; name: string };
+      }>;
+      pagination: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
+    }>(`/leads/${leadId}/activities?${searchParams}`);
+  }
+
+  async updateActivity(id: string, data: {
+    title?: string;
+    description?: string;
+    outcome?: string;
+    scheduledAt?: string;
+  }) {
+    return this.request(`/activities/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteActivity(id: string) {
+    return this.request(`/activities/${id}`, {
+      method: "DELETE",
     });
   }
 
@@ -741,6 +820,666 @@ class ApiClient {
     }>("/scraping/analyze/tech-stack", {
       method: "POST",
       body: JSON.stringify({ leadId }),
+    });
+  }
+
+  // ===== Map-Based Scraping =====
+
+  // Estimate scraping costs for a geographic region
+  async estimateScrapingRegion(bounds: {
+    ne: { lat: number; lng: number };
+    sw: { lat: number; lng: number };
+  }) {
+    return this.request<{
+      cellCount: number;
+      estimatedLeads: number;
+      estimatedCredits: number;
+      areaKm2: number;
+    }>("/scraping/estimate", {
+      method: "POST",
+      body: JSON.stringify({ bounds }),
+    });
+  }
+
+  // Create scrape job with geographic bounds
+  async createScrapeJobWithBounds(data: {
+    type: string;
+    query: string;
+    bounds: {
+      ne: { lat: number; lng: number };
+      sw: { lat: number; lng: number };
+    };
+    category?: string;
+    maxResults?: number;
+    filters?: {
+      hasWebsite?: boolean;
+      hasEmail?: boolean;
+      hasPhone?: boolean;
+      minRating?: number;
+      minReviews?: number;
+    };
+  }) {
+    return this.request("/scraping/jobs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ===== Admin Panel =====
+  // SECURITY: All admin API endpoints use the obscure URL prefix
+
+  // Admin Users
+  async getAdminUsers(params?: { search?: string; page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      users: Array<{
+        id: string;
+        email: string;
+        name: string;
+        role: string;
+        isActive: boolean;
+        creditBalance: number;
+        createdAt: string;
+        updatedAt: string;
+        _count: {
+          ownedLeads: number;
+          scrapeJobs: number;
+          creditTransactions: number;
+        };
+      }>;
+      pagination: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
+    }>(`/${ADMIN_API_PREFIX}/users?${searchParams}`);
+  }
+
+  async getAdminUserDetails(userId: string) {
+    return this.request<{
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+      isActive: boolean;
+      creditBalance: number;
+      createdAt: string;
+      updatedAt: string;
+      _count: {
+        ownedLeads: number;
+        scrapeJobs: number;
+        creditTransactions: number;
+      };
+      recentTransactions: Array<{
+        id: string;
+        amount: number;
+        type: string;
+        description: string | null;
+        reference: string | null;
+        createdAt: string;
+      }>;
+      recentScrapeJobs: Array<{
+        id: string;
+        type: string;
+        query: string;
+        status: string;
+        leadsCreated: number;
+        createdAt: string;
+      }>;
+    }>(`/${ADMIN_API_PREFIX}/users/${userId}`);
+  }
+
+  async updateAdminUser(
+    userId: string,
+    data: {
+      name?: string;
+      isActive?: boolean;
+      role?: "ADMIN" | "SALES_REP";
+      creditBalance?: number;
+    }
+  ) {
+    return this.request(`/${ADMIN_API_PREFIX}/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async addUserCredits(userId: string, amount: number, reason: string) {
+    return this.request<{ message: string; newBalance: number }>(
+      `/${ADMIN_API_PREFIX}/users/${userId}/credits`,
+      {
+        method: "POST",
+        body: JSON.stringify({ amount, reason }),
+      }
+    );
+  }
+
+  async deductUserCredits(userId: string, amount: number, reason: string) {
+    return this.request<{ message: string; newBalance: number }>(
+      `/${ADMIN_API_PREFIX}/users/${userId}/credits/deduct`,
+      {
+        method: "POST",
+        body: JSON.stringify({ amount, reason }),
+      }
+    );
+  }
+
+  // Admin Analytics
+  async getAdminAnalyticsOverview() {
+    return this.request<{
+      totalUsers: number;
+      activeUsers: number;
+      totalLeads: number;
+      totalProspects: number;
+      totalCreditsUsed: number;
+      totalCreditsAdded: number;
+      activeJobs: number;
+      completedJobs: number;
+    }>(`/${ADMIN_API_PREFIX}/analytics/overview`);
+  }
+
+  async getAdminUserGrowth(days?: number) {
+    const params = days ? `?days=${days}` : "";
+    return this.request<Array<{ date: string; count: number }>>(
+      `/${ADMIN_API_PREFIX}/analytics/users${params}`
+    );
+  }
+
+  async getAdminCreditUsage(days?: number) {
+    const params = days ? `?days=${days}` : "";
+    return this.request<Array<{ date: string; used: number; added: number }>>(
+      `/${ADMIN_API_PREFIX}/analytics/usage${params}`
+    );
+  }
+
+  async getAdminLeadGrowth(days?: number) {
+    const params = days ? `?days=${days}` : "";
+    return this.request<Array<{ date: string; count: number }>>(
+      `/${ADMIN_API_PREFIX}/analytics/leads${params}`
+    );
+  }
+
+  async getAdminTopUsers(limit?: number) {
+    const params = limit ? `?limit=${limit}` : "";
+    return this.request<
+      Array<{
+        id: string;
+        name: string;
+        email: string;
+        leadsCount: number;
+        creditsUsed: number;
+      }>
+    >(`/${ADMIN_API_PREFIX}/analytics/top-users${params}`);
+  }
+
+  async getAdminScrapeJobStats(days?: number) {
+    const params = days ? `?days=${days}` : "";
+    return this.request<{
+      totalJobs: number;
+      successRate: number;
+      avgLeadsPerJob: number;
+      byStatus: Array<{ status: string; count: number }>;
+      byType: Array<{ type: string; count: number }>;
+    }>(`/${ADMIN_API_PREFIX}/analytics/scrape-jobs${params}`);
+  }
+
+  async getAdminCategoryDistribution() {
+    return this.request<Array<{ category: string; count: number }>>(
+      `/${ADMIN_API_PREFIX}/analytics/categories`
+    );
+  }
+
+  async getAdminGeographicDistribution() {
+    return this.request<{
+      cities: Array<{ city: string; count: number }>;
+      states: Array<{ state: string; count: number }>;
+    }>(`/${ADMIN_API_PREFIX}/analytics/geography`);
+  }
+
+  // ===== Coupons =====
+
+  async redeemCoupon(code: string) {
+    return this.request<{
+      message: string;
+      creditsAdded: number;
+      newBalance: number;
+    }>("/coupons/redeem", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async validateCoupon(code: string) {
+    return this.request<{
+      valid: boolean;
+      creditAmount?: number;
+      error?: string;
+    }>("/coupons/validate", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  // ===== GDPR / Privacy =====
+
+  /**
+   * Export all user data (GDPR Article 20 - Data Portability)
+   * Returns a JSON file with all user data
+   */
+  async exportUserData(): Promise<Blob> {
+    const token = await this.getToken();
+
+    const response = await fetch(`${API_BASE_URL}/user/export`, {
+      method: "GET",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Session expired. Please log in again.");
+      }
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Export failed" }));
+      throw new Error(errorData.error || errorData.message || "Export failed");
+    }
+
+    return response.blob();
+  }
+
+  /**
+   * Request account deletion (GDPR Article 17 - Right to Erasure)
+   * Initiates deletion process with grace period
+   */
+  async requestAccountDeletion(reason?: string): Promise<{
+    message: string;
+    deletionScheduledFor: string;
+    gracePeriodDays: number;
+  }> {
+    return this.request("/user/delete", {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  /**
+   * Cancel a pending account deletion request
+   */
+  async cancelAccountDeletion(): Promise<{ message: string }> {
+    return this.request("/user/delete/cancel", {
+      method: "POST",
+    });
+  }
+
+  // ===== Saved Regions =====
+
+  /**
+   * Get list of user's saved regions
+   */
+  async getSavedRegions(params?: {
+    limit?: number;
+    offset?: number;
+    sortBy?: "lastUsed" | "timesUsed" | "createdAt" | "name";
+    sortOrder?: "asc" | "desc";
+  }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      regions: Array<{
+        id: string;
+        userId: string;
+        name: string;
+        southwestLat: number;
+        southwestLng: number;
+        northeastLat: number;
+        northeastLng: number;
+        lastUsed: string;
+        timesUsed: number;
+        createdAt: string;
+      }>;
+      total: number;
+      limit: number;
+      offset: number;
+    }>(`/saved-regions?${searchParams}`);
+  }
+
+  /**
+   * Get recently used saved regions (for quick selection dropdown)
+   */
+  async getRecentSavedRegions() {
+    return this.request<{
+      regions: Array<{
+        id: string;
+        userId: string;
+        name: string;
+        southwestLat: number;
+        southwestLng: number;
+        northeastLat: number;
+        northeastLng: number;
+        lastUsed: string;
+        timesUsed: number;
+        createdAt: string;
+      }>;
+    }>("/saved-regions/recent");
+  }
+
+  /**
+   * Get a single saved region by ID
+   */
+  async getSavedRegion(id: string) {
+    return this.request<{
+      id: string;
+      userId: string;
+      name: string;
+      southwestLat: number;
+      southwestLng: number;
+      northeastLat: number;
+      northeastLng: number;
+      lastUsed: string;
+      timesUsed: number;
+      createdAt: string;
+    }>(`/saved-regions/${id}`);
+  }
+
+  /**
+   * Create a new saved region
+   */
+  async createSavedRegion(data: {
+    name: string;
+    southwestLat: number;
+    southwestLng: number;
+    northeastLat: number;
+    northeastLng: number;
+  }) {
+    return this.request<{
+      id: string;
+      userId: string;
+      name: string;
+      southwestLat: number;
+      southwestLng: number;
+      northeastLat: number;
+      northeastLng: number;
+      lastUsed: string;
+      timesUsed: number;
+      createdAt: string;
+    }>("/saved-regions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update a saved region's name
+   */
+  async updateSavedRegion(id: string, data: { name: string }) {
+    return this.request<{
+      id: string;
+      userId: string;
+      name: string;
+      southwestLat: number;
+      southwestLng: number;
+      northeastLat: number;
+      northeastLng: number;
+      lastUsed: string;
+      timesUsed: number;
+      createdAt: string;
+    }>(`/saved-regions/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete a saved region
+   */
+  async deleteSavedRegion(id: string) {
+    return this.request<{ success: boolean; message: string }>(
+      `/saved-regions/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
+
+  /**
+   * Mark a saved region as used (updates lastUsed and increments timesUsed)
+   */
+  async markSavedRegionAsUsed(id: string) {
+    return this.request<{
+      id: string;
+      userId: string;
+      name: string;
+      southwestLat: number;
+      southwestLng: number;
+      northeastLat: number;
+      northeastLng: number;
+      lastUsed: string;
+      timesUsed: number;
+      createdAt: string;
+    }>(`/saved-regions/${id}/use`, {
+      method: "POST",
+    });
+  }
+
+  // ===== Reminders =====
+
+  /**
+   * Get user's reminders with optional filters
+   */
+  async getReminders(params?: {
+    page?: number;
+    limit?: number;
+    status?: "PENDING" | "COMPLETED" | "DISMISSED";
+    leadId?: string;
+  }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      data: Array<{
+        id: string;
+        leadId: string;
+        remindAt: string;
+        note: string | null;
+        status: "PENDING" | "COMPLETED" | "DISMISSED";
+        createdAt: string;
+        lead: {
+          id: string;
+          businessName: string;
+          email: string | null;
+          phone: string | null;
+          city: string | null;
+          stage: string;
+        };
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    }>(`/reminders?${searchParams}`);
+  }
+
+  /**
+   * Get reminders due today
+   */
+  async getDueReminders() {
+    return this.request<{
+      data: Array<{
+        id: string;
+        leadId: string;
+        remindAt: string;
+        note: string | null;
+        status: "PENDING" | "COMPLETED" | "DISMISSED";
+        createdAt: string;
+        lead: {
+          id: string;
+          businessName: string;
+          email: string | null;
+          phone: string | null;
+          city: string | null;
+          stage: string;
+        };
+      }>;
+      count: number;
+    }>("/reminders/due");
+  }
+
+  /**
+   * Get count of reminders due today (for dashboard widget)
+   */
+  async getDueRemindersCount() {
+    return this.request<{ count: number }>("/reminders/due/count");
+  }
+
+  /**
+   * Get a single reminder by ID
+   */
+  async getReminder(id: string) {
+    return this.request<{
+      id: string;
+      leadId: string;
+      remindAt: string;
+      note: string | null;
+      status: "PENDING" | "COMPLETED" | "DISMISSED";
+      createdAt: string;
+      lead: {
+        id: string;
+        businessName: string;
+        email: string | null;
+        phone: string | null;
+        city: string | null;
+        stage: string;
+      };
+    }>(`/reminders/${id}`);
+  }
+
+  /**
+   * Get all reminders for a specific lead
+   */
+  async getLeadReminders(leadId: string) {
+    return this.request<{
+      data: Array<{
+        id: string;
+        remindAt: string;
+        note: string | null;
+        status: "PENDING" | "COMPLETED" | "DISMISSED";
+        createdAt: string;
+      }>;
+    }>(`/reminders/lead/${leadId}`);
+  }
+
+  /**
+   * Create a new reminder
+   */
+  async createReminder(data: { leadId: string; remindAt: string; note?: string }) {
+    return this.request<{
+      id: string;
+      leadId: string;
+      remindAt: string;
+      note: string | null;
+      status: "PENDING" | "COMPLETED" | "DISMISSED";
+      createdAt: string;
+      lead: {
+        id: string;
+        businessName: string;
+        email: string | null;
+        phone: string | null;
+        city: string | null;
+        stage: string;
+      };
+    }>("/reminders", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update a reminder
+   */
+  async updateReminder(
+    id: string,
+    data: {
+      remindAt?: string;
+      note?: string;
+      status?: "PENDING" | "COMPLETED" | "DISMISSED";
+    }
+  ) {
+    return this.request<{
+      id: string;
+      leadId: string;
+      remindAt: string;
+      note: string | null;
+      status: "PENDING" | "COMPLETED" | "DISMISSED";
+      createdAt: string;
+      lead: {
+        id: string;
+        businessName: string;
+        email: string | null;
+        phone: string | null;
+        city: string | null;
+        stage: string;
+      };
+    }>(`/reminders/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Mark a reminder as completed
+   */
+  async completeReminder(id: string) {
+    return this.request<{
+      id: string;
+      leadId: string;
+      remindAt: string;
+      note: string | null;
+      status: "PENDING" | "COMPLETED" | "DISMISSED";
+      createdAt: string;
+    }>(`/reminders/${id}/complete`, {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Dismiss a reminder
+   */
+  async dismissReminder(id: string) {
+    return this.request<{
+      id: string;
+      leadId: string;
+      remindAt: string;
+      note: string | null;
+      status: "PENDING" | "COMPLETED" | "DISMISSED";
+      createdAt: string;
+    }>(`/reminders/${id}/dismiss`, {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Delete a reminder
+   */
+  async deleteReminder(id: string) {
+    return this.request<{ message: string }>(`/reminders/${id}`, {
+      method: "DELETE",
     });
   }
 }

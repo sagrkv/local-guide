@@ -1,22 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 
 const footerLinks = [
   {
-    title: "Pages",
+    title: "Product",
     links: [
-      { href: "/", label: "Home" },
-      { href: "/work", label: "Work" },
-      { href: "/labs", label: "Labs" },
-      { href: "/services", label: "Services" },
+      { href: "/#features", label: "Features" },
+      { href: "/pricing", label: "Pricing" },
+      { href: "/dashboard", label: "Dashboard" },
     ],
   },
   {
     title: "Company",
     links: [
-      { href: "/pricing", label: "Pricing" },
       { href: "/about", label: "About" },
       { href: "/contact", label: "Contact" },
     ],
@@ -31,31 +28,32 @@ const footerLinks = [
 ];
 
 const socialLinks = [
-  { href: "https://twitter.com/leedo_io", label: "Twitter / X" },
+  { href: "https://twitter.com/leedo_io", label: "Twitter" },
   { href: "https://linkedin.com/company/leedo", label: "LinkedIn" },
-  { href: "https://github.com/sagrkv/Leedo", label: "GitHub" },
 ];
 
 export default function Footer() {
   return (
-    <footer className="ml-0 lg:ml-[80px] border-t border-[var(--gray-700)] bg-[var(--gray-900)]">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+    <footer className="border-t border-[var(--gray-800)] bg-[var(--gray-900)]">
+      <div className="max-w-[1280px] mx-auto px-6 lg:px-12">
         {/* Main Footer Content */}
-        <div className="py-16 lg:py-20">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10 lg:gap-16">
+        <div className="py-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10">
             {/* Brand Column */}
-            <div className="col-span-2 md:col-span-4 lg:col-span-2">
+            <div className="col-span-2">
               <Link
                 href="/"
-                className="inline-block text-2xl font-semibold tracking-tight mb-4"
+                className="inline-flex items-center gap-2 mb-4"
               >
-                <span className="bracket">{`{`}</span>
-                <span className="text-white">LEEDO</span>
-                <span className="bracket">{`}`}</span>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[#FF8C40] flex items-center justify-center">
+                  <span className="text-[var(--background)] font-bold text-sm">L</span>
+                </div>
+                <span className="text-xl font-semibold text-white">
+                  Leedo
+                </span>
               </Link>
               <p className="text-[var(--gray-400)] text-sm leading-relaxed max-w-xs mb-6">
-                Powerful lead generation platform. Discover, qualify, and manage
-                B2B leads with automated scraping and sales intelligence.
+                B2B lead generation platform for India. Find, qualify, and convert leads with map-based targeting and AI-powered sales intelligence.
               </p>
               <a
                 href="mailto:hello@leedo.io"
@@ -68,7 +66,7 @@ export default function Footer() {
             {/* Link Columns */}
             {footerLinks.map((group) => (
               <div key={group.title}>
-                <h4 className="text-[var(--gray-300)] font-medium text-sm mb-4 uppercase tracking-wider">
+                <h4 className="text-white font-medium text-sm mb-4">
                   {group.title}
                 </h4>
                 <ul className="space-y-3">
@@ -89,9 +87,9 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="py-6 border-t border-[var(--gray-700)] flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="py-6 border-t border-[var(--gray-800)] flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-[var(--gray-500)] text-sm">
-            © {new Date().getFullYear()} Leedo. All rights reserved.
+            &copy; {new Date().getFullYear()} Leedo. All rights reserved.
           </p>
 
           <div className="flex items-center gap-6">
@@ -108,29 +106,6 @@ export default function Footer() {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Large Brand Text */}
-      <div className="overflow-hidden py-10 border-t border-[var(--gray-700)]">
-        <motion.div
-          initial={{ x: "0%" }}
-          animate={{ x: "-50%" }}
-          transition={{
-            duration: 30,
-            ease: "linear",
-            repeat: Infinity,
-          }}
-          className="flex whitespace-nowrap"
-        >
-          {[...Array(4)].map((_, i) => (
-            <span
-              key={i}
-              className="text-[8vw] lg:text-[6vw] font-bold text-[var(--gray-800)] tracking-tighter mx-4"
-            >
-              LEEDO •{" "}
-            </span>
-          ))}
-        </motion.div>
       </div>
     </footer>
   );

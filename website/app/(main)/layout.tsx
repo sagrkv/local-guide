@@ -9,7 +9,7 @@ export default function MainLayout({
   return (
     <>
       <Navigation />
-      <main className="ml-0 lg:ml-[80px]">{children}</main>
+      <main>{children}</main>
       <Footer />
     </>
   );

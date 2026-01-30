@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { leadsService } from './leads.service.js';
+import { activitiesService } from '../activities/activities.service.js';
 
 const createLeadSchema = z.object({
   businessName: z.string().min(1),
@@ -22,7 +23,7 @@ const createLeadSchema = z.object({
 });
 
 const updateLeadSchema = createLeadSchema.partial().extend({
-  stage: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']).optional(),
+  stage: z.enum(['NEW', 'CONTACTED', 'INTERESTED', 'CLOSED']).optional(),
   score: z.number().min(0).max(100).optional(),
   hasWebsite: z.boolean().optional(),
   lighthouseScore: z.number().min(0).max(100).optional(),
@@ -35,7 +36,7 @@ const updateLeadSchema = createLeadSchema.partial().extend({
 const listQuerySchema = z.object({
   page: z.coerce.number().default(1),
   limit: z.coerce.number().default(20),
-  stage: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']).optional(),
+  stage: z.enum(['NEW', 'CONTACTED', 'INTERESTED', 'CLOSED']).optional(),
   category: z.enum(['STARTUP', 'RESTAURANT', 'HOTEL', 'ECOMMERCE', 'SALON', 'CLINIC', 'GYM', 'RETAIL', 'EDUCATION', 'REAL_ESTATE', 'AGENCY', 'OTHER']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
   assignedToId: z.string().optional(),
@@ -53,16 +54,19 @@ export async function leadsRoutes(fastify: FastifyInstance) {
   fastify.addHook('preHandler', fastify.authenticate);
 
   // List leads with filtering and pagination
-  fastify.get('/', async (request, reply) => {
+  fastify.get('/', async (request) => {
     const query = listQuerySchema.parse(request.query);
-    const result = await leadsService.list(query);
+    const result = await leadsService.list({
+      ...query,
+      userId: request.user.userId, // Multi-tenancy enforcement
+    });
     return result;
   });
 
   // Get lead by ID
   fastify.get('/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const lead = await leadsService.getById(id);
+    const lead = await leadsService.getById(id, request.user.userId);
 
     if (!lead) {
       return reply.status(404).send({ error: 'Lead not found' });
@@ -75,6 +79,7 @@ export async function leadsRoutes(fastify: FastifyInstance) {
   fastify.post('/', async (request, reply) => {
     const data = createLeadSchema.parse(request.body);
     const lead = await leadsService.create({
+      userId: request.user.userId, // Multi-tenancy: set owner
       businessName: data.businessName,
       contactPerson: data.contactPerson,
       email: data.email,
@@ -100,7 +105,7 @@ export async function leadsRoutes(fastify: FastifyInstance) {
     const { id } = request.params as { id: string };
     const data = updateLeadSchema.parse(request.body);
 
-    const lead = await leadsService.update(id, data);
+    const lead = await leadsService.update(id, request.user.userId, data);
 
     if (!lead) {
       return reply.status(404).send({ error: 'Lead not found' });
@@ -113,7 +118,7 @@ export async function leadsRoutes(fastify: FastifyInstance) {
   fastify.delete('/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    const deleted = await leadsService.delete(id);
+    const deleted = await leadsService.delete(id, request.user.userId);
 
     if (!deleted) {
       return reply.status(404).send({ error: 'Lead not found' });
@@ -126,7 +131,7 @@ export async function leadsRoutes(fastify: FastifyInstance) {
   fastify.patch('/:id/stage', async (request, reply) => {
     const { id } = request.params as { id: string };
     const schema = z.object({
-      stage: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']),
+      stage: z.enum(['NEW', 'CONTACTED', 'INTERESTED', 'CLOSED']),
       notes: z.string().optional(),
     });
 
@@ -163,7 +168,7 @@ export async function leadsRoutes(fastify: FastifyInstance) {
   fastify.post('/bulk/stage', async (request, reply) => {
     const schema = z.object({
       leadIds: z.array(z.string()).min(1),
-      stage: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']),
+      stage: z.enum(['NEW', 'CONTACTED', 'INTERESTED', 'CLOSED']),
     });
 
     const { leadIds, stage } = schema.parse(request.body);
@@ -182,7 +187,8 @@ export async function leadsRoutes(fastify: FastifyInstance) {
 
     const { tagIds } = schema.parse(request.body);
 
-    const lead = await leadsService.addTags(id, tagIds);
+    // Multi-tenancy: pass userId for data isolation
+    const lead = await leadsService.addTags(id, request.user.userId, tagIds);
 
     if (!lead) {
       return reply.status(404).send({ error: 'Lead not found' });
@@ -195,12 +201,64 @@ export async function leadsRoutes(fastify: FastifyInstance) {
   fastify.delete('/:id/tags/:tagId', async (request, reply) => {
     const { id, tagId } = request.params as { id: string; tagId: string };
 
-    const lead = await leadsService.removeTag(id, tagId);
+    // Multi-tenancy: pass userId for data isolation
+    const lead = await leadsService.removeTag(id, request.user.userId, tagId);
 
     if (!lead) {
       return reply.status(404).send({ error: 'Lead not found' });
     }
 
     return lead;
+  });
+
+  // === Activity routes nested under leads ===
+  // GET /api/leads/:id/activities - Get activities for a specific lead
+  fastify.get('/:id/activities', async (request) => {
+    const { id } = request.params as { id: string };
+    const query = z.object({
+      page: z.coerce.number().min(1).default(1),
+      limit: z.coerce.number().min(1).max(100).default(50),
+    }).parse(request.query);
+
+    const result = await activitiesService.getActivitiesByLead(
+      request.user.userId,
+      id,
+      query.page,
+      query.limit
+    );
+
+    return result;
+  });
+
+  // POST /api/leads/:id/activities - Create activity for a specific lead
+  fastify.post('/:id/activities', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const activitySchema = z.object({
+      type: z.enum(['NOTE', 'CALL', 'EMAIL', 'MEETING', 'TASK']),
+      title: z.string().min(1, 'Title is required').max(255),
+      description: z.string().max(5000).optional(),
+      outcome: z.string().max(1000).optional(),
+      scheduledAt: z.string().datetime().optional(),
+    });
+
+    const data = activitySchema.parse(request.body);
+
+    const activity = await activitiesService.createActivity(
+      request.user.userId,
+      id,
+      {
+        type: data.type,
+        title: data.title,
+        description: data.description,
+        outcome: data.outcome,
+        scheduledAt: data.scheduledAt,
+      }
+    );
+
+    if (!activity) {
+      return reply.status(404).send({ error: 'Lead not found' });
+    }
+
+    return reply.status(201).send(activity);
   });
 }

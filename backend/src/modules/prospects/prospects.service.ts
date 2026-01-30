@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 import { Prisma, ProspectStatus, LeadCategory } from "@prisma/client";
 
 interface ProspectFilters {
+  userId: string; // Required for multi-tenancy
   page?: number;
   limit?: number;
   scrapeJobId?: string;
@@ -20,6 +21,7 @@ interface ProspectFilters {
 export const prospectsService = {
   async list(filters: ProspectFilters) {
     const {
+      userId,
       page = 1,
       limit = 50,
       scrapeJobId,
@@ -35,7 +37,9 @@ export const prospectsService = {
       dateTo,
     } = filters;
 
+    // CRITICAL: Always filter by userId for multi-tenancy data isolation
     const where: Prisma.LeadWhereInput = {
+      userId, // Multi-tenancy: users only see their own prospects
       prospectStatus: ProspectStatus.PROSPECT,
       ...(scrapeJobId && { scrapeJobId }),
       ...(city && { city: { equals: city, mode: "insensitive" } }),
@@ -88,9 +92,10 @@ export const prospectsService = {
     };
   },
 
-  async getById(id: string) {
-    return prisma.lead.findUnique({
-      where: { id },
+  async getById(id: string, userId: string) {
+    // CRITICAL: Always include userId check for multi-tenancy (prevents enumeration)
+    return prisma.lead.findFirst({
+      where: { id, userId },
       include: {
         scrapeJob: {
           select: { id: true, query: true, location: true, createdAt: true },
@@ -100,6 +105,10 @@ export const prospectsService = {
   },
 
   async promote(id: string, userId: string) {
+    // CRITICAL: Verify ownership before update (prevents enumeration)
+    const prospect = await prisma.lead.findFirst({ where: { id, userId } });
+    if (!prospect) return null;
+
     return prisma.lead.update({
       where: { id },
       data: {
@@ -113,6 +122,10 @@ export const prospectsService = {
   },
 
   async markNotInterested(id: string, userId: string, reason?: string) {
+    // CRITICAL: Verify ownership before update (prevents enumeration)
+    const prospect = await prisma.lead.findFirst({ where: { id, userId } });
+    if (!prospect) return null;
+
     return prisma.lead.update({
       where: { id },
       data: {
@@ -123,22 +136,35 @@ export const prospectsService = {
     });
   },
 
-  async archive(id: string) {
+  async archive(id: string, userId: string) {
+    // CRITICAL: Verify ownership before update (prevents enumeration)
+    const prospect = await prisma.lead.findFirst({ where: { id, userId } });
+    if (!prospect) return null;
+
     return prisma.lead.update({
       where: { id },
       data: { prospectStatus: ProspectStatus.ARCHIVED },
     });
   },
 
-  async delete(id: string) {
+  async delete(id: string, userId: string) {
+    // CRITICAL: Verify ownership before deletion (prevents enumeration)
+    const prospect = await prisma.lead.findFirst({ where: { id, userId } });
+    if (!prospect) return null;
+
     return prisma.lead.delete({
       where: { id },
     });
   },
 
   async bulkPromote(ids: string[], userId: string) {
+    // CRITICAL: Only update prospects that belong to this user
     return prisma.lead.updateMany({
-      where: { id: { in: ids }, prospectStatus: ProspectStatus.PROSPECT },
+      where: {
+        id: { in: ids },
+        userId, // Multi-tenancy: users can only bulk update their own prospects
+        prospectStatus: ProspectStatus.PROSPECT,
+      },
       data: {
         prospectStatus: ProspectStatus.LEAD,
         promotedAt: new Date(),
@@ -149,15 +175,25 @@ export const prospectsService = {
     });
   },
 
-  async bulkDelete(ids: string[]) {
+  async bulkDelete(ids: string[], userId: string) {
+    // CRITICAL: Only delete prospects that belong to this user
     return prisma.lead.deleteMany({
-      where: { id: { in: ids }, prospectStatus: ProspectStatus.PROSPECT },
+      where: {
+        id: { in: ids },
+        userId, // Multi-tenancy: users can only bulk delete their own prospects
+        prospectStatus: ProspectStatus.PROSPECT,
+      },
     });
   },
 
-  async bulkMarkNotInterested(ids: string[], reason?: string) {
+  async bulkMarkNotInterested(ids: string[], userId: string, reason?: string) {
+    // CRITICAL: Only update prospects that belong to this user
     return prisma.lead.updateMany({
-      where: { id: { in: ids }, prospectStatus: ProspectStatus.PROSPECT },
+      where: {
+        id: { in: ids },
+        userId, // Multi-tenancy: users can only bulk update their own prospects
+        prospectStatus: ProspectStatus.PROSPECT,
+      },
       data: {
         prospectStatus: ProspectStatus.NOT_INTERESTED,
         reviewedAt: new Date(),
@@ -166,7 +202,10 @@ export const prospectsService = {
     });
   },
 
-  async getStats() {
+  async getStats(userId: string) {
+    // CRITICAL: All stats should be filtered by userId for multi-tenancy
+    const userFilter = { userId };
+
     const [
       totalProspects,
       totalLeads,
@@ -175,18 +214,19 @@ export const prospectsService = {
       byCategory,
       byScrapeJob,
     ] = await Promise.all([
-      prisma.lead.count({ where: { prospectStatus: ProspectStatus.PROSPECT } }),
-      prisma.lead.count({ where: { prospectStatus: ProspectStatus.LEAD } }),
-      prisma.lead.count({ where: { prospectStatus: ProspectStatus.NOT_INTERESTED } }),
-      prisma.lead.count({ where: { prospectStatus: ProspectStatus.ARCHIVED } }),
+      prisma.lead.count({ where: { ...userFilter, prospectStatus: ProspectStatus.PROSPECT } }),
+      prisma.lead.count({ where: { ...userFilter, prospectStatus: ProspectStatus.LEAD } }),
+      prisma.lead.count({ where: { ...userFilter, prospectStatus: ProspectStatus.NOT_INTERESTED } }),
+      prisma.lead.count({ where: { ...userFilter, prospectStatus: ProspectStatus.ARCHIVED } }),
       prisma.lead.groupBy({
         by: ["category"],
-        where: { prospectStatus: ProspectStatus.PROSPECT },
+        where: { ...userFilter, prospectStatus: ProspectStatus.PROSPECT },
         _count: true,
       }),
       prisma.lead.groupBy({
         by: ["scrapeJobId"],
         where: {
+          ...userFilter,
           prospectStatus: ProspectStatus.PROSPECT,
           scrapeJobId: { not: null },
         },
@@ -208,9 +248,11 @@ export const prospectsService = {
     };
   },
 
-  async getCities() {
+  async getCities(userId: string) {
+    // CRITICAL: Only get cities from this user's prospects
     const cities = await prisma.lead.findMany({
       where: {
+        userId, // Multi-tenancy: only this user's data
         prospectStatus: ProspectStatus.PROSPECT,
         city: { not: null },
       },

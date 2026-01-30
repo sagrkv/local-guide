@@ -6,7 +6,7 @@ interface ListParams {
   limit?: number;
   leadId?: string;
   type?: ActivityType;
-  userId?: string;
+  userId: string; // Required for multi-tenancy
   upcoming?: boolean;
 }
 
@@ -29,15 +29,20 @@ interface UpdateActivityData {
 }
 
 export const activitiesService = {
+  /**
+   * List activities with multi-tenancy enforcement
+   * Users can only see their own activities
+   */
   async list(params: ListParams) {
-    const { page = 1, limit = 20, ...filters } = params;
+    const { page = 1, limit = 20, userId, ...filters } = params;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ActivityWhereInput = {};
+    const where: Prisma.ActivityWhereInput = {
+      userId, // Multi-tenancy: always filter by current user
+    };
 
     if (filters.leadId) where.leadId = filters.leadId;
     if (filters.type) where.type = filters.type;
-    if (filters.userId) where.userId = filters.userId;
     if (filters.upcoming) {
       where.scheduledAt = { gte: new Date() };
       where.completedAt = null;
@@ -72,9 +77,16 @@ export const activitiesService = {
     };
   },
 
-  async getById(id: string) {
-    return prisma.activity.findUnique({
-      where: { id },
+  /**
+   * Get activity by ID with multi-tenancy check
+   * Returns null if activity doesn't belong to user
+   */
+  async getById(id: string, userId: string) {
+    return prisma.activity.findFirst({
+      where: {
+        id,
+        userId, // Multi-tenancy: user can only access their own activities
+      },
       include: {
         lead: {
           select: { id: true, businessName: true, stage: true, contactPerson: true, email: true, phone: true },
@@ -105,8 +117,21 @@ export const activitiesService = {
     });
   },
 
-  async update(id: string, data: UpdateActivityData) {
+  /**
+   * Update activity with multi-tenancy check
+   * Only updates if activity belongs to the user
+   */
+  async update(id: string, userId: string, data: UpdateActivityData) {
     const { scheduledAt, completedAt, ...rest } = data;
+
+    // First verify ownership
+    const existing = await prisma.activity.findFirst({
+      where: { id, userId },
+    });
+
+    if (!existing) {
+      return null;
+    }
 
     try {
       return await prisma.activity.update({
@@ -133,7 +158,20 @@ export const activitiesService = {
     }
   },
 
-  async complete(id: string, outcome?: string) {
+  /**
+   * Mark activity as complete with multi-tenancy check
+   * Also updates the lead's lastContactedAt timestamp
+   */
+  async complete(id: string, userId: string, outcome?: string) {
+    // First verify ownership
+    const existing = await prisma.activity.findFirst({
+      where: { id, userId },
+    });
+
+    if (!existing) {
+      return null;
+    }
+
     try {
       const activity = await prisma.activity.update({
         where: { id },
@@ -166,7 +204,20 @@ export const activitiesService = {
     }
   },
 
-  async delete(id: string) {
+  /**
+   * Delete activity with multi-tenancy check
+   * Only deletes if activity belongs to the user
+   */
+  async delete(id: string, userId: string) {
+    // First verify ownership
+    const existing = await prisma.activity.findFirst({
+      where: { id, userId },
+    });
+
+    if (!existing) {
+      return false;
+    }
+
     try {
       await prisma.activity.delete({ where: { id } });
       return true;
@@ -178,7 +229,11 @@ export const activitiesService = {
     }
   },
 
-  async getUpcomingForUser(userId: string, days = 7) {
+  /**
+   * Get upcoming tasks/activities for a user
+   * Returns activities with scheduledAt in the future that are not completed
+   */
+  async getUpcomingTasks(userId: string, days = 7) {
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + days);
 
@@ -194,9 +249,48 @@ export const activitiesService = {
       orderBy: { scheduledAt: 'asc' },
       include: {
         lead: {
-          select: { id: true, businessName: true, contactPerson: true, phone: true },
+          select: { id: true, businessName: true, contactPerson: true, phone: true, email: true },
         },
       },
+    });
+  },
+
+  /**
+   * Get activities for a specific lead with multi-tenancy check
+   * Convenience method for the nested route pattern
+   */
+  async getActivitiesByLead(userId: string, leadId: string, page = 1, limit = 50) {
+    return this.list({
+      userId,
+      leadId,
+      page,
+      limit,
+    });
+  },
+
+  /**
+   * Create activity for a specific lead
+   * CRITICAL: Validates that the lead exists AND belongs to the user (multi-tenancy)
+   */
+  async createActivity(
+    userId: string,
+    leadId: string,
+    data: Omit<CreateActivityData, 'userId' | 'leadId'>
+  ) {
+    // CRITICAL: Verify the lead exists AND belongs to this user for multi-tenancy
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, userId },
+      select: { id: true },
+    });
+
+    if (!lead) {
+      return null; // Return 404 to prevent enumeration attacks
+    }
+
+    return this.create({
+      ...data,
+      userId,
+      leadId,
     });
   },
 };

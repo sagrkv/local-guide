@@ -1,25 +1,38 @@
 import { prisma } from "../../lib/prisma.js";
-import { ProspectStatus } from "@prisma/client";
-
-// Only count promoted LEADs in dashboard stats (not raw prospects)
-const leadFilter = { prospectStatus: ProspectStatus.LEAD };
+import { ProspectStatus, ReminderStatus } from "@prisma/client";
 
 export const dashboardService = {
-  async getStats() {
+  async getStats(userId: string) {
+    // CRITICAL: All dashboard stats filtered by userId for multi-tenancy
+    const userFilter = { userId };
+    const leadFilter = { ...userFilter, prospectStatus: ProspectStatus.LEAD };
+
+    // Get end of today for due reminders count
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
     const [
       totalLeads,
       totalProspects,
       newLeads,
-      wonLeads,
+      closedLeads,
       activeScrapeJobs,
       totalActivities,
+      dueRemindersCount,
     ] = await Promise.all([
       prisma.lead.count({ where: leadFilter }),
-      prisma.lead.count({ where: { prospectStatus: ProspectStatus.PROSPECT } }),
+      prisma.lead.count({ where: { ...userFilter, prospectStatus: ProspectStatus.PROSPECT } }),
       prisma.lead.count({ where: { ...leadFilter, stage: "NEW" } }),
-      prisma.lead.count({ where: { ...leadFilter, stage: "WON" } }),
-      prisma.scrapeJob.count({ where: { status: "RUNNING" } }),
-      prisma.activity.count(),
+      prisma.lead.count({ where: { ...leadFilter, stage: "CLOSED" } }),
+      prisma.scrapeJob.count({ where: { createdById: userId, status: "RUNNING" } }),
+      prisma.activity.count({ where: { userId } }),
+      prisma.reminder.count({
+        where: {
+          userId,
+          status: ReminderStatus.PENDING,
+          remindAt: { lte: endOfToday },
+        },
+      }),
     ]);
 
     // Calculate leads this month
@@ -41,23 +54,23 @@ export const dashboardService = {
       totalLeads,
       totalProspects, // New: count of raw prospects awaiting review
       newLeads,
-      wonLeads,
+      closedLeads, // Renamed from wonLeads to match new pipeline
       leadsThisMonth,
       activeScrapeJobs,
       totalActivities,
       averageScore: Math.round(avgScoreResult._avg.score || 0),
+      dueRemindersCount, // Follow-up reminders due today
     };
   },
 
-  async getPipelineCounts() {
+  async getPipelineCounts(userId: string) {
+    // CRITICAL: Filter by userId for multi-tenancy
+    const leadFilter = { userId, prospectStatus: ProspectStatus.LEAD };
     const stages = [
       "NEW",
       "CONTACTED",
-      "QUALIFIED",
-      "PROPOSAL",
-      "NEGOTIATION",
-      "WON",
-      "LOST",
+      "INTERESTED",
+      "CLOSED",
     ] as const;
 
     const counts = await prisma.lead.groupBy({
@@ -74,7 +87,9 @@ export const dashboardService = {
     return pipeline;
   },
 
-  async getLeadsByCategory() {
+  async getLeadsByCategory(userId: string) {
+    // CRITICAL: Filter by userId for multi-tenancy
+    const leadFilter = { userId, prospectStatus: ProspectStatus.LEAD };
     const categories = await prisma.lead.groupBy({
       by: ["category"],
       where: leadFilter,
@@ -88,7 +103,9 @@ export const dashboardService = {
     }));
   },
 
-  async getLeadsBySource() {
+  async getLeadsBySource(userId: string) {
+    // CRITICAL: Filter by userId for multi-tenancy
+    const leadFilter = { userId, prospectStatus: ProspectStatus.LEAD };
     const sources = await prisma.lead.groupBy({
       by: ["source"],
       where: leadFilter,
@@ -102,8 +119,10 @@ export const dashboardService = {
     }));
   },
 
-  async getRecentActivities(limit = 10) {
+  async getRecentActivities(userId: string, limit = 10) {
+    // CRITICAL: Filter by userId for multi-tenancy
     return prisma.activity.findMany({
+      where: { userId },
       take: limit,
       orderBy: { createdAt: "desc" },
       include: {
@@ -117,7 +136,9 @@ export const dashboardService = {
     });
   },
 
-  async getLeadsOverTime(days = 30) {
+  async getLeadsOverTime(userId: string, days = 30) {
+    // CRITICAL: Filter by userId for multi-tenancy
+    const leadFilter = { userId, prospectStatus: ProspectStatus.LEAD };
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
@@ -151,12 +172,14 @@ export const dashboardService = {
     }));
   },
 
-  async getTopPerformers(limit = 5) {
+  async getTopPerformers(userId: string, limit = 5) {
+    // CRITICAL: Filter by userId for multi-tenancy
+    const leadFilter = { userId, prospectStatus: ProspectStatus.LEAD };
     const performers = await prisma.lead.groupBy({
       by: ["assignedToId"],
       where: {
         ...leadFilter,
-        stage: "WON",
+        stage: "CLOSED",
         assignedToId: { not: null },
       },
       _count: { id: true },
@@ -179,40 +202,35 @@ export const dashboardService = {
     }));
   },
 
-  async getConversionRates() {
-    const [total, contacted, qualified, proposal, won] = await Promise.all([
+  async getConversionRates(userId: string) {
+    // CRITICAL: Filter by userId for multi-tenancy
+    const leadFilter = { userId, prospectStatus: ProspectStatus.LEAD };
+    const [total, contacted, interested, closed] = await Promise.all([
       prisma.lead.count({ where: leadFilter }),
       prisma.lead.count({
         where: {
           ...leadFilter,
           stage: {
-            in: ["CONTACTED", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON"],
+            in: ["CONTACTED", "INTERESTED", "CLOSED"],
           },
         },
       }),
       prisma.lead.count({
         where: {
           ...leadFilter,
-          stage: { in: ["QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON"] },
+          stage: { in: ["INTERESTED", "CLOSED"] },
         },
       }),
-      prisma.lead.count({
-        where: {
-          ...leadFilter,
-          stage: { in: ["PROPOSAL", "NEGOTIATION", "WON"] },
-        },
-      }),
-      prisma.lead.count({ where: { ...leadFilter, stage: "WON" } }),
+      prisma.lead.count({ where: { ...leadFilter, stage: "CLOSED" } }),
     ]);
 
     return {
       newToContacted: total > 0 ? Math.round((contacted / total) * 100) : 0,
-      contactedToQualified:
-        contacted > 0 ? Math.round((qualified / contacted) * 100) : 0,
-      qualifiedToProposal:
-        qualified > 0 ? Math.round((proposal / qualified) * 100) : 0,
-      proposalToWon: proposal > 0 ? Math.round((won / proposal) * 100) : 0,
-      overallConversion: total > 0 ? Math.round((won / total) * 100) : 0,
+      contactedToInterested:
+        contacted > 0 ? Math.round((interested / contacted) * 100) : 0,
+      interestedToClosed:
+        interested > 0 ? Math.round((closed / interested) * 100) : 0,
+      overallConversion: total > 0 ? Math.round((closed / total) * 100) : 0,
     };
   },
 };

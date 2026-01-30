@@ -5,12 +5,20 @@ import { googleMapsScraper } from "../../modules/scraping/scrapers/google-maps.s
 import { googleSearchScraper } from "../../modules/scraping/scrapers/google-search.scraper.js";
 import { perplexityClient } from "../../modules/scraping/utils/perplexity.js";
 import { googlePlacesClient } from "../../modules/scraping/utils/google-places.js";
+import { googlePlacesService } from "../../modules/scraping/scrapers/google-places.service.js";
 import {
   qualificationService,
   QualificationResult,
 } from "../../modules/qualification/qualification.service.js";
 import { config } from "../../config.js";
 import { forceFlushLogs } from "../../lib/api-logger.js";
+import { creditsService } from "../../modules/credits/credits.service.js";
+import type { LeadFilters } from "../../types/filters.js";
+import {
+  isLeadValid,
+  parseFilters,
+  getFilterSummary,
+} from "../../utils/lead-filter.js";
 
 export interface ScrapeJobData {
   jobId: string;
@@ -20,6 +28,13 @@ export interface ScrapeJobData {
   category?: LeadCategory;
   regionId?: string;
   maxResults: number;
+  /** Pre-scrape filters - users only pay for leads matching these criteria */
+  filters?: LeadFilters;
+  /** Rectangular bounds for custom map area scraping (alternative to zone-based discovery) */
+  bounds?: {
+    ne: { lat: number; lng: number };
+    sw: { lat: number; lng: number };
+  };
 }
 
 interface ProcessedBusiness {
@@ -36,19 +51,40 @@ interface ProcessedBusiness {
   latitude?: number;
   longitude?: number;
   hasWebsite: boolean;
+  rating?: number;
+  reviewCount?: number;
   qualification?: QualificationResult;
   qualificationError?: string; // Error message if Lighthouse/qualification failed
 }
 
 export async function scrapeWorker(job: Job<ScrapeJobData>) {
-  const { jobId, type, query, location, category, regionId, maxResults } =
+  const { jobId, type, query, location, category, regionId, maxResults, filters: rawFilters, bounds } =
     job.data;
 
   console.log(`Starting scrape job ${jobId}: ${type} - ${query}`);
 
+  // Parse and validate filters
+  const filters = parseFilters(rawFilters);
+  if (filters) {
+    console.log(`[FILTERS] Active filters: ${getFilterSummary(filters)}`);
+  }
+
   // Set job ID for API logging context
   googlePlacesClient.setScrapeJobId(jobId);
+  googlePlacesService.setScrapeJobId(jobId);
   perplexityClient.setScrapeJobId(jobId);
+
+  // Get the scrape job to find the user who created it (for multi-tenancy)
+  const scrapeJob = await prisma.scrapeJob.findUnique({
+    where: { id: jobId },
+    select: { createdById: true },
+  });
+
+  if (!scrapeJob) {
+    throw new Error(`Scrape job ${jobId} not found`);
+  }
+
+  const userId = scrapeJob.createdById;
 
   // Update job status to RUNNING
   await prisma.scrapeJob.update({
@@ -64,6 +100,9 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
     let leadsCreated = 0;
     let leadsDuplicate = 0;
     let leadsSkipped = 0;
+    let totalFound = 0; // Total leads discovered before filtering
+    let matchedFilters = 0; // Leads that matched the user's filters
+    let filteredOut = 0; // Leads that didn't match filters
 
     // Get region cities if regionId is provided
     let locations: string[] = location ? [location] : [];
@@ -145,38 +184,340 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
           );
         }
 
-        for (const loc of locations) {
+        // Check if bounds are provided (custom map area selection)
+        if (bounds) {
           console.log(
-            `[DISCOVERY_PIPELINE] Starting hybrid discovery for ${loc}...`,
+            `[DISCOVERY_PIPELINE] Using bounds-based search (custom map area)`,
+          );
+          console.log(
+            `[DISCOVERY_PIPELINE] Bounds: NE(${bounds.ne.lat}, ${bounds.ne.lng}) SW(${bounds.sw.lat}, ${bounds.sw.lng})`,
           );
 
-          // Step 1: Google Places API Discovery (complete city coverage via grid)
-          console.log(
-            `[DISCOVERY_PIPELINE] Step 1: Discovering businesses via Google Places API...`,
-          );
-
-          const placesResults =
-            await googlePlacesClient.discoverBusinessesInCity(
+          // Step 1: Search within bounds using grid-based approach
+          const boundsSearchResults = await googlePlacesService.searchPlacesInArea(
+            {
               query,
-              loc,
-              (progress) => {
-                job.updateProgress({
-                  phase: "discovery",
-                  location: loc,
-                  gridPoint: progress.gridPoint,
-                  totalGridPoints: progress.totalPoints,
-                  businessesFound: progress.businessesFound,
-                });
-                console.log(
-                  `[DISCOVERY_PIPELINE] Grid ${progress.gridPoint}/${progress.totalPoints}: ${progress.businessesFound} businesses found`,
-                );
+              bounds: {
+                ne: { latitude: bounds.ne.lat, longitude: bounds.ne.lng },
+                sw: { latitude: bounds.sw.lat, longitude: bounds.sw.lng },
               },
-              maxResults, // Stop early once we have enough businesses
+            },
+            2, // 2km grid cells
+            (progress) => {
+              job.updateProgress({
+                phase: "discovery",
+                location: location || "Custom Area",
+                gridPoint: progress.currentCell,
+                totalGridPoints: progress.totalCells,
+                businessesFound: progress.resultsFound,
+              });
+              console.log(
+                `[DISCOVERY_PIPELINE] Grid ${progress.currentCell}/${progress.totalCells}: ${progress.resultsFound} businesses found`,
+              );
+            },
+          );
+
+          console.log(
+            `[DISCOVERY_PIPELINE] Found ${boundsSearchResults.results.length} businesses in custom area`,
+          );
+
+          // Transform PlaceResult to the format expected by the rest of the pipeline
+          const placesResults = boundsSearchResults.results.map((p) => ({
+            placeId: p.placeId,
+            name: p.name,
+            address: p.address,
+            latitude: p.location.latitude,
+            longitude: p.location.longitude,
+            types: p.types,
+            businessStatus: p.businessStatus,
+            websiteUri: p.website,
+            phoneNumber: p.phone,
+            rating: p.rating,
+            reviewCount: p.reviewCount,
+          }));
+
+          // Step 1.5: Filter to only businesses WITH websites
+          const businessesWithWebsites = placesResults.filter(
+            (p) => p.websiteUri && p.websiteUri.length > 0,
+          );
+          const businessesWithoutWebsites =
+            placesResults.length - businessesWithWebsites.length;
+
+          console.log(
+            `[DISCOVERY_PIPELINE] Filtered: ${businessesWithWebsites.length} have websites, ${businessesWithoutWebsites} skipped (no website)`,
+          );
+
+          leadsSkipped += businessesWithoutWebsites;
+
+          await job.updateProgress({
+            phase: "discovery_complete",
+            location: location || "Custom Area",
+            totalBusinesses: placesResults.length,
+            withWebsites: businessesWithWebsites.length,
+            withoutWebsites: businessesWithoutWebsites,
+          });
+
+          // Step 2: Qualify businesses with Lighthouse
+          console.log(
+            `[DISCOVERY_PIPELINE] Step 2: Qualifying ${businessesWithWebsites.length} businesses with Lighthouse...`,
+          );
+
+          let qualifiedCount = 0;
+          for (const place of businessesWithWebsites) {
+            if (results.length >= maxResults) {
+              console.log(
+                `[DISCOVERY_PIPELINE] Reached max results (${maxResults}), stopping`,
+              );
+              break;
+            }
+
+            try {
+              const website = place.websiteUri!;
+              console.log(
+                `[DISCOVERY_PIPELINE] Qualifying ${place.name} (${website})...`,
+              );
+
+              const qualification = await qualificationService.qualifyBusiness({
+                website,
+                hasWebsite: true,
+                businessName: place.name,
+              });
+
+              if (!qualification.isQualified) {
+                console.log(
+                  `[DISCOVERY_PIPELINE] Skipping ${place.name} - website is good (score: ${qualification.lighthouse?.performance})`,
+                );
+                leadsSkipped++;
+                continue;
+              }
+
+              qualifiedCount++;
+
+              await job.updateProgress({
+                phase: "qualification",
+                location: location || "Custom Area",
+                qualified: qualifiedCount,
+                total: Math.min(businessesWithWebsites.length, maxResults),
+              });
+
+              // Step 3: Enrich with Perplexity
+              console.log(
+                `[DISCOVERY_PIPELINE] Enriching ${place.name} with Perplexity...`,
+              );
+
+              const enriched = await perplexityClient.enrichFromGooglePlace({
+                name: place.name,
+                address: place.address,
+                city: location || "Unknown",
+              });
+
+              const processedBusiness: ProcessedBusiness = {
+                businessName: place.name,
+                googlePlaceId: place.placeId,
+                contactPerson: enriched.ownerName,
+                email: enriched.email,
+                phone: place.phoneNumber || enriched.phone,
+                website: place.websiteUri || enriched.website || website,
+                address: place.address,
+                city: location,
+                latitude: place.latitude,
+                longitude: place.longitude,
+                hasWebsite: true,
+                rating: place.rating,
+                reviewCount: place.reviewCount,
+                qualification,
+                qualificationError: qualification.error,
+              };
+
+              totalFound++;
+
+              const filterResult = isLeadValid(processedBusiness, filters);
+              if (!filterResult.isValid) {
+                console.log(
+                  `[DISCOVERY_PIPELINE] Filtered out ${place.name}: ${filterResult.filterReasons.join(", ")}`,
+                );
+                filteredOut++;
+                continue;
+              }
+
+              matchedFilters++;
+
+              // Check for duplicates
+              let isDuplicate = false;
+              if (processedBusiness.googlePlaceId) {
+                const existingByPlaceId = await prisma.lead.findUnique({
+                  where: { googlePlaceId: processedBusiness.googlePlaceId },
+                });
+                if (existingByPlaceId) {
+                  isDuplicate = true;
+                  leadsDuplicate++;
+                }
+              }
+
+              if (!isDuplicate) {
+                const existingByName = await prisma.lead.findFirst({
+                  where: {
+                    businessName: {
+                      equals: processedBusiness.businessName,
+                      mode: "insensitive",
+                    },
+                    city: processedBusiness.city
+                      ? { equals: processedBusiness.city, mode: "insensitive" }
+                      : undefined,
+                  },
+                });
+                if (existingByName) {
+                  isDuplicate = true;
+                  leadsDuplicate++;
+                }
+              }
+
+              if (!isDuplicate) {
+                try {
+                  await creditsService.deductCredits({
+                    userId,
+                    amount: 1,
+                    type: "LEAD_CHARGE",
+                    description: `Lead: ${processedBusiness.businessName}`,
+                    reference: jobId,
+                  });
+                } catch (creditError) {
+                  console.warn(
+                    `[DISCOVERY_PIPELINE] Insufficient credits for ${place.name}, skipping lead save`,
+                  );
+                  continue;
+                }
+
+                const createdLead = await prisma.lead.create({
+                  data: {
+                    user: { connect: { id: userId } },
+                    businessName: processedBusiness.businessName,
+                    googlePlaceId: processedBusiness.googlePlaceId,
+                    contactPerson: processedBusiness.contactPerson,
+                    email: processedBusiness.email,
+                    phone: processedBusiness.phone,
+                    website: processedBusiness.website,
+                    address: processedBusiness.address,
+                    city: processedBusiness.city,
+                    state: processedBusiness.state,
+                    locality: processedBusiness.locality,
+                    latitude: processedBusiness.latitude,
+                    longitude: processedBusiness.longitude,
+                    category: category || "OTHER",
+                    source: "GOOGLE_PLACES",
+                    leadType:
+                      qualification.reason === "NO_WEBSITE"
+                        ? "NO_WEBSITE"
+                        : "OUTDATED_WEBSITE",
+                    hasWebsite: processedBusiness.hasWebsite,
+                    scrapeJob: { connect: { id: jobId } },
+                    lighthouseScore: qualification.lighthouse?.performance,
+                    lighthouseSeo: qualification.lighthouse?.seo,
+                    lighthouseAccessibility:
+                      qualification.lighthouse?.accessibility,
+                    lighthouseBestPractices:
+                      qualification.lighthouse?.bestPractices,
+                    websiteNeedsRedesign:
+                      qualification.reason === "POOR_WEBSITE" ||
+                      qualification.reason === "WEBSITE_UNREACHABLE",
+                    score: qualification.score || 0,
+                    prospectStatus: "LEAD",
+                    qualificationError: processedBusiness.qualificationError,
+                  },
+                });
+                leadsCreated++;
+
+                console.log(
+                  `[DISCOVERY_PIPELINE] Charged 1 credit for lead: ${processedBusiness.businessName} (ID: ${createdLead.id})`,
+                );
+
+                await prisma.scrapeJob.update({
+                  where: { id: jobId },
+                  data: {
+                    leadsFound: results.length + leadsSkipped + 1,
+                    leadsCreated,
+                    leadsDuplicate,
+                    leadsSkipped,
+                    totalFound,
+                    matchedFilters,
+                  },
+                });
+              }
+
+              results.push(processedBusiness);
+
+              await job.updateProgress({
+                phase: "enriching",
+                location: location || "Custom Area",
+                currentBusiness: place.name,
+                qualified: qualifiedCount,
+                created: leadsCreated,
+                duplicates: leadsDuplicate,
+                skipped: leadsSkipped,
+                filteredOut,
+                matchedFilters,
+                totalFound,
+                total: Math.min(businessesWithWebsites.length, maxResults),
+              });
+
+              console.log(
+                `[DISCOVERY_PIPELINE] Added ${place.name} (${qualification.reason}, score: ${qualification.score})`,
+              );
+            } catch (processError) {
+              console.warn(
+                `[DISCOVERY_PIPELINE] Failed to process ${place.name}:`,
+                processError,
+              );
+            }
+          }
+
+          await job.updateProgress({
+            phase: "complete",
+            location: location || "Custom Area",
+            qualified: results.length,
+            skipped: leadsSkipped,
+            filteredOut,
+            matchedFilters,
+            totalFound,
+          });
+
+          console.log(
+            `[DISCOVERY_PIPELINE] Custom area: ${results.length} qualified, ${leadsSkipped} skipped, ${filteredOut} filtered out, ${matchedFilters} matched filters`,
+          );
+        } else {
+          // Zone-based discovery (existing logic for supported cities)
+          for (const loc of locations) {
+            console.log(
+              `[DISCOVERY_PIPELINE] Starting hybrid discovery for ${loc}...`,
             );
 
-          console.log(
-            `[DISCOVERY_PIPELINE] Found ${placesResults.length} businesses in ${loc}`,
-          );
+            // Step 1: Google Places API Discovery (complete city coverage via grid)
+            console.log(
+              `[DISCOVERY_PIPELINE] Step 1: Discovering businesses via Google Places API...`,
+            );
+
+            const placesResults =
+              await googlePlacesClient.discoverBusinessesInCity(
+                query,
+                loc,
+                (progress) => {
+                  job.updateProgress({
+                    phase: "discovery",
+                    location: loc,
+                    gridPoint: progress.gridPoint,
+                    totalGridPoints: progress.totalPoints,
+                    businessesFound: progress.businessesFound,
+                  });
+                  console.log(
+                    `[DISCOVERY_PIPELINE] Grid ${progress.gridPoint}/${progress.totalPoints}: ${progress.businessesFound} businesses found`,
+                  );
+                },
+                maxResults, // Stop early once we have enough businesses
+              );
+
+            console.log(
+              `[DISCOVERY_PIPELINE] Found ${placesResults.length} businesses in ${loc}`,
+            );
 
           // Step 1.5: Filter to only businesses WITH websites (from Google Places data)
           // This saves Perplexity API calls by filtering early
@@ -261,7 +602,7 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
                 city: loc,
               });
 
-              // Build the processed business data
+              // Build the processed business data (including rating/reviews from Google Places)
               const processedBusiness: ProcessedBusiness = {
                 businessName: place.name,
                 googlePlaceId: place.placeId,
@@ -274,9 +615,27 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
                 latitude: place.latitude,
                 longitude: place.longitude,
                 hasWebsite: true,
+                rating: place.rating,
+                reviewCount: place.reviewCount,
                 qualification,
                 qualificationError: qualification.error,
               };
+
+              // Track total found
+              totalFound++;
+
+              // Apply user's pre-scrape filters
+              const filterResult = isLeadValid(processedBusiness, filters);
+              if (!filterResult.isValid) {
+                console.log(
+                  `[DISCOVERY_PIPELINE] Filtered out ${place.name}: ${filterResult.filterReasons.join(", ")}`,
+                );
+                filteredOut++;
+                continue;
+              }
+
+              // Lead matches filters
+              matchedFilters++;
 
               // SAVE LEAD IMMEDIATELY (incremental saving)
               // Check for duplicates first
@@ -311,9 +670,28 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
               }
 
               if (!isDuplicate) {
+                // Charge 1 credit for this lead (users only pay for matching leads)
+                try {
+                  await creditsService.deductCredits({
+                    userId,
+                    amount: 1,
+                    type: "LEAD_CHARGE",
+                    description: `Lead: ${processedBusiness.businessName}`,
+                    reference: jobId,
+                  });
+                } catch (creditError) {
+                  // If insufficient credits, log and skip but don't fail the job
+                  console.warn(
+                    `[DISCOVERY_PIPELINE] Insufficient credits for ${place.name}, skipping lead save`,
+                  );
+                  // Continue to next lead without saving
+                  continue;
+                }
+
                 // Save the lead immediately
-                await prisma.lead.create({
+                const createdLead = await prisma.lead.create({
                   data: {
+                    user: { connect: { id: userId } }, // Multi-tenancy: set owner to job creator
                     businessName: processedBusiness.businessName,
                     googlePlaceId: processedBusiness.googlePlaceId,
                     contactPerson: processedBusiness.contactPerson,
@@ -335,7 +713,7 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
                         ? "NO_WEBSITE"
                         : "OUTDATED_WEBSITE",
                     hasWebsite: processedBusiness.hasWebsite,
-                    scrapeJobId: jobId,
+                    scrapeJob: { connect: { id: jobId } },
                     lighthouseScore: qualification.lighthouse?.performance,
                     lighthouseSeo: qualification.lighthouse?.seo,
                     lighthouseAccessibility:
@@ -346,11 +724,15 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
                       qualification.reason === "POOR_WEBSITE" ||
                       qualification.reason === "WEBSITE_UNREACHABLE",
                     score: qualification.score || 0,
-                    prospectStatus: "PROSPECT",
+                    prospectStatus: "LEAD",
                     qualificationError: processedBusiness.qualificationError,
                   },
                 });
                 leadsCreated++;
+
+                console.log(
+                  `[DISCOVERY_PIPELINE] Charged 1 credit for lead: ${processedBusiness.businessName} (ID: ${createdLead.id})`,
+                );
 
                 // Update job counts in real-time
                 await prisma.scrapeJob.update({
@@ -360,6 +742,8 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
                     leadsCreated,
                     leadsDuplicate,
                     leadsSkipped,
+                    totalFound,
+                    matchedFilters,
                   },
                 });
               }
@@ -367,7 +751,7 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
               // Add to results array for final count
               results.push(processedBusiness);
 
-              // Update progress with current business name
+              // Update progress with current business name and filter stats
               await job.updateProgress({
                 phase: "enriching",
                 location: loc,
@@ -376,6 +760,9 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
                 created: leadsCreated,
                 duplicates: leadsDuplicate,
                 skipped: leadsSkipped,
+                filteredOut,
+                matchedFilters,
+                totalFound,
                 total: Math.min(businessesWithWebsites.length, maxResults),
               });
 
@@ -396,11 +783,15 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
             location: loc,
             qualified: results.length,
             skipped: leadsSkipped,
+            filteredOut,
+            matchedFilters,
+            totalFound,
           });
 
           console.log(
-            `[DISCOVERY_PIPELINE] ${loc}: ${results.length} qualified, ${leadsSkipped} skipped`,
+            `[DISCOVERY_PIPELINE] ${loc}: ${results.length} qualified, ${leadsSkipped} skipped, ${filteredOut} filtered out, ${matchedFilters} matched filters`,
           );
+          }
         }
         break;
     }
@@ -409,6 +800,22 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
     // For other job types, we still need to save leads at the end
     if (type !== "DISCOVERY_PIPELINE") {
       for (const result of results) {
+        // Track total found
+        totalFound++;
+
+        // Apply user's pre-scrape filters
+        const filterResult = isLeadValid(result, filters);
+        if (!filterResult.isValid) {
+          console.log(
+            `[${type}] Filtered out ${result.businessName}: ${filterResult.filterReasons.join(", ")}`,
+          );
+          filteredOut++;
+          continue;
+        }
+
+        // Lead matches filters
+        matchedFilters++;
+
         // Check for existing lead by googlePlaceId first (most reliable)
         if (result.googlePlaceId) {
           const existingByPlaceId = await prisma.lead.findUnique({
@@ -436,6 +843,24 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
           continue;
         }
 
+        // Charge 1 credit for this lead (users only pay for matching leads)
+        try {
+          await creditsService.deductCredits({
+            userId,
+            amount: 1,
+            type: "LEAD_CHARGE",
+            description: `Lead: ${result.businessName}`,
+            reference: jobId,
+          });
+        } catch (creditError) {
+          // If insufficient credits, log and skip but don't fail the job
+          console.warn(
+            `[${type}] Insufficient credits for ${result.businessName}, skipping lead save`,
+          );
+          // Continue to next lead without saving
+          continue;
+        }
+
         // Determine source and leadType based on job type and qualification
         let source:
           | "GOOGLE_MAPS"
@@ -453,8 +878,9 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
         }
 
         // Create the lead as a PROSPECT (awaiting review)
-        await prisma.lead.create({
+        const createdLead = await prisma.lead.create({
           data: {
+            user: { connect: { id: userId } }, // Multi-tenancy: set owner to job creator
             businessName: result.businessName,
             googlePlaceId: result.googlePlaceId,
             contactPerson: result.contactPerson,
@@ -471,7 +897,7 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
             source,
             leadType,
             hasWebsite: result.hasWebsite,
-            scrapeJobId: jobId,
+            scrapeJob: { connect: { id: jobId } },
             // Include Lighthouse scores if available
             lighthouseScore: result.qualification?.lighthouse?.performance,
             lighthouseSeo: result.qualification?.lighthouse?.seo,
@@ -484,37 +910,44 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
               result.qualification?.reason === "WEBSITE_UNREACHABLE",
             // Add qualification score to lead score
             score: result.qualification?.score || 0,
-            // Save as PROSPECT - user must review and promote to LEAD
-            prospectStatus: "PROSPECT",
+            // Save directly as LEAD for immediate visibility
+            prospectStatus: "LEAD",
             // Store qualification error if Lighthouse failed
             qualificationError: result.qualificationError,
           },
         });
 
         leadsCreated++;
+        console.log(
+          `[${type}] Charged 1 credit for lead: ${result.businessName} (ID: ${createdLead.id})`,
+        );
       }
     }
 
-    // Update job with results
+    // Update job with results (including filter stats)
     await prisma.scrapeJob.update({
       where: { id: jobId },
       data: {
         status: "COMPLETED",
         completedAt: new Date(),
-        leadsFound: results.length + leadsSkipped, // Total businesses found before filtering
+        leadsFound: results.length + leadsSkipped, // Qualified businesses before user filters
         leadsCreated,
         leadsDuplicate,
         leadsSkipped,
+        totalFound, // Total leads discovered before any filtering
+        matchedFilters, // Leads that matched user's pre-scrape filters
       },
     });
 
+    const filterSummary = filters ? getFilterSummary(filters) : "none";
     console.log(
-      `Scrape job ${jobId} completed: ${leadsCreated} leads created, ${leadsDuplicate} duplicates, ${leadsSkipped} skipped (good websites)`,
+      `Scrape job ${jobId} completed: ${leadsCreated} leads created, ${leadsDuplicate} duplicates, ${leadsSkipped} skipped (good websites), ${filteredOut} filtered out (filters: ${filterSummary})`,
     );
 
     // Flush API logs and clear job context
     await forceFlushLogs();
     googlePlacesClient.setScrapeJobId(undefined);
+    googlePlacesService.setScrapeJobId(undefined);
     perplexityClient.setScrapeJobId(undefined);
 
     return {
@@ -522,6 +955,9 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
       leadsCreated,
       leadsDuplicate,
       leadsSkipped,
+      totalFound,
+      matchedFilters,
+      filteredOut,
     };
   } catch (error) {
     console.error(`Scrape job ${jobId} failed:`, error);
@@ -529,6 +965,7 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
     // Flush API logs and clear job context even on error
     await forceFlushLogs();
     googlePlacesClient.setScrapeJobId(undefined);
+    googlePlacesService.setScrapeJobId(undefined);
     perplexityClient.setScrapeJobId(undefined);
 
     // Update job with error

@@ -6,10 +6,12 @@ import {
   LeadSource,
   LeadType,
   ProspectStatus,
+  ReminderStatus,
 } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 
 interface ListParams {
+  userId: string; // Required for multi-tenancy
   page?: number;
   limit?: number;
   stage?: LeadStage;
@@ -26,6 +28,7 @@ interface ListParams {
 }
 
 interface CreateLeadData {
+  userId: string; // Required for multi-tenancy - owner of the lead
   businessName: string;
   contactPerson?: string;
   email?: string;
@@ -58,6 +61,7 @@ interface UpdateLeadData extends Partial<CreateLeadData> {
 export const leadsService = {
   async list(params: ListParams) {
     const {
+      userId,
       page = 1,
       limit = 20,
       sortBy = "createdAt",
@@ -67,7 +71,9 @@ export const leadsService = {
     const skip = (page - 1) * limit;
 
     // Build where clause - only show LEAD status (promoted prospects)
+    // CRITICAL: Always filter by userId for multi-tenancy data isolation
     const where: Prisma.LeadWhereInput = {
+      userId, // Multi-tenancy: users only see their own leads
       prospectStatus: ProspectStatus.LEAD,
     };
 
@@ -106,8 +112,21 @@ export const leadsService = {
               tag: true,
             },
           },
+          reminders: {
+            where: {
+              status: ReminderStatus.PENDING,
+            },
+            select: {
+              id: true,
+              remindAt: true,
+            },
+            orderBy: {
+              remindAt: "asc",
+            },
+            take: 1,
+          },
           _count: {
-            select: { activities: true },
+            select: { activities: true, reminders: true },
           },
         },
       }),
@@ -119,6 +138,8 @@ export const leadsService = {
       ...lead,
       tags: lead.tags.map((t) => t.tag),
       activitiesCount: lead._count.activities,
+      pendingRemindersCount: lead._count.reminders,
+      nextReminder: lead.reminders[0] || null,
     }));
 
     return {
@@ -132,9 +153,14 @@ export const leadsService = {
     };
   },
 
-  async getById(id: string) {
-    const lead = await prisma.lead.findUnique({
-      where: { id },
+  async getById(id: string, userId: string) {
+    // CRITICAL: Always include userId in query for multi-tenancy
+    // Returns null if lead doesn't exist OR belongs to another user (prevents enumeration)
+    const lead = await prisma.lead.findFirst({
+      where: {
+        id,
+        userId, // Multi-tenancy: users only see their own leads
+      },
       include: {
         assignedTo: {
           select: { id: true, name: true, email: true },
@@ -166,7 +192,7 @@ export const leadsService = {
   },
 
   async create(data: CreateLeadData) {
-    const { tags, ...leadData } = data;
+    const { tags, userId, ...leadData } = data;
 
     // Calculate initial score
     const score = calculateLeadScore({
@@ -177,6 +203,7 @@ export const leadsService = {
     const lead = await prisma.lead.create({
       data: {
         ...leadData,
+        userId, // Multi-tenancy: set the owner of this lead
         hasWebsite: !!leadData.website,
         score,
         tags: tags?.length
@@ -203,8 +230,16 @@ export const leadsService = {
     };
   },
 
-  async update(id: string, data: UpdateLeadData) {
+  async update(id: string, userId: string, data: UpdateLeadData) {
     const { tags, nextFollowUpAt, ...updateData } = data;
+
+    // CRITICAL: First verify the lead belongs to this user (prevents enumeration)
+    const existingLead = await prisma.lead.findFirst({
+      where: { id, userId },
+    });
+    if (!existingLead) {
+      return null; // Return 404 (not 403) to prevent enumeration attacks
+    }
 
     // Recalculate score if relevant fields changed
     let score: number | undefined;
@@ -216,13 +251,10 @@ export const leadsService = {
       "hasWebsite" in data ||
       "lighthouseScore" in data
     ) {
-      const existingLead = await prisma.lead.findUnique({ where: { id } });
-      if (existingLead) {
-        score = calculateLeadScore({
-          ...existingLead,
-          ...updateData,
-        });
-      }
+      score = calculateLeadScore({
+        ...existingLead,
+        ...updateData,
+      });
     }
 
     try {
@@ -255,7 +287,15 @@ export const leadsService = {
     }
   },
 
-  async delete(id: string) {
+  async delete(id: string, userId: string) {
+    // CRITICAL: Verify ownership before deletion (prevents enumeration)
+    const lead = await prisma.lead.findFirst({
+      where: { id, userId },
+    });
+    if (!lead) {
+      return false; // Return 404 (not 403) to prevent enumeration attacks
+    }
+
     try {
       await prisma.lead.delete({ where: { id } });
       return true;
@@ -273,7 +313,8 @@ export const leadsService = {
     userId: string,
     notes?: string,
   ) {
-    const lead = await prisma.lead.findUnique({ where: { id } });
+    // CRITICAL: Verify ownership before update (prevents enumeration)
+    const lead = await prisma.lead.findFirst({ where: { id, userId } });
     if (!lead) return null;
 
     const previousStage = lead.stage;
@@ -314,8 +355,9 @@ export const leadsService = {
   },
 
   async assign(id: string, assignedToId: string | null, userId: string) {
-    const lead = await prisma.lead.findUnique({
-      where: { id },
+    // CRITICAL: Verify ownership before update (prevents enumeration)
+    const lead = await prisma.lead.findFirst({
+      where: { id, userId },
       include: { assignedTo: { select: { name: true } } },
     });
     if (!lead) return null;
@@ -362,26 +404,42 @@ export const leadsService = {
   },
 
   async bulkChangeStage(leadIds: string[], stage: LeadStage, userId: string) {
+    // CRITICAL: Only update leads that belong to this user
     const result = await prisma.lead.updateMany({
-      where: { id: { in: leadIds } },
+      where: {
+        id: { in: leadIds },
+        userId, // Multi-tenancy: users can only bulk update their own leads
+      },
       data: { stage },
     });
 
-    // Create activities for all leads
-    await prisma.activity.createMany({
-      data: leadIds.map((leadId) => ({
-        type: "NOTE" as const,
-        title: `Stage changed to ${stage} (bulk update)`,
-        leadId,
-        userId,
-        completedAt: new Date(),
-      })),
+    // Only create activities for leads that were actually updated
+    // Get the IDs of leads that belong to this user
+    const userLeads = await prisma.lead.findMany({
+      where: { id: { in: leadIds }, userId },
+      select: { id: true },
     });
+
+    if (userLeads.length > 0) {
+      await prisma.activity.createMany({
+        data: userLeads.map((lead) => ({
+          type: "NOTE" as const,
+          title: `Stage changed to ${stage} (bulk update)`,
+          leadId: lead.id,
+          userId,
+          completedAt: new Date(),
+        })),
+      });
+    }
 
     return result;
   },
 
-  async addTags(id: string, tagIds: string[]) {
+  async addTags(id: string, userId: string, tagIds: string[]) {
+    // CRITICAL: Verify ownership before update (prevents enumeration)
+    const lead = await prisma.lead.findFirst({ where: { id, userId } });
+    if (!lead) return null;
+
     try {
       await prisma.tagOnLead.createMany({
         data: tagIds.map((tagId) => ({
@@ -391,7 +449,7 @@ export const leadsService = {
         skipDuplicates: true,
       });
 
-      return this.getById(id);
+      return this.getById(id, userId);
     } catch (error) {
       if ((error as any).code === "P2025") {
         return null;
@@ -400,7 +458,11 @@ export const leadsService = {
     }
   },
 
-  async removeTag(id: string, tagId: string) {
+  async removeTag(id: string, userId: string, tagId: string) {
+    // CRITICAL: Verify ownership before update (prevents enumeration)
+    const lead = await prisma.lead.findFirst({ where: { id, userId } });
+    if (!lead) return null;
+
     try {
       await prisma.tagOnLead.delete({
         where: {
@@ -408,7 +470,7 @@ export const leadsService = {
         },
       });
 
-      return this.getById(id);
+      return this.getById(id, userId);
     } catch (error) {
       if ((error as any).code === "P2025") {
         return null;

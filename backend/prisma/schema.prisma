@@ -15,11 +15,8 @@ enum UserRole {
 enum LeadStage {
   NEW
   CONTACTED
-  QUALIFIED
-  PROPOSAL
-  NEGOTIATION
-  WON
-  LOST
+  INTERESTED
+  CLOSED
 }
 
 enum LeadPriority {
@@ -86,27 +83,42 @@ enum ScrapeJobStatus {
 }
 
 enum ProspectStatus {
-  PROSPECT        // Raw scraped business, awaiting review
-  LEAD            // Promoted to sales pipeline
-  NOT_INTERESTED  // Reviewed and rejected
-  ARCHIVED        // Soft deleted / hidden
+  PROSPECT // Raw scraped business, awaiting review
+  LEAD // Promoted to sales pipeline
+  NOT_INTERESTED // Reviewed and rejected
+  ARCHIVED // Soft deleted / hidden
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      UserRole @default(SALES_REP)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  clerkId       String?  @unique // Clerk user ID - will be required after migration
+  email         String   @unique
+  password      String?  // Optional - Clerk handles auth, kept for legacy migration
+  name          String
+  imageUrl      String?  // Profile image URL from Clerk
+  role          UserRole @default(SALES_REP)
+  isActive      Boolean  @default(true)
+  creditBalance Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // GDPR compliance fields
+  deletedAt         DateTime? // Actual deletion date (set after grace period)
+  deleteRequestedAt DateTime? // When user requested account deletion
+  dataExportedAt    DateTime? // Last data export timestamp
 
   // Relations
-  leads         Lead[]
-  activities    Activity[]
-  scrapeJobs    ScrapeJob[]
-  promotedLeads Lead[]     @relation("PromotedLeads")
+  ownedLeads         Lead[]              @relation("OwnedLeads") // Leads this user owns (multi-tenancy)
+  leads              Lead[] // Leads assigned to this user
+  activities         Activity[]
+  scrapeJobs         ScrapeJob[]
+  promotedLeads      Lead[]              @relation("PromotedLeads")
+  creditTransactions CreditTransaction[]
+  auditLogs          AuditLog[]
+  createdCoupons     Coupon[]            @relation("CouponCreator")
+  couponRedemptions  CouponRedemption[]
+  reminders          Reminder[]
+  savedRegions       SavedRegion[]
 
   @@map("users")
 }
@@ -122,7 +134,7 @@ model Lead {
   address       String?
   city          String?
   state         String?
-  locality      String?      // Neighborhood/area within city
+  locality      String? // Neighborhood/area within city
   country       String       @default("India")
   latitude      Float?
   longitude     Float?
@@ -134,46 +146,52 @@ model Lead {
   leadType      LeadType     @default(MANUAL)
 
   // Website analysis
-  hasWebsite           Boolean @default(false)
-  lighthouseScore      Int? // Performance score 0-100
-  lighthouseSeo        Int? // SEO score 0-100
+  hasWebsite              Boolean @default(false)
+  lighthouseScore         Int? // Performance score 0-100
+  lighthouseSeo           Int? // SEO score 0-100
   lighthouseAccessibility Int?
   lighthouseBestPractices Int?
-  websiteNeedsRedesign Boolean @default(false)
+  websiteNeedsRedesign    Boolean @default(false)
 
   // AI analysis
   perplexityAnalysis String? @db.Text
-  salesIntelligence  Json?   // Structured deep research data (decision makers, company info, pain points, etc.)
+  salesIntelligence  Json? // Structured deep research data (decision makers, company info, pain points, etc.)
   qualificationError String? // Error message if Lighthouse/qualification failed
 
   // Contact status
-  emailVerified     Boolean   @default(false)
-  lastContactedAt   DateTime?
-  nextFollowUpAt    DateTime?
+  emailVerified   Boolean   @default(false)
+  lastContactedAt DateTime?
+  nextFollowUpAt  DateTime?
 
   // Notes
   notes String? @db.Text
 
   // Prospect management
   prospectStatus      ProspectStatus @default(PROSPECT)
-  promotedAt          DateTime?      // When promoted from PROSPECT to LEAD
-  promotedById        String?        // Who promoted it
-  reviewedAt          DateTime?      // When last reviewed
-  notInterestedReason String?        // Optional reason for NOT_INTERESTED
+  promotedAt          DateTime? // When promoted from PROSPECT to LEAD
+  promotedById        String? // Who promoted it
+  reviewedAt          DateTime? // When last reviewed
+  notInterestedReason String? // Optional reason for NOT_INTERESTED
 
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
+  // Relations - Multi-tenancy: userId is the owner of this lead
+  userId       String // Owner of this lead for data isolation
+  user         User        @relation("OwnedLeads", fields: [userId], references: [id])
   assignedToId String?
-  assignedTo   User?      @relation(fields: [assignedToId], references: [id])
-  promotedBy   User?      @relation("PromotedLeads", fields: [promotedById], references: [id])
+  assignedTo   User?       @relation(fields: [assignedToId], references: [id])
+  promotedBy   User?       @relation("PromotedLeads", fields: [promotedById], references: [id])
   activities   Activity[]
   tags         TagOnLead[]
   scrapeJobId  String?
-  scrapeJob    ScrapeJob? @relation(fields: [scrapeJobId], references: [id])
+  scrapeJob    ScrapeJob?  @relation(fields: [scrapeJobId], references: [id])
+  reminders    Reminder[]
 
+  @@index([userId]) // Critical for multi-tenancy queries
+  @@index([userId, stage])
+  @@index([userId, prospectStatus])
   @@index([stage])
   @@index([category])
   @@index([score])
@@ -223,6 +241,7 @@ model Activity {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
+  @@index([userId]) // Critical for multi-tenancy queries
   @@index([leadId])
   @@index([type])
   @@map("activities")
@@ -252,11 +271,17 @@ model ScrapeJob {
   category LeadCategory?
   status   ScrapeJobStatus @default(PENDING)
 
+  // Pre-scrape filters (JSON object with filter criteria)
+  // Example: { hasWebsite: true, hasEmail: true, minRating: 3.5, minReviews: 10 }
+  filters Json?
+
   // Results
-  leadsFound     Int @default(0)
-  leadsCreated   Int @default(0)
-  leadsDuplicate Int @default(0)
-  leadsSkipped   Int @default(0) // Businesses skipped because they have good websites
+  leadsFound      Int @default(0)
+  leadsCreated    Int @default(0)
+  leadsDuplicate  Int @default(0)
+  leadsSkipped    Int @default(0) // Businesses skipped because they have good websites
+  totalFound      Int @default(0) // Total leads discovered before any filtering
+  matchedFilters  Int @default(0) // Leads that matched user's pre-scrape filters
 
   // Error tracking
   errorMessage String? @db.Text
@@ -269,14 +294,15 @@ model ScrapeJob {
   updatedAt   DateTime  @updatedAt
 
   // Relations
-  regionId    String?
-  region      ScrapingRegion? @relation(fields: [regionId], references: [id])
-  createdById String
-  createdBy   User            @relation(fields: [createdById], references: [id])
-  leads       Lead[]
-  apiCallLogs ApiCallLog[]
+  regionId          String?
+  region            ScrapingRegion?     @relation(fields: [regionId], references: [id])
+  createdById       String
+  createdBy         User                @relation(fields: [createdById], references: [id])
+  leads             Lead[]
+  apiCallLogs       ApiCallLog[]
   zoneScrapeHistory ZoneScrapeHistory[]
 
+  @@index([createdById]) // Critical for multi-tenancy queries
   @@index([status])
   @@index([type])
   @@map("scrape_jobs")
@@ -327,22 +353,22 @@ enum ApiProvider {
 }
 
 model ApiCallLog {
-  id            String      @id @default(cuid())
-  provider      ApiProvider
-  endpoint      String
-  method        String      // GET, POST
-  statusCode    Int
+  id             String      @id @default(cuid())
+  provider       ApiProvider
+  endpoint       String
+  method         String // GET, POST
+  statusCode     Int
   responseTimeMs Int
-  success       Boolean
-  error         String?     @db.Text
-  metadata      String?     @db.Text // JSON string
-  estimatedCost Float?      @default(0)
+  success        Boolean
+  error          String?     @db.Text
+  metadata       String?     @db.Text // JSON string
+  estimatedCost  Float?      @default(0)
 
   // Link to scrape job if applicable
-  scrapeJobId   String?
-  scrapeJob     ScrapeJob?  @relation(fields: [scrapeJobId], references: [id], onDelete: SetNull)
+  scrapeJobId String?
+  scrapeJob   ScrapeJob? @relation(fields: [scrapeJobId], references: [id], onDelete: SetNull)
 
-  createdAt     DateTime    @default(now())
+  createdAt DateTime @default(now())
 
   @@index([provider])
   @@index([scrapeJobId])
@@ -354,18 +380,151 @@ model ApiCallLog {
 // This allows the scraper to skip already-scraped zones and find new leads
 model ZoneScrapeHistory {
   id           String   @id @default(cuid())
-  city         String   // e.g., "Bangalore"
-  zoneName     String   // e.g., "Koramangala"
-  businessType String   // e.g., "gym", "salon", "clinic"
+  city         String // e.g., "Bangalore"
+  zoneName     String // e.g., "Koramangala"
+  businessType String // e.g., "gym", "salon", "clinic"
   leadsFound   Int      @default(0)
   scrapedAt    DateTime @default(now())
 
   // Link to scrape job
-  scrapeJobId  String?
-  scrapeJob    ScrapeJob? @relation(fields: [scrapeJobId], references: [id], onDelete: SetNull)
+  scrapeJobId String?
+  scrapeJob   ScrapeJob? @relation(fields: [scrapeJobId], references: [id], onDelete: SetNull)
 
   @@unique([city, zoneName, businessType]) // One record per zone+businessType combo
   @@index([city, businessType])
   @@index([scrapedAt])
   @@map("zone_scrape_history")
+}
+
+// Credit System
+enum CreditTransactionType {
+  COUPON_REDEMPTION // Credits added via coupon code
+  LEAD_CHARGE // Credits deducted for valid lead
+  ANALYSIS_CHARGE // Credits deducted for Lighthouse/tech stack/sales intelligence analysis
+  ADMIN_ADJUSTMENT // Manual adjustment by admin
+}
+
+model CreditTransaction {
+  id          String                @id @default(cuid())
+  userId      String
+  amount      Int // Positive for adds, negative for deductions
+  type        CreditTransactionType
+  description String? // Human-readable description
+  reference   String? // Optional reference (e.g., lead ID, coupon code)
+  createdAt   DateTime              @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("credit_transactions")
+}
+
+// Audit logging for compliance and debugging
+model AuditLog {
+  id           String   @id @default(cuid())
+  timestamp    DateTime @default(now())
+  userId       String?
+  action       String // e.g., "LOGIN_SUCCESS", "LEAD_CREATED", "CREDITS_DEDUCTED"
+  resource     String // e.g., "user", "lead", "scrape_job"
+  resourceId   String?
+  details      Json?
+  ipAddress    String?
+  userAgent    String?
+  success      Boolean  @default(true)
+  errorMessage String?
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([resource])
+  @@map("audit_logs")
+}
+
+// Coupon System
+model Coupon {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  creditAmount Int
+  maxUses      Int? // null = unlimited
+  currentUses  Int       @default(0)
+  expiresAt    DateTime?
+  isActive     Boolean   @default(true)
+  createdBy    String
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  creator     User               @relation("CouponCreator", fields: [createdBy], references: [id])
+  redemptions CouponRedemption[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id         String   @id @default(cuid())
+  couponId   String
+  userId     String
+  redeemedAt DateTime @default(now())
+
+  // Relations
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([couponId, userId]) // Prevent double redemption
+  @@index([userId])
+  @@index([couponId])
+  @@map("coupon_redemptions")
+}
+
+// Follow-up Reminders
+enum ReminderStatus {
+  PENDING
+  COMPLETED
+  DISMISSED
+}
+
+model Reminder {
+  id        String         @id @default(cuid())
+  userId    String
+  leadId    String
+  remindAt  DateTime
+  note      String?
+  status    ReminderStatus @default(PENDING)
+  createdAt DateTime       @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, remindAt])
+  @@index([leadId])
+  @@map("reminders")
+}
+
+// Saved Regions - User-defined geographic regions for quick re-scraping (PRD 19.5, 19.7)
+model SavedRegion {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  southwestLat Float
+  southwestLng Float
+  northeastLat Float
+  northeastLng Float
+  lastUsed     DateTime @default(now())
+  timesUsed    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("saved_regions")
 }

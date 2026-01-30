@@ -32,23 +32,27 @@ export async function prospectsRoutes(fastify: FastifyInstance) {
   // List prospects with filtering and pagination
   fastify.get("/", async (request) => {
     const query = listQuerySchema.parse(request.query);
-    return prospectsService.list(query);
+    // Multi-tenancy: pass userId for data isolation
+    return prospectsService.list({ ...query, userId: request.user.userId });
   });
 
   // Get stats
-  fastify.get("/stats", async () => {
-    return prospectsService.getStats();
+  fastify.get("/stats", async (request) => {
+    // Multi-tenancy: pass userId for data isolation
+    return prospectsService.getStats(request.user.userId);
   });
 
   // Get unique cities for filter dropdown
-  fastify.get("/cities", async () => {
-    return prospectsService.getCities();
+  fastify.get("/cities", async (request) => {
+    // Multi-tenancy: pass userId for data isolation
+    return prospectsService.getCities(request.user.userId);
   });
 
   // Get single prospect
   fastify.get("/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const prospect = await prospectsService.getById(id);
+    // Multi-tenancy: pass userId for data isolation (returns null if not owned)
+    const prospect = await prospectsService.getById(id, request.user.userId);
     if (!prospect) {
       return reply.status(404).send({ error: "Prospect not found" });
     }
@@ -58,55 +62,56 @@ export async function prospectsRoutes(fastify: FastifyInstance) {
   // Promote single prospect to lead
   fastify.post("/:id/promote", async (request, reply) => {
     const { id } = request.params as { id: string };
-    try {
-      const lead = await prospectsService.promote(id, request.user.userId);
-      return lead;
-    } catch {
+    // Multi-tenancy: service verifies ownership
+    const lead = await prospectsService.promote(id, request.user.userId);
+    if (!lead) {
       return reply.status(404).send({ error: "Prospect not found" });
     }
+    return lead;
   });
 
   // Mark single prospect as not interested
   fastify.post("/:id/not-interested", async (request, reply) => {
     const { id } = request.params as { id: string };
     const body = request.body as { reason?: string } | undefined;
-    try {
-      const prospect = await prospectsService.markNotInterested(
-        id,
-        request.user.userId,
-        body?.reason
-      );
-      return prospect;
-    } catch {
+    // Multi-tenancy: service verifies ownership
+    const prospect = await prospectsService.markNotInterested(
+      id,
+      request.user.userId,
+      body?.reason
+    );
+    if (!prospect) {
       return reply.status(404).send({ error: "Prospect not found" });
     }
+    return prospect;
   });
 
   // Archive single prospect (soft delete)
   fastify.post("/:id/archive", async (request, reply) => {
     const { id } = request.params as { id: string };
-    try {
-      const prospect = await prospectsService.archive(id);
-      return prospect;
-    } catch {
+    // Multi-tenancy: service verifies ownership
+    const prospect = await prospectsService.archive(id, request.user.userId);
+    if (!prospect) {
       return reply.status(404).send({ error: "Prospect not found" });
     }
+    return prospect;
   });
 
   // Delete single prospect (hard delete)
   fastify.delete("/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
-    try {
-      await prospectsService.delete(id);
-      return { message: "Prospect deleted" };
-    } catch {
+    // Multi-tenancy: service verifies ownership
+    const result = await prospectsService.delete(id, request.user.userId);
+    if (!result) {
       return reply.status(404).send({ error: "Prospect not found" });
     }
+    return { message: "Prospect deleted" };
   });
 
   // Bulk promote prospects to leads
   fastify.post("/bulk/promote", async (request) => {
     const { ids } = bulkIdsSchema.parse(request.body);
+    // Multi-tenancy: service only updates this user's prospects
     const result = await prospectsService.bulkPromote(ids, request.user.userId);
     return { count: result.count };
   });
@@ -114,14 +119,16 @@ export async function prospectsRoutes(fastify: FastifyInstance) {
   // Bulk delete prospects
   fastify.post("/bulk/delete", async (request) => {
     const { ids } = bulkIdsSchema.parse(request.body);
-    const result = await prospectsService.bulkDelete(ids);
+    // Multi-tenancy: service only deletes this user's prospects
+    const result = await prospectsService.bulkDelete(ids, request.user.userId);
     return { count: result.count };
   });
 
   // Bulk mark not interested
   fastify.post("/bulk/not-interested", async (request) => {
     const { ids, reason } = bulkIdsSchema.parse(request.body);
-    const result = await prospectsService.bulkMarkNotInterested(ids, reason);
+    // Multi-tenancy: service only updates this user's prospects
+    const result = await prospectsService.bulkMarkNotInterested(ids, request.user.userId, reason);
     return { count: result.count };
   });
 }

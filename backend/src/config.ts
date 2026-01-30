@@ -26,6 +26,11 @@ function getOptionalEnv(name: string, defaultValue: string): string {
 // Configuration
 // =============================================================================
 
+// Admin URL prefix - obscure URL for security
+// SECURITY: Change this prefix periodically and keep it secret
+// Default: nucleus-admin-x7k9m2 (should be changed in production)
+const adminUrlPrefix = getOptionalEnv("ADMIN_URL_PREFIX", "nucleus-admin-x7k9m2");
+
 // Frontend URL - required in production for CORS
 const frontendUrl = getRequiredEnv("FRONTEND_URL", "http://localhost:3000");
 
@@ -54,6 +59,10 @@ export const config = {
   port: parseInt(getOptionalEnv("PORT", "3001"), 10),
   isDev,
   logLevel: getOptionalEnv("LOG_LEVEL", "info"),
+
+  // Admin URL prefix (obscure URL for security)
+  // SECURITY: Change this periodically to prevent unauthorized access attempts
+  adminUrlPrefix,
 
   // JWT
   jwtSecret,
