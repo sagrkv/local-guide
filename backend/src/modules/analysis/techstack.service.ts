@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "../../lib/prisma.js";
+import { CreditTransactionType } from "@prisma/client";
 import { creditsService } from "../credits/credits.service.js";
 import {
   scanTechStack,
@@ -340,7 +341,7 @@ export const techStackService = {
       const newBalance = await creditsService.deductCredits({
         userId,
         amount: TECH_STACK_CREDIT_COST,
-        type: "ANALYSIS_CHARGE",
+        type: CreditTransactionType.ANALYSIS_CHARGE,
         description: `Tech stack analysis for ${lead.businessName}`,
         reference: leadId,
       });

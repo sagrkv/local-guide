@@ -160,7 +160,7 @@ export default function AnalysisPanel({ lead, onAnalysisComplete }: AnalysisPane
     setConfirmModal(null);
     setSalesIntelLoading(true);
     try {
-      await apiClient.deepResearchProspect(lead.id);
+      await apiClient.deepResearchLead(lead.id);
       toast.success("Sales intelligence generated");
       onAnalysisComplete();
     } catch {

@@ -82,7 +82,7 @@ export const authService = {
     return true;
   },
 
-  async createUser(data: { email: string; password: string; name: string; role?: 'ADMIN' | 'SALES_REP' }) {
+  async createUser(data: { email: string; password: string; name: string; role?: 'ADMIN' | 'USER' }) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     const user = await prisma.user.create({
@@ -90,7 +90,7 @@ export const authService = {
         email: data.email,
         password: hashedPassword,
         name: data.name,
-        role: data.role || 'SALES_REP',
+        role: data.role || 'USER',
       },
       select: {
         id: true,

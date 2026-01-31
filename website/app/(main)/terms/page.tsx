@@ -52,7 +52,7 @@ export default function TermsPage() {
               Terms of Service
             </h1>
             <p className="text-lg text-[var(--gray-400)] leading-relaxed">
-              Please read these terms carefully before using Quadrant A. By accessing
+              Please read these terms carefully before using Boko. By accessing
               or using our service, you agree to be bound by these terms.
             </p>
           </motion.div>
@@ -102,8 +102,8 @@ export default function TermsPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  By accessing or using Quadrant A (&quot;the Service&quot;), operated by
-                  Quadrant A (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), you agree to be bound by these
+                  By accessing or using Boko (&quot;the Service&quot;), operated by
+                  Boko (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), you agree to be bound by these
                   Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms,
                   you may not access or use the Service.
                 </p>
@@ -123,7 +123,7 @@ export default function TermsPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  Quadrant A is a B2B lead generation platform that helps businesses
+                  Boko is a B2B lead generation platform that helps businesses
                   discover potential customers through:
                 </p>
                 <ul className="list-disc pl-6 space-y-2">
@@ -267,7 +267,7 @@ export default function TermsPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  Quadrant A collects business information from publicly available
+                  Boko collects business information from publicly available
                   sources, including but not limited to Google Maps, Google
                   Places API, and public websites. By using our Service, you
                   acknowledge and agree that:
@@ -308,7 +308,7 @@ export default function TermsPage() {
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
                   The Service, including its original content, features,
-                  functionality, and underlying technology, is owned by Quadrant A and
+                  functionality, and underlying technology, is owned by Boko and
                   is protected by copyright, trademark, and other intellectual
                   property laws.
                 </p>
@@ -333,7 +333,7 @@ export default function TermsPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  TO THE MAXIMUM EXTENT PERMITTED BY LAW, LEEDO SHALL NOT BE
+                  TO THE MAXIMUM EXTENT PERMITTED BY LAW, BOKO SHALL NOT BE
                   LIABLE FOR:
                 </p>
                 <ul className="list-disc pl-6 space-y-2">
@@ -435,19 +435,19 @@ export default function TermsPage() {
                   <li>
                     <strong className="text-[var(--gray-300)]">Email:</strong>{" "}
                     <a
-                      href="mailto:legal@quadrant.io"
+                      href="mailto:hello@boko.app"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      legal@quadrant.io
+                      hello@boko.app
                     </a>
                   </li>
                   <li>
                     <strong className="text-[var(--gray-300)]">Support:</strong>{" "}
                     <a
-                      href="mailto:hello@quadrant.io"
+                      href="mailto:hello@boko.app"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      hello@quadrant.io
+                      hello@boko.app
                     </a>
                   </li>
                   <li>
@@ -456,7 +456,7 @@ export default function TermsPage() {
                       href="/contact"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      quadrant.io/contact
+                      boko.app/contact
                     </Link>
                   </li>
                 </ul>

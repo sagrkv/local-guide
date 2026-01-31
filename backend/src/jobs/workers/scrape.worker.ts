@@ -1,5 +1,5 @@
 import { Job } from "bullmq";
-import { ScrapeJobType, LeadCategory } from "@prisma/client";
+import { ScrapeJobType, LeadCategory, CreditTransactionType } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { googleMapsScraper } from "../../modules/scraping/scrapers/google-maps.scraper.js";
 import { googleSearchScraper } from "../../modules/scraping/scrapers/google-search.scraper.js";
@@ -85,6 +85,23 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
   }
 
   const userId = scrapeJob.createdById;
+
+  // Pre-scrape credit check - ensure user has at least some credits
+  const currentBalance = await creditsService.getBalance(userId);
+  if (currentBalance <= 0) {
+    console.warn(`[SCRAPE] User ${userId} has no credits, failing job ${jobId}`);
+    await prisma.scrapeJob.update({
+      where: { id: jobId },
+      data: {
+        status: "FAILED",
+        completedAt: new Date(),
+        errorMessage: "Insufficient credits. Please add credits before scraping.",
+      },
+    });
+    throw new Error("Insufficient credits to start scrape job");
+  }
+
+  console.log(`[SCRAPE] User ${userId} has ${currentBalance} credits available`);
 
   // Update job status to RUNNING
   await prisma.scrapeJob.update({
@@ -373,21 +390,6 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
               }
 
               if (!isDuplicate) {
-                try {
-                  await creditsService.deductCredits({
-                    userId,
-                    amount: 1,
-                    type: "LEAD_CHARGE",
-                    description: `Lead: ${processedBusiness.businessName}`,
-                    reference: jobId,
-                  });
-                } catch (creditError) {
-                  console.warn(
-                    `[DISCOVERY_PIPELINE] Insufficient credits for ${place.name}, skipping lead save`,
-                  );
-                  continue;
-                }
-
                 const createdLead = await prisma.lead.create({
                   data: {
                     user: { connect: { id: userId } },
@@ -428,7 +430,7 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
                 leadsCreated++;
 
                 console.log(
-                  `[DISCOVERY_PIPELINE] Charged 1 credit for lead: ${processedBusiness.businessName} (ID: ${createdLead.id})`,
+                  `[DISCOVERY_PIPELINE] Created lead: ${processedBusiness.businessName} (ID: ${createdLead.id})`,
                 );
 
                 await prisma.scrapeJob.update({
@@ -670,24 +672,6 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
               }
 
               if (!isDuplicate) {
-                // Charge 1 credit for this lead (users only pay for matching leads)
-                try {
-                  await creditsService.deductCredits({
-                    userId,
-                    amount: 1,
-                    type: "LEAD_CHARGE",
-                    description: `Lead: ${processedBusiness.businessName}`,
-                    reference: jobId,
-                  });
-                } catch (creditError) {
-                  // If insufficient credits, log and skip but don't fail the job
-                  console.warn(
-                    `[DISCOVERY_PIPELINE] Insufficient credits for ${place.name}, skipping lead save`,
-                  );
-                  // Continue to next lead without saving
-                  continue;
-                }
-
                 // Save the lead immediately
                 const createdLead = await prisma.lead.create({
                   data: {
@@ -731,7 +715,7 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
                 leadsCreated++;
 
                 console.log(
-                  `[DISCOVERY_PIPELINE] Charged 1 credit for lead: ${processedBusiness.businessName} (ID: ${createdLead.id})`,
+                  `[DISCOVERY_PIPELINE] Created lead: ${processedBusiness.businessName} (ID: ${createdLead.id})`,
                 );
 
                 // Update job counts in real-time
@@ -843,24 +827,6 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
           continue;
         }
 
-        // Charge 1 credit for this lead (users only pay for matching leads)
-        try {
-          await creditsService.deductCredits({
-            userId,
-            amount: 1,
-            type: "LEAD_CHARGE",
-            description: `Lead: ${result.businessName}`,
-            reference: jobId,
-          });
-        } catch (creditError) {
-          // If insufficient credits, log and skip but don't fail the job
-          console.warn(
-            `[${type}] Insufficient credits for ${result.businessName}, skipping lead save`,
-          );
-          // Continue to next lead without saving
-          continue;
-        }
-
         // Determine source and leadType based on job type and qualification
         let source:
           | "GOOGLE_MAPS"
@@ -919,8 +885,31 @@ export async function scrapeWorker(job: Job<ScrapeJobData>) {
 
         leadsCreated++;
         console.log(
-          `[${type}] Charged 1 credit for lead: ${result.businessName} (ID: ${createdLead.id})`,
+          `[${type}] Created lead: ${result.businessName} (ID: ${createdLead.id})`,
         );
+      }
+    }
+
+    // Consolidated credit deduction for all leads created in this job
+    if (leadsCreated > 0) {
+      try {
+        await creditsService.deductCredits({
+          userId,
+          amount: leadsCreated,
+          type: CreditTransactionType.LEAD_CHARGE,
+          description: `Scrape job: ${leadsCreated} leads`,
+          reference: jobId,
+        });
+        console.log(
+          `[SCRAPE] Charged ${leadsCreated} credits for job ${jobId}`,
+        );
+      } catch (creditError) {
+        console.error(
+          `[SCRAPE] Failed to charge ${leadsCreated} credits for job ${jobId}:`,
+          creditError,
+        );
+        // Note: Leads are already created at this point, so we log the error
+        // but don't fail the job. Admin can manually adjust credits if needed.
       }
     }
 

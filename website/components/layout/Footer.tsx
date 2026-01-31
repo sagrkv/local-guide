@@ -28,8 +28,8 @@ const footerLinks = [
 ];
 
 const socialLinks = [
-  { href: "https://twitter.com/quadrant_io", label: "Twitter" },
-  { href: "https://linkedin.com/company/quadrant", label: "LinkedIn" },
+  { href: "https://twitter.com/bokoapp", label: "Twitter" },
+  { href: "https://linkedin.com/company/bokoapp", label: "LinkedIn" },
 ];
 
 export default function Footer() {
@@ -46,20 +46,20 @@ export default function Footer() {
                 className="inline-flex items-center gap-2 mb-4"
               >
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[#FF8C40] flex items-center justify-center">
-                  <span className="text-[var(--background)] font-bold text-sm">L</span>
+                  <span className="text-[var(--background)] font-bold text-sm">B</span>
                 </div>
                 <span className="text-xl font-semibold text-white">
-                  Quadrant A
+                  Boko
                 </span>
               </Link>
               <p className="text-[var(--gray-400)] text-sm leading-relaxed max-w-xs mb-6">
                 B2B lead generation platform for India. Find, qualify, and convert leads with map-based targeting and AI-powered sales intelligence.
               </p>
               <a
-                href="mailto:hello@quadrant.io"
+                href="mailto:hello@boko.app"
                 className="text-[var(--accent)] hover:text-white transition-colors text-sm font-medium"
               >
-                hello@quadrant.io
+                hello@boko.app
               </a>
             </div>
 
@@ -89,7 +89,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="py-6 border-t border-[var(--gray-800)] flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-[var(--gray-500)] text-sm">
-            &copy; {new Date().getFullYear()} Quadrant A. All rights reserved.
+            &copy; {new Date().getFullYear()} Boko. All rights reserved.
           </p>
 
           <div className="flex items-center gap-6">

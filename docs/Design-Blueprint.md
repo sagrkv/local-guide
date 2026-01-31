@@ -1,9 +1,9 @@
-# Summer Studios - Design Blueprint
+# Boko - Design Blueprint
 
 ## Brand Identity
 
 ### Logo
-**Concept:** Code Brackets `{SUMMER}`
+**Concept:** Code Brackets `{BOKO}`
 - Orange brackets wrapping the company name
 - Signals technical/developer credibility
 - Clean, modern, memorable
@@ -81,7 +81,7 @@ Caption:   12px / 16px
 ### Desktop: Vertical Side Navigation
 ```
 ┌─────────────────────────────────────────┐
-│ {S}                                     │
+│ {B}                                     │
 │                                         │
 │ Home                                    │
 │ Work                                    │

@@ -1,4 +1,4 @@
-# Summer Studios - Website Content & Copy
+# Boko - Website Content & Copy
 
 ---
 
@@ -44,7 +44,7 @@
 **Section Title:** What clients say
 
 **Testimonial 1:**
-> "Summer Studios delivered our startup website in under 3 weeks. The attention to detail and performance optimization exceeded our expectations."
+> "Boko delivered our startup website in under 3 weeks. The attention to detail and performance optimization exceeded our expectations."
 > — *Founder, Tech Startup, Bangalore*
 
 **Testimonial 2:**
@@ -283,7 +283,7 @@ Next.js, Tailwind, [etc.]
 
 ### Our Story
 
-> Summer Studios started with a simple frustration: too many businesses were getting ripped off by agencies delivering mediocre work at premium prices.
+> Boko started with a simple frustration: too many businesses were getting ripped off by agencies delivering mediocre work at premium prices.
 
 > We're developers and designers who believe great websites shouldn't cost a fortune or take forever. We keep our team small, our processes efficient, and our prices fair.
 
@@ -339,7 +339,7 @@ Next.js, Tailwind, [etc.]
 
 ### Contact Info
 
-**Email:** hello@summerstudios.in
+**Email:** hello@boko.app
 **Location:** South India (Remote-first)
 **Response Time:** Within 24 hours
 
@@ -451,4 +451,4 @@ Brief explanation of what this experiment explores and the techniques used.
 - Privacy Policy
 - Terms of Service
 
-**Copyright:** © 2026 Summer Studios. All rights reserved.
+**Copyright:** © 2026 Boko. All rights reserved.

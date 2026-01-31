@@ -43,7 +43,7 @@ export async function gdprRoutes(fastify: FastifyInstance) {
       reply.header('Content-Type', 'application/json');
       reply.header(
         'Content-Disposition',
-        `attachment; filename="quadrant-a-data-export-${new Date().toISOString().split('T')[0]}.json"`
+        `attachment; filename="boko-data-export-${new Date().toISOString().split('T')[0]}.json"`
       );
 
       return exportData;

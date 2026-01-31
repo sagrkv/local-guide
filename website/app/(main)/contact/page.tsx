@@ -240,10 +240,10 @@ export default function ContactPage() {
                         Email
                       </h3>
                       <a
-                        href="mailto:hello@quadrant.io"
+                        href="mailto:hello@boko.app"
                         className="text-[var(--accent)] hover:text-white transition-colors"
                       >
-                        hello@quadrant.io
+                        hello@boko.app
                       </a>
                     </div>
 
@@ -273,7 +273,7 @@ export default function ContactPage() {
                     </h3>
                     <div className="flex gap-4">
                       <a
-                        href="https://twitter.com/quadrant_io"
+                        href="https://twitter.com/bokoapp"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[var(--gray-400)] hover:text-white transition-colors"
@@ -281,7 +281,7 @@ export default function ContactPage() {
                         Twitter / X
                       </a>
                       <a
-                        href="https://linkedin.com/company/quadrant"
+                        href="https://linkedin.com/company/bokoapp"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[var(--gray-400)] hover:text-white transition-colors"

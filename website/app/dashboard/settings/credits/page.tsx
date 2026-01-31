@@ -6,42 +6,51 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
 
-interface CreditHistory {
+interface CreditTransaction {
   id: string;
   amount: number;
-  type: "PURCHASE" | "USAGE" | "COUPON" | "REFUND";
-  description: string;
+  type: string;
+  description: string | null;
+  reference: string | null;
   createdAt: string;
 }
 
+interface MonthlyStats {
+  creditsUsed: number;
+  leadsScraped: number;
+  transactionCount: number;
+}
+
 export default function CreditsPage() {
-  const [balance, setBalance] = useState(100);
-  const [history, setHistory] = useState<CreditHistory[]>([]);
+  const [balance, setBalance] = useState(0);
+  const [history, setHistory] = useState<CreditTransaction[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats>({
+    creditsUsed: 0,
+    leadsScraped: 0,
+    transactionCount: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [couponCode, setCouponCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
 
   useEffect(() => {
-    const fetchCredits = async () => {
+    const fetchData = async () => {
       try {
-        const userData = await apiClient.getCurrentUser();
-        setBalance(userData.user.creditBalance ?? 100);
-        setHistory([
-          {
-            id: "1",
-            amount: 100,
-            type: "PURCHASE",
-            description: "Initial credits",
-            createdAt: new Date().toISOString(),
-          },
+        const [userData, historyData, statsData] = await Promise.all([
+          apiClient.getCurrentUser(),
+          apiClient.getCreditHistory({ limit: 10 }),
+          apiClient.getMonthlyCreditsStats(),
         ]);
+        setBalance(userData.user.creditBalance ?? 0);
+        setHistory(historyData.transactions);
+        setMonthlyStats(statsData);
       } catch {
         toast.error("Failed to load credit information");
       } finally {
         setLoading(false);
       }
     };
-    fetchCredits();
+    fetchData();
   }, []);
 
   const handleRedeemCoupon = async (e: React.FormEvent) => {
@@ -59,16 +68,9 @@ export default function CreditsPage() {
       });
       setCouponCode("");
       setBalance(result.newBalance);
-      setHistory((prevHistory) => [
-        {
-          id: crypto.randomUUID(),
-          amount: result.creditsAdded,
-          type: "COUPON" as const,
-          description: `Redeemed coupon: ${trimmedCode}`,
-          createdAt: new Date().toISOString(),
-        },
-        ...prevHistory,
-      ]);
+      // Refresh history
+      const historyData = await apiClient.getCreditHistory({ limit: 10 });
+      setHistory(historyData.transactions);
     } catch (error) {
       const errorMessage = error instanceof Error
         ? error.message
@@ -77,6 +79,18 @@ export default function CreditsPage() {
     } finally {
       setRedeeming(false);
     }
+  };
+
+  const formatTransactionType = (type: string) => {
+    const types: Record<string, string> = {
+      PURCHASE: "Purchase",
+      COUPON: "Coupon",
+      SCRAPE_CHARGE: "Scraping",
+      ANALYSIS_CHARGE: "Analysis",
+      REFUND: "Refund",
+      ADMIN_ADJUSTMENT: "Adjustment",
+    };
+    return types[type] || type;
   };
 
   if (loading) {
@@ -89,308 +103,242 @@ export default function CreditsPage() {
 
   return (
     <div className="p-4 lg:p-6">
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-semibold text-white">
-            <span className="text-gray-400 font-medium">Settings /</span> Credits
-          </h1>
-          <p className="text-[13px] text-gray-500 mt-0.5">Manage your credit balance and transactions</p>
+        <h1 className="text-xl font-semibold text-gray-100">Settings</h1>
+
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-1 bg-gray-800/50 rounded-md p-0.5">
+          <Link
+            href="/dashboard/settings"
+            className="px-3 py-1.5 text-[13px] font-medium rounded text-gray-400 hover:text-white transition-colors"
+          >
+            Profile
+          </Link>
+          <Link
+            href="/dashboard/settings/credits"
+            className="px-3 py-1.5 text-[13px] font-medium rounded bg-gray-700 text-white"
+          >
+            Credits
+          </Link>
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 mb-4 border-b border-gray-800">
-        <Link
-          href="/dashboard/settings"
-          className="px-3 py-2 text-[13px] font-medium text-gray-400 hover:text-white transition-colors"
-        >
-          Profile
-        </Link>
-        <Link
-          href="/dashboard/settings/credits"
-          className="px-3 py-2 text-[13px] font-medium text-accent border-b-2 border-accent -mb-px"
-        >
-          Credits
-        </Link>
-      </div>
-
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-4">
-        {/* Main Content */}
-        <div className="space-y-4">
-          {/* Current Balance Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="border border-accent/30 rounded-lg bg-gradient-to-br from-accent/10 to-accent/5 overflow-hidden"
-          >
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-accent/80 uppercase tracking-wide">Current Balance</p>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-4xl font-bold text-white">{balance.toLocaleString()}</span>
-                    <span className="text-sm text-gray-400">credits</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">≈ {balance} leads remaining</p>
-                </div>
-                <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center">
-                  <CoinIcon className="w-7 h-7 text-accent" />
+      {/* Main Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="border border-gray-800 rounded-lg bg-gray-900 divide-y divide-gray-800/50"
+      >
+        {/* Balance Section */}
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                <CoinIcon className="w-6 h-6 text-accent" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Current Balance</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-white">{balance.toLocaleString()}</span>
+                  <span className="text-sm text-gray-400">credits</span>
                 </div>
               </div>
-              {balance < 10 && (
-                <div className="mt-3 p-2 bg-red-500/10 border border-red-500/20 rounded-md flex items-center gap-2">
-                  <WarningIcon className="w-4 h-4 text-red-400 flex-shrink-0" />
-                  <p className="text-xs text-red-400">Low balance! Add credits to continue scraping.</p>
-                </div>
-              )}
             </div>
-          </motion.div>
-
-          {/* Main Card with Sections */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="border border-gray-800 rounded-lg bg-gray-900 divide-y divide-gray-800/50"
-          >
-            {/* Redeem Coupon Section */}
-            <div className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-md bg-purple-500/10 flex items-center justify-center">
-                  <GiftIcon className="w-3.5 h-3.5 text-purple-400" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-medium text-white">Redeem Coupon</h2>
-                  <p className="text-xs text-gray-500">Enter a code to add credits</p>
-                </div>
+            {balance < 10 && (
+              <div className="px-2.5 py-1 bg-red-500/10 border border-red-500/20 rounded-md flex items-center gap-1.5">
+                <WarningIcon className="w-3.5 h-3.5 text-red-400" />
+                <span className="text-xs text-red-400">Low balance</span>
               </div>
-              <form onSubmit={handleRedeemCoupon} className="flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    placeholder="WELCOME50"
-                    disabled={redeeming}
-                    maxLength={50}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="characters"
-                    spellCheck="false"
-                    className="w-full h-9 px-3 bg-gray-800/50 border border-gray-700 rounded-md text-[13px] text-white placeholder-gray-500 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/25 uppercase tracking-wider font-mono disabled:opacity-50 transition-colors"
-                  />
-                  {couponCode.length > 0 && !redeeming && (
-                    <button
-                      type="button"
-                      onClick={() => setCouponCode("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-white transition-colors"
-                    >
-                      <ClearIcon className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+            )}
+          </div>
+        </div>
+
+        {/* This Month Stats */}
+        <div className="p-4">
+          <h2 className="text-sm font-medium text-gray-200 mb-3">This Month</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="p-3 bg-gray-800/50 rounded-md">
+              <p className="text-2xl font-bold text-white">{monthlyStats.creditsUsed}</p>
+              <p className="text-xs text-gray-500">Credits Used</p>
+            </div>
+            <div className="p-3 bg-gray-800/50 rounded-md">
+              <p className="text-2xl font-bold text-white">{monthlyStats.leadsScraped}</p>
+              <p className="text-xs text-gray-500">Leads Scraped</p>
+            </div>
+            <div className="p-3 bg-gray-800/50 rounded-md hidden sm:block">
+              <p className="text-2xl font-bold text-white">{monthlyStats.transactionCount}</p>
+              <p className="text-xs text-gray-500">Transactions</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Redeem Coupon Section */}
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <GiftIcon className="w-4 h-4 text-purple-400" />
+            <h2 className="text-sm font-medium text-gray-200">Redeem Coupon</h2>
+          </div>
+          <form onSubmit={handleRedeemCoupon} className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                placeholder="Enter coupon code"
+                disabled={redeeming}
+                maxLength={50}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="characters"
+                spellCheck="false"
+                className="w-full h-9 px-3 bg-gray-800/50 border border-gray-700 rounded-md text-[13px] text-white placeholder-gray-500 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/25 uppercase tracking-wider font-mono disabled:opacity-50 transition-colors"
+              />
+              {couponCode.length > 0 && !redeeming && (
                 <button
-                  type="submit"
-                  disabled={redeeming || !couponCode.trim()}
-                  className="h-9 px-4 bg-accent hover:bg-[#FF8C40] disabled:bg-gray-700 disabled:text-gray-500 text-background text-[13px] font-medium rounded-md transition-colors disabled:cursor-not-allowed flex items-center gap-2"
+                  type="button"
+                  onClick={() => setCouponCode("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-white transition-colors"
                 >
-                  {redeeming ? (
-                    <LoadingSpinner className="w-4 h-4" />
-                  ) : (
-                    <TicketIcon className="w-4 h-4" />
-                  )}
-                  <span>{redeeming ? "Redeeming..." : "Redeem"}</span>
+                  <ClearIcon className="w-3.5 h-3.5" />
                 </button>
-              </form>
-            </div>
-
-            {/* Purchase Credits Section */}
-            <div className="p-4">
-              <h2 className="text-sm font-medium text-white mb-3">Purchase Credits</h2>
-              <div className="grid grid-cols-3 gap-3">
-                <PricingCard credits={100} price={9.99} />
-                <PricingCard credits={500} price={39.99} popular savings="Save 20%" />
-                <PricingCard credits={1000} price={69.99} savings="Save 30%" />
-              </div>
-              <p className="text-[11px] text-gray-500 text-center mt-3">
-                Payments processed securely. Credits never expire.
-              </p>
-            </div>
-
-            {/* Transaction History Section */}
-            <div className="p-4">
-              <h2 className="text-sm font-medium text-white mb-3">Transaction History</h2>
-              {history.length === 0 ? (
-                <p className="text-[13px] text-gray-500 text-center py-4">No transactions yet</p>
-              ) : (
-                <div className="space-y-2">
-                  {history.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-2 px-3 bg-gray-800/30 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-7 h-7 rounded-md flex items-center justify-center ${
-                            item.type === "USAGE"
-                              ? "bg-red-500/10"
-                              : item.type === "COUPON"
-                                ? "bg-purple-500/10"
-                                : "bg-emerald-500/10"
-                          }`}
-                        >
-                          {item.type === "USAGE" ? (
-                            <MinusIcon className="w-3.5 h-3.5 text-red-400" />
-                          ) : (
-                            <PlusIcon className="w-3.5 h-3.5 text-emerald-400" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-[13px] font-medium text-white">{item.description}</p>
-                          <p className="text-[11px] text-gray-500">
-                            {new Date(item.createdAt).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                      <span
-                        className={`text-[13px] font-semibold ${
-                          item.type === "USAGE" ? "text-red-400" : "text-emerald-400"
-                        }`}
-                      >
-                        {item.type === "USAGE" ? "-" : "+"}
-                        {item.amount}
-                      </span>
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
-          </motion.div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-4">
-          {/* Credit Usage */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="border border-gray-800 rounded-lg bg-gray-900 p-4"
-          >
-            <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Credit Costs</h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-[13px] text-gray-300">Lead scraped</span>
-                <span className="text-[13px] font-medium text-white">1 credit</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-[13px] text-gray-300">Lighthouse analysis</span>
-                <span className="text-[13px] font-medium text-white">1 credit</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-[13px] text-gray-300">Tech stack detection</span>
-                <span className="text-[13px] font-medium text-white">1 credit</span>
-              </div>
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-[13px] text-gray-300">Sales intelligence</span>
-                <span className="text-[13px] font-medium text-white">1 credit</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Quick Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="border border-gray-800 rounded-lg bg-gray-900 p-4"
-          >
-            <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">This Month</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-gray-800/50 rounded-md">
-                <p className="text-2xl font-bold text-white">0</p>
-                <p className="text-[11px] text-gray-500">Credits Used</p>
-              </div>
-              <div className="p-3 bg-gray-800/50 rounded-md">
-                <p className="text-2xl font-bold text-white">0</p>
-                <p className="text-[11px] text-gray-500">Leads Scraped</p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Help */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="border border-gray-800 rounded-lg bg-gray-900 p-4"
-          >
-            <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Need Help?</h3>
-            <p className="text-[13px] text-gray-400 mb-3">
-              Questions about credits or billing?
-            </p>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-1.5 text-[13px] text-accent hover:text-[#FF8C40] transition-colors"
+            <button
+              type="submit"
+              disabled={redeeming || !couponCode.trim()}
+              className="h-9 px-4 bg-white text-gray-900 hover:bg-gray-100 disabled:bg-gray-700 disabled:text-gray-500 text-[13px] font-medium rounded-md transition-colors disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Contact Support
-              <ArrowIcon className="w-3.5 h-3.5" />
-            </Link>
-          </motion.div>
+              {redeeming ? (
+                <LoadingSpinner className="w-4 h-4" />
+              ) : (
+                <TicketIcon className="w-4 h-4" />
+              )}
+              <span>{redeeming ? "Redeeming..." : "Redeem"}</span>
+            </button>
+          </form>
         </div>
-      </div>
+
+        {/* Transaction History Section */}
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-gray-200">Recent Transactions</h2>
+            <Link
+              href="/dashboard/settings/credits/transactions"
+              className="text-xs text-accent hover:text-[#FF8C40] transition-colors"
+            >
+              View All
+            </Link>
+          </div>
+          {history.length === 0 ? (
+            <div className="text-center py-6">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gray-800 flex items-center justify-center">
+                <HistoryIcon className="w-5 h-5 text-gray-500" />
+              </div>
+              <p className="text-[13px] text-gray-500">No transactions yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {history.map((item) => (
+                <div key={item.id} className="flex items-center justify-between py-2 px-3 bg-gray-800/30 rounded-md">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-7 h-7 rounded-md flex items-center justify-center ${
+                        item.amount < 0
+                          ? "bg-red-500/10"
+                          : item.type === "COUPON"
+                            ? "bg-purple-500/10"
+                            : "bg-emerald-500/10"
+                      }`}
+                    >
+                      {item.amount < 0 ? (
+                        <MinusIcon className="w-3.5 h-3.5 text-red-400" />
+                      ) : (
+                        <PlusIcon className="w-3.5 h-3.5 text-emerald-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-medium text-white">
+                        {item.description || formatTransactionType(item.type)}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        {new Date(item.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[13px] font-semibold ${
+                      item.amount < 0 ? "text-red-400" : "text-emerald-400"
+                    }`}
+                  >
+                    {item.amount < 0 ? "" : "+"}{item.amount}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Need Credits Section */}
+        <div className="p-4 bg-accent/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                <MailIcon className="w-4 h-4 text-accent" />
+              </div>
+              <div>
+                <p className="text-[13px] font-medium text-gray-200">Need more credits?</p>
+                <p className="text-xs text-gray-500">Contact us to purchase credits</p>
+              </div>
+            </div>
+            <a
+              href="mailto:hello@boko.app?subject=Credit%20Purchase%20Request"
+              className="h-9 px-4 rounded-md bg-accent/10 border border-accent/30 text-[13px] text-accent hover:bg-accent/20 transition-colors inline-flex items-center gap-1.5"
+            >
+              <MailIcon className="w-3.5 h-3.5" />
+              Email Us
+            </a>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Credit Costs Info */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mt-4 border border-gray-800 rounded-lg bg-gray-900 p-4"
+      >
+        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Credit Costs</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-gray-400">Lead scraped</span>
+            <span className="text-[13px] font-medium text-white">1 credit</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-gray-400">Lighthouse analysis</span>
+            <span className="text-[13px] font-medium text-white">1 credit</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-gray-400">Tech stack detection</span>
+            <span className="text-[13px] font-medium text-white">1 credit</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-gray-400">Sales intelligence</span>
+            <span className="text-[13px] font-medium text-white">1 credit</span>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
 
-function PricingCard({
-  credits,
-  price,
-  popular = false,
-  savings,
-}: {
-  credits: number;
-  price: number;
-  popular?: boolean;
-  savings?: string;
-}) {
-  return (
-    <div
-      className={`relative rounded-lg border p-3 transition-all hover:scale-[1.02] cursor-pointer ${
-        popular
-          ? "bg-accent/10 border-accent/50"
-          : "bg-gray-800/30 border-gray-700 hover:border-gray-600"
-      }`}
-    >
-      {popular && (
-        <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-accent text-background text-[10px] font-semibold rounded-full">
-          Popular
-        </span>
-      )}
-      <div className="text-center">
-        <p className="text-xl font-bold text-white">{credits.toLocaleString()}</p>
-        <p className="text-[11px] text-gray-400">credits</p>
-        <p className="text-lg font-semibold text-white mt-2">${price}</p>
-        {savings && <p className="text-[10px] text-emerald-400">{savings}</p>}
-        <button
-          disabled
-          className={`w-full mt-2 h-7 text-[11px] font-medium rounded-md transition-colors ${
-            popular
-              ? "bg-accent text-background"
-              : "bg-gray-700 text-white"
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          Coming Soon
-        </button>
-      </div>
-    </div>
-  );
-}
-
+// Icons
 function CoinIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -476,10 +424,18 @@ function TicketIcon({ className }: { className?: string }) {
   );
 }
 
-function ArrowIcon({ className }: { className?: string }) {
+function HistoryIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function MailIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
     </svg>
   );
 }

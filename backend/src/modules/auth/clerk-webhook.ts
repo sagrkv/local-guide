@@ -125,7 +125,7 @@ async function handleUserCreated(event: ClerkUserEvent): Promise<void> {
       email,
       name,
       imageUrl,
-      role: 'SALES_REP', // Default role for new users
+      role: 'USER', // Default role for new users
       isActive: true,
       creditBalance: 0,
     },

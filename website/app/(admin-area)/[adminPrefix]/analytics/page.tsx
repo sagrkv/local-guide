@@ -8,7 +8,6 @@ interface OverviewStats {
   totalUsers: number;
   activeUsers: number;
   totalLeads: number;
-  totalProspects: number;
   totalCreditsUsed: number;
   totalCreditsAdded: number;
   activeJobs: number;
@@ -171,7 +170,7 @@ export default function AdminAnalyticsPage() {
           <StatCard
             label="Total Leads"
             value={overview.totalLeads}
-            subValue={`${overview.totalProspects} prospects`}
+            subValue={`from ${overview.completedJobs} jobs`}
             icon={<LeadsIcon />}
             color="green"
           />

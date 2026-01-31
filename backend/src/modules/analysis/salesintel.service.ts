@@ -2,7 +2,7 @@ import { config } from "../../config.js";
 import { logApiCall } from "../../lib/api-logger.js";
 import { prisma } from "../../lib/prisma.js";
 import { creditsService } from "../credits/credits.service.js";
-import { Lead } from "@prisma/client";
+import { Lead, CreditTransactionType } from "@prisma/client";
 
 // Credit cost for sales intelligence generation
 const SALES_INTEL_CREDIT_COST = 1;
@@ -382,7 +382,7 @@ export const salesIntelService = {
     await creditsService.deductCredits({
       userId,
       amount: SALES_INTEL_CREDIT_COST,
-      type: "ANALYSIS_CHARGE",
+      type: CreditTransactionType.ANALYSIS_CHARGE,
       description: `Sales intelligence for ${lead.businessName}`,
       reference: leadId,
     });

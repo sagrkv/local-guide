@@ -10,7 +10,7 @@ const createCouponSchema = z.object({
     .regex(/^[A-Za-z0-9_-]+$/, 'Code can only contain letters, numbers, underscores, and hyphens'),
   creditAmount: z.number().int().positive('Credit amount must be a positive integer'),
   maxUses: z.number().int().positive().nullable().optional(),
-  expiresAt: z.string().datetime().nullable().optional(),
+  expiresAt: z.string().nullable().optional(),
 });
 
 const redeemCouponSchema = z.object({

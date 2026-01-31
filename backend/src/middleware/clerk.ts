@@ -108,7 +108,7 @@ export async function clerkAuthenticate(
           email,
           name: fullName,
           imageUrl: clerkUser.imageUrl || undefined,
-          role: 'SALES_REP',
+          role: 'USER',
           isActive: true,
           creditBalance: 100, // Starting credits for new users
         },

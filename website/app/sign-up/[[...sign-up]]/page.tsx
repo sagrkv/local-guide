@@ -7,7 +7,7 @@ export default function SignUpPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">
             <span className="text-accent">[</span>
-            Quadrant A
+            Boko
             <span className="text-accent">]</span>
           </h1>
           <p className="text-gray-400">Create your account</p>

@@ -12,8 +12,8 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "Quadrant A | Lead Generation SaaS",
-    template: "%s | Quadrant A",
+    default: "Boko | Lead Generation SaaS",
+    template: "%s | Boko",
   },
   description:
     "Powerful lead generation platform. Discover, qualify, and manage B2B leads with automated scraping, technical analysis, and sales intelligence.",
@@ -27,14 +27,14 @@ export const metadata: Metadata = {
     "business leads",
     "SaaS",
   ],
-  authors: [{ name: "Quadrant A" }],
-  creator: "Quadrant A",
+  authors: [{ name: "Boko" }],
+  creator: "Boko",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://quadrant.io",
-    siteName: "Quadrant A",
-    title: "Quadrant A | Lead Generation SaaS",
+    url: "https://boko.app",
+    siteName: "Boko",
+    title: "Boko | Lead Generation SaaS",
     description:
       "Powerful lead generation platform. Discover, qualify, and manage B2B leads with automated scraping and sales intelligence.",
     images: [
@@ -42,13 +42,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Quadrant A",
+        alt: "Boko",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Quadrant A | Lead Generation SaaS",
+    title: "Boko | Lead Generation SaaS",
     description:
       "Powerful lead generation platform. Discover, qualify, and manage B2B leads with automated scraping and sales intelligence.",
     images: ["/og-image.png"],

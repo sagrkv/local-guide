@@ -582,98 +582,10 @@ class ApiClient {
     }>(`/scraping/api-logs/recent?limit=${limit}`);
   }
 
-  // Prospects
-  async getProspects(params?: {
-    page?: number;
-    limit?: number;
-    scrapeJobId?: string;
-    city?: string;
-    category?: string;
-    hasWebsite?: string;
-    minScore?: number;
-    maxScore?: number;
-    search?: string;
-    sortBy?: string;
-    sortOrder?: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) searchParams.set(key, String(value));
-      });
-    }
-    return this.request<{ data: any[]; pagination: any }>(
-      `/prospects?${searchParams}`,
-    );
-  }
-
-  async getProspectStats() {
-    return this.request<{
-      counts: {
-        prospects: number;
-        leads: number;
-        notInterested: number;
-        archived: number;
-      };
-      byCategory: any[];
-      byScrapeJob: any[];
-    }>("/prospects/stats");
-  }
-
-  async getProspectCities() {
-    return this.request<string[]>("/prospects/cities");
-  }
-
-  async getProspect(id: string) {
-    return this.request<any>(`/prospects/${id}`);
-  }
-
-  async promoteProspect(id: string) {
-    return this.request(`/prospects/${id}/promote`, { method: "POST" });
-  }
-
-  async markProspectNotInterested(id: string, reason?: string) {
-    return this.request(`/prospects/${id}/not-interested`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    });
-  }
-
-  async archiveProspect(id: string) {
-    return this.request(`/prospects/${id}/archive`, { method: "POST" });
-  }
-
-  async deleteProspect(id: string) {
-    return this.request(`/prospects/${id}`, { method: "DELETE" });
-  }
-
-  async bulkPromoteProspects(ids: string[]) {
-    return this.request<{ count: number }>("/prospects/bulk/promote", {
-      method: "POST",
-      body: JSON.stringify({ ids }),
-    });
-  }
-
-  async bulkDeleteProspects(ids: string[]) {
-    return this.request<{ count: number }>("/prospects/bulk/delete", {
-      method: "POST",
-      body: JSON.stringify({ ids }),
-    });
-  }
-
-  async bulkMarkNotInterested(ids: string[], reason?: string) {
-    return this.request<{ count: number }>("/prospects/bulk/not-interested", {
-      method: "POST",
-      body: JSON.stringify({ ids, reason }),
-    });
-  }
-
   // ===== Perplexity Enhanced Features =====
 
-  // Deep research a prospect for comprehensive sales intelligence
-  async deepResearchProspect(prospectId: string) {
+  // Deep research a lead for comprehensive sales intelligence
+  async deepResearchLead(leadId: string) {
     return this.request<{
       email?: string;
       phone?: string;
@@ -699,11 +611,11 @@ class ApiClient {
       rawAnalysis?: string;
     }>("/scraping/perplexity/deep-research", {
       method: "POST",
-      body: JSON.stringify({ prospectId }),
+      body: JSON.stringify({ prospectId: leadId }),
     });
   }
 
-  // Deep research a business by name (without existing prospect)
+  // Deep research a business by name (without existing lead)
   async deepResearchBusiness(business: {
     name: string;
     address?: string;
@@ -740,8 +652,8 @@ class ApiClient {
     });
   }
 
-  // Find decision makers for a prospect
-  async findDecisionMakers(prospectId: string) {
+  // Find decision makers for a lead
+  async findDecisionMakers(leadId: string) {
     return this.request<{
       decisionMakers: Array<{
         name: string;
@@ -751,24 +663,24 @@ class ApiClient {
       }>;
     }>("/scraping/perplexity/decision-makers", {
       method: "POST",
-      body: JSON.stringify({ prospectId }),
+      body: JSON.stringify({ prospectId: leadId }),
     });
   }
 
-  // Generate personalized outreach email for a prospect
-  async generateOutreachEmail(prospectId: string) {
+  // Generate personalized outreach email for a lead
+  async generateOutreachEmail(leadId: string) {
     return this.request<{
       subject: string;
       body: string;
     }>("/scraping/perplexity/generate-email", {
       method: "POST",
-      body: JSON.stringify({ prospectId }),
+      body: JSON.stringify({ prospectId: leadId }),
     });
   }
 
   // ===== Website Analysis =====
 
-  // Rerun Lighthouse analysis on a lead/prospect
+  // Rerun Lighthouse analysis on a lead
   async rerunLighthouse(leadId: string) {
     return this.request<{
       success: boolean;
@@ -935,12 +847,32 @@ class ApiClient {
     }>(`/${ADMIN_API_PREFIX}/users/${userId}`);
   }
 
+  async getAdminUserActivity(userId: string) {
+    return this.request<{
+      activityTimeline: Array<{
+        date: string;
+        scrapeJobs: number;
+        leadsCreated: number;
+        creditsUsed: number;
+      }>;
+      creditBurnRate: {
+        daily: number;
+        weekly: number;
+      };
+      lastActive: string | null;
+      apiUsage: {
+        total: number;
+        last30Days: number;
+      };
+    }>(`/${ADMIN_API_PREFIX}/users/${userId}/activity`);
+  }
+
   async updateAdminUser(
     userId: string,
     data: {
       name?: string;
       isActive?: boolean;
-      role?: "ADMIN" | "SALES_REP";
+      role?: "ADMIN" | "USER";
       creditBalance?: number;
     }
   ) {
@@ -976,7 +908,6 @@ class ApiClient {
       totalUsers: number;
       activeUsers: number;
       totalLeads: number;
-      totalProspects: number;
       totalCreditsUsed: number;
       totalCreditsAdded: number;
       activeJobs: number;
@@ -1042,7 +973,190 @@ class ApiClient {
     }>(`/${ADMIN_API_PREFIX}/analytics/geography`);
   }
 
-  // ===== Coupons =====
+  // Get all saved regions across all users (admin only)
+  async getAdminSavedRegions() {
+    return this.request<{
+      regions: Array<{
+        id: string;
+        userId: string;
+        name: string;
+        southwestLat: number;
+        southwestLng: number;
+        northeastLat: number;
+        northeastLng: number;
+        lastUsed: string;
+        timesUsed: number;
+        createdAt: string;
+        user: {
+          id: string;
+          name: string;
+          email: string;
+        };
+      }>;
+    }>(`/${ADMIN_API_PREFIX}/saved-regions`);
+  }
+
+  // Get system health metrics (admin only)
+  async getAdminHealthMetrics() {
+    return this.request<{
+      queue: {
+        active: number;
+        pending: number;
+        completed: number;
+        failed: number;
+      };
+      system: {
+        uptime: number;
+        uptimeFormatted: string;
+        memoryUsed: number;
+        memoryTotal: number;
+        memoryPercent: number;
+      };
+      api: {
+        errorRate: number;
+        avgResponseTime: number;
+      };
+    }>(`/${ADMIN_API_PREFIX}/health-metrics`);
+  }
+
+  // ===== Admin Jobs (Job Monitor) =====
+
+  async getAdminJobs(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    userId?: string;
+  }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      jobs: Array<{
+        id: string;
+        type: string;
+        query: string;
+        location: string | null;
+        category: string | null;
+        status: string;
+        leadsFound: number;
+        leadsCreated: number;
+        leadsDuplicate: number;
+        leadsSkipped: number;
+        createdAt: string;
+        startedAt: string | null;
+        completedAt: string | null;
+        region: { id: string; name: string } | null;
+        createdBy: { id: string; name: string; email: string };
+      }>;
+      pagination: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
+    }>(`/${ADMIN_API_PREFIX}/jobs?${searchParams}`);
+  }
+
+  async getAdminJobStats() {
+    return this.request<{
+      total: number;
+      pending: number;
+      running: number;
+      completed: number;
+      failed: number;
+      last24h: { jobs: number; leadsCreated: number };
+    }>(`/${ADMIN_API_PREFIX}/jobs/stats`);
+  }
+
+  // ===== Admin Coupons =====
+
+  async getAdminCoupons(params?: { includeInactive?: boolean }) {
+    const searchParams = new URLSearchParams();
+    if (params?.includeInactive) {
+      searchParams.set("includeInactive", "true");
+    }
+    return this.request<
+      Array<{
+        id: string;
+        code: string;
+        creditAmount: number;
+        maxUses: number | null;
+        currentUses: number;
+        expiresAt: string | null;
+        isActive: boolean;
+        createdAt: string;
+        createdBy: { id: string; name: string; email: string };
+      }>
+    >(`/admin/coupons?${searchParams}`);
+  }
+
+  async getAdminCouponStats() {
+    return this.request<{
+      totalCoupons: number;
+      activeCoupons: number;
+      totalRedemptions: number;
+      totalCreditsDistributed: number;
+    }>(`/admin/coupons/stats`);
+  }
+
+  async getAdminCoupon(id: string) {
+    return this.request<{
+      id: string;
+      code: string;
+      creditAmount: number;
+      maxUses: number | null;
+      currentUses: number;
+      expiresAt: string | null;
+      isActive: boolean;
+      createdAt: string;
+      createdBy: { id: string; name: string; email: string };
+      redemptions: Array<{
+        id: string;
+        userId: string;
+        redeemedAt: string;
+        user: { name: string; email: string };
+      }>;
+    }>(`/admin/coupons/${id}`);
+  }
+
+  async createAdminCoupon(data: {
+    code: string;
+    creditAmount: number;
+    maxUses?: number | null;
+    expiresAt?: string | null;
+  }) {
+    return this.request<{
+      id: string;
+      code: string;
+      creditAmount: number;
+    }>(`/admin/coupons`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async activateAdminCoupon(id: string) {
+    return this.request(`/admin/coupons/${id}/activate`, {
+      method: "PATCH",
+    });
+  }
+
+  async deactivateAdminCoupon(id: string) {
+    return this.request(`/admin/coupons/${id}/deactivate`, {
+      method: "PATCH",
+    });
+  }
+
+  async deleteAdminCoupon(id: string) {
+    return this.request<{ message: string }>(`/admin/coupons/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // ===== Coupons (User) =====
 
   async redeemCoupon(code: string) {
     return this.request<{
@@ -1064,6 +1178,38 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify({ code }),
     });
+  }
+
+  // ===== Credits =====
+
+  async getCreditHistory(params?: { limit?: number; offset?: number; type?: string }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      transactions: Array<{
+        id: string;
+        amount: number;
+        type: string;
+        description: string | null;
+        reference: string | null;
+        createdAt: string;
+      }>;
+      total: number;
+      limit: number;
+      offset: number;
+    }>(`/credits/history?${searchParams}`);
+  }
+
+  async getMonthlyCreditsStats() {
+    return this.request<{
+      creditsUsed: number;
+      leadsScraped: number;
+      transactionCount: number;
+    }>("/credits/monthly-stats");
   }
 
   // ===== GDPR / Privacy =====

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 
 interface DashboardStats {
@@ -35,6 +36,8 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 export default function AdminDashboardPage() {
+  const params = useParams();
+  const adminPrefix = params.adminPrefix as string;
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [pipeline, setPipeline] = useState<PipelineCount[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -108,7 +111,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-medium">Pipeline Overview</h2>
           <Link
-            href="/admin/leads"
+            href={`/${adminPrefix}/leads`}
             className="text-sm text-accent hover:text-accent-light transition-colors"
           >
             View all leads →
@@ -147,7 +150,7 @@ export default function AdminDashboardPage() {
                     <p className="text-[13px] text-white">{activity.title}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       <Link
-                        href={`/admin/leads/${activity.lead.id}`}
+                        href={`/${adminPrefix}/leads/${activity.lead.id}`}
                         className="text-accent hover:text-accent-light"
                       >
                         {activity.lead.businessName}
@@ -169,28 +172,28 @@ export default function AdminDashboardPage() {
           <h2 className="text-sm font-medium mb-3">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-2">
             <Link
-              href="/admin/leads?stage=NEW"
+              href={`/${adminPrefix}/leads?stage=NEW`}
               className="p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
               <p className="text-sm font-medium">New Leads</p>
               <p className="text-xs text-gray-400 mt-0.5">Review incoming leads</p>
             </Link>
             <Link
-              href="/admin/scraping"
+              href={`/${adminPrefix}/scraping`}
               className="p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
               <p className="text-sm font-medium">Start Scraping</p>
               <p className="text-xs text-gray-400 mt-0.5">Find new businesses</p>
             </Link>
             <Link
-              href="/admin/leads"
+              href={`/${adminPrefix}/leads`}
               className="p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
               <p className="text-sm font-medium">Kanban Board</p>
               <p className="text-xs text-gray-400 mt-0.5">Manage pipeline</p>
             </Link>
             <Link
-              href="/admin/settings"
+              href={`/${adminPrefix}/settings`}
               className="p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
               <p className="text-sm font-medium">Settings</p>

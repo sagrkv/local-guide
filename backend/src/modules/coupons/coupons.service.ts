@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
+import { CreditTransactionType } from '@prisma/client';
 
 interface CreateCouponData {
   code: string;
@@ -145,7 +146,7 @@ export const couponsService = {
           data: {
             userId: userId,
             amount: coupon.creditAmount,
-            type: 'COUPON_REDEMPTION',
+            type: CreditTransactionType.COUPON_REDEMPTION,
             description: `Redeemed coupon code: ${coupon.code}`,
             reference: coupon.code,
           },
@@ -183,6 +184,18 @@ export const couponsService = {
             name: true,
             email: true,
           },
+        },
+        redemptions: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: { redeemedAt: 'desc' },
         },
         _count: {
           select: { redemptions: true },
@@ -308,7 +321,7 @@ export const couponsService = {
       prisma.coupon.count({ where: { isActive: true } }),
       prisma.couponRedemption.count(),
       prisma.creditTransaction.aggregate({
-        where: { type: 'COUPON_REDEMPTION' },
+        where: { type: CreditTransactionType.COUPON_REDEMPTION },
         _sum: { amount: true },
       }),
     ]);

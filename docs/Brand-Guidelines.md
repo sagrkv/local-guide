@@ -1,18 +1,18 @@
-# Summer Studios - Brand Guidelines
+# Boko - Brand Guidelines
 
 ## Logo
 
 ### Primary Logo
-The Summer Studios logo consists of the word "SUMMER" wrapped in code brackets `{SUMMER}`.
+The Boko logo consists of the word "SUMMER" wrapped in code brackets `{BOKO}`.
 
 ### Logo Variations
 | File | Usage |
 |------|-------|
-| `summer-studios-logo-dark.svg` | Use on dark backgrounds |
-| `summer-studios-logo-light.svg` | Use on light backgrounds |
-| `summer-studios-full-dark.svg` | Full logo with "STUDIOS" tagline (dark bg) |
-| `summer-studios-full-light.svg` | Full logo with "STUDIOS" tagline (light bg) |
-| `summer-studios-favicon.svg` | Favicon, app icon: `{S}` |
+| `boko-logo-dark.svg` | Use on dark backgrounds |
+| `boko-logo-light.svg` | Use on light backgrounds |
+| `boko-full-dark.svg` | Full logo with "APP" tagline (dark bg) |
+| `boko-full-light.svg` | Full logo with "APP" tagline (light bg) |
+| `boko-favicon.svg` | Favicon, app icon: `{B}` |
 
 ### Clear Space
 Maintain minimum clear space around the logo equal to the height of the brackets.
@@ -88,7 +88,7 @@ Caption:  12px
 
 ### Letter Spacing
 - Logo text: 2px
-- Tagline "STUDIOS": 8px
+- Tagline "APP": 8px
 - Body text: 0
 
 ---
@@ -164,8 +164,8 @@ Caption:  12px
 ### Email Signatures
 ```
 Name
-Role, Summer Studios
-hello@summerstudios.in
+Role, Boko
+hello@boko.app
 ```
 
 ### Business Cards
@@ -191,4 +191,4 @@ hello@summerstudios.in
 ## Contact
 
 For brand questions or additional assets:
-**Email:** hello@summerstudios.in
+**Email:** hello@boko.app

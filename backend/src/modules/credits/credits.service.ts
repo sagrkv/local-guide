@@ -182,4 +182,35 @@ export const creditsService = {
     const balance = await this.getBalance(userId);
     return balance >= requiredAmount;
   },
+
+  /**
+   * Get monthly credit usage stats for a user
+   */
+  async getMonthlyStats(userId: string) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Get all deduction transactions this month
+    const transactions = await prisma.creditTransaction.findMany({
+      where: {
+        userId,
+        createdAt: { gte: startOfMonth },
+        amount: { lt: 0 }, // Only negative amounts (deductions)
+      },
+    });
+
+    // Calculate total credits used (absolute value of negative amounts)
+    const creditsUsed = transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+    // Count scrape-related transactions as leads scraped
+    const leadsScraped = transactions.filter(
+      t => t.type === CreditTransactionType.LEAD_CHARGE || t.description?.toLowerCase().includes('scrape')
+    ).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+    return {
+      creditsUsed,
+      leadsScraped,
+      transactionCount: transactions.length,
+    };
+  },
 };

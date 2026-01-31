@@ -46,7 +46,7 @@ interface UpdateUserData {
   creditBalance?: number;
   isActive?: boolean;
   name?: string;
-  role?: 'ADMIN' | 'SALES_REP';
+  role?: 'ADMIN' | 'USER';
 }
 
 export const adminUsersService = {
@@ -316,5 +316,151 @@ export const adminUsersService = {
     });
 
     return { newBalance: result };
+  },
+
+  /**
+   * Get user activity data for enhanced stats display
+   * Includes 30-day activity, burn rate, last active, and API usage
+   */
+  async getUserActivity(userId: string): Promise<{
+    activityTimeline: Array<{ date: string; scrapeJobs: number; leadsCreated: number; creditsUsed: number }>;
+    creditBurnRate: { daily: number; weekly: number };
+    lastActive: string | null;
+    apiUsage: { total: number; last30Days: number };
+  } | null> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Get activity timeline (last 30 days)
+    const scrapeJobsByDate = await prisma.scrapeJob.groupBy({
+      by: ['createdAt'],
+      where: {
+        createdById: userId,
+        createdAt: { gte: thirtyDaysAgo },
+      },
+      _count: true,
+      _sum: { leadsCreated: true },
+    });
+
+    const creditsByDate = await prisma.creditTransaction.groupBy({
+      by: ['createdAt'],
+      where: {
+        userId,
+        createdAt: { gte: thirtyDaysAgo },
+        amount: { lt: 0 }, // Only deductions (usage)
+      },
+      _sum: { amount: true },
+    });
+
+    // Build timeline for last 30 days
+    const timeline: Array<{ date: string; scrapeJobs: number; leadsCreated: number; creditsUsed: number }> = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const jobsForDay = scrapeJobsByDate.filter(
+        j => j.createdAt.toISOString().split('T')[0] === dateStr
+      );
+      const creditsForDay = creditsByDate.filter(
+        c => c.createdAt.toISOString().split('T')[0] === dateStr
+      );
+
+      timeline.push({
+        date: dateStr,
+        scrapeJobs: jobsForDay.reduce((sum, j) => sum + j._count, 0),
+        leadsCreated: jobsForDay.reduce((sum, j) => sum + (j._sum.leadsCreated || 0), 0),
+        creditsUsed: Math.abs(creditsForDay.reduce((sum, c) => sum + (c._sum.amount || 0), 0)),
+      });
+    }
+
+    // Calculate credit burn rate
+    const last30DaysUsage = await prisma.creditTransaction.aggregate({
+      where: {
+        userId,
+        createdAt: { gte: thirtyDaysAgo },
+        amount: { lt: 0 },
+      },
+      _sum: { amount: true },
+    });
+
+    const last7DaysUsage = await prisma.creditTransaction.aggregate({
+      where: {
+        userId,
+        createdAt: { gte: sevenDaysAgo },
+        amount: { lt: 0 },
+      },
+      _sum: { amount: true },
+    });
+
+    const dailyBurn = Math.abs(last30DaysUsage._sum.amount || 0) / 30;
+    const weeklyBurn = Math.abs(last7DaysUsage._sum.amount || 0);
+
+    // Get last active (most recent scrape job or transaction)
+    const lastJob = await prisma.scrapeJob.findFirst({
+      where: { createdById: userId },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+
+    const lastTransaction = await prisma.creditTransaction.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+
+    let lastActive: string | null = null;
+    if (lastJob && lastTransaction) {
+      lastActive = lastJob.createdAt > lastTransaction.createdAt
+        ? lastJob.createdAt.toISOString()
+        : lastTransaction.createdAt.toISOString();
+    } else if (lastJob) {
+      lastActive = lastJob.createdAt.toISOString();
+    } else if (lastTransaction) {
+      lastActive = lastTransaction.createdAt.toISOString();
+    }
+
+    // Get API usage (from ApiCallLog if exists)
+    let totalApiCalls = 0;
+    let last30DaysApiCalls = 0;
+    try {
+      const apiCounts = await prisma.apiCallLog.aggregate({
+        where: { scrapeJob: { createdById: userId } },
+        _count: true,
+      });
+      totalApiCalls = apiCounts._count;
+
+      const recentApiCounts = await prisma.apiCallLog.aggregate({
+        where: {
+          scrapeJob: { createdById: userId },
+          createdAt: { gte: thirtyDaysAgo },
+        },
+        _count: true,
+      });
+      last30DaysApiCalls = recentApiCounts._count;
+    } catch {
+      // ApiCallLog might not exist or have different structure
+    }
+
+    return {
+      activityTimeline: timeline,
+      creditBurnRate: {
+        daily: Math.round(dailyBurn * 10) / 10,
+        weekly: Math.round(weeklyBurn),
+      },
+      lastActive,
+      apiUsage: {
+        total: totalApiCalls,
+        last30Days: last30DaysApiCalls,
+      },
+    };
   },
 };

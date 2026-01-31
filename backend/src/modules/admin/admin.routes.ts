@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { adminUsersService } from './admin-users.service.js';
 import { adminAnalyticsService } from './admin-analytics.service.js';
+import { prisma } from '../../lib/prisma.js';
 
 // Validation schemas
 const listUsersQuerySchema = z.object({
@@ -13,7 +14,7 @@ const listUsersQuerySchema = z.object({
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
-  role: z.enum(['ADMIN', 'SALES_REP']).optional(),
+  role: z.enum(['ADMIN', 'USER']).optional(),
   creditBalance: z.number().int().min(0).optional(),
 });
 
@@ -95,6 +96,19 @@ export async function adminRoutes(fastify: FastifyInstance) {
     }
 
     return user;
+  });
+
+  // GET /api/admin/users/:id/activity - Get user activity data (sparkline, burn rate, etc.)
+  fastify.get('/users/:id/activity', async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    const activity = await adminUsersService.getUserActivity(id);
+
+    if (!activity) {
+      return reply.status(404).send({ error: 'User not found' });
+    }
+
+    return activity;
   });
 
   // PATCH /api/admin/users/:id - Update user
@@ -233,4 +247,185 @@ export async function adminRoutes(fastify: FastifyInstance) {
   fastify.get('/analytics/geography', async () => {
     return adminAnalyticsService.getGeographicDistribution();
   });
+
+  // ============================================
+  // Saved Regions Routes (Admin view of all user-saved regions)
+  // ============================================
+
+  // GET /api/admin/saved-regions - List all saved regions across all users
+  fastify.get('/saved-regions', async () => {
+    const regions = await prisma.savedRegion.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { regions };
+  });
+
+  // ============================================
+  // Job Monitor Routes (Admin view of all scrape jobs)
+  // ============================================
+
+  const jobsQuerySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+    status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED']).optional(),
+    userId: z.string().optional(),
+  });
+
+  // GET /api/admin/jobs - List all scrape jobs with owner info
+  fastify.get('/jobs', async (request) => {
+    const query = jobsQuerySchema.parse(request.query);
+    const skip = (query.page - 1) * query.limit;
+
+    const where: Record<string, unknown> = {};
+    if (query.status) where.status = query.status;
+    if (query.userId) where.createdById = query.userId;
+
+    const [jobs, total] = await Promise.all([
+      prisma.scrapeJob.findMany({
+        where,
+        skip,
+        take: query.limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          region: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+      prisma.scrapeJob.count({ where }),
+    ]);
+
+    return {
+      jobs,
+      pagination: {
+        total,
+        page: query.page,
+        limit: query.limit,
+        totalPages: Math.ceil(total / query.limit),
+      },
+    };
+  });
+
+  // GET /api/admin/jobs/stats - Get job statistics for admin dashboard
+  fastify.get('/jobs/stats', async () => {
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const [total, pending, running, completed, failed, last24h] = await Promise.all([
+      prisma.scrapeJob.count(),
+      prisma.scrapeJob.count({ where: { status: 'PENDING' } }),
+      prisma.scrapeJob.count({ where: { status: 'RUNNING' } }),
+      prisma.scrapeJob.count({ where: { status: 'COMPLETED' } }),
+      prisma.scrapeJob.count({ where: { status: 'FAILED' } }),
+      prisma.scrapeJob.aggregate({
+        where: {
+          createdAt: { gte: oneDayAgo },
+        },
+        _count: true,
+        _sum: { leadsCreated: true },
+      }),
+    ]);
+
+    return {
+      total,
+      pending,
+      running,
+      completed,
+      failed,
+      last24h: {
+        jobs: last24h._count,
+        leadsCreated: last24h._sum.leadsCreated || 0,
+      },
+    };
+  });
+
+  // ============================================
+  // Health Metrics Routes
+  // ============================================
+
+  // GET /api/admin/health-metrics - Get system health metrics
+  fastify.get('/health-metrics', async () => {
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Get queue stats from scrape jobs
+    const [activeJobs, pendingJobs, completedJobs, failedJobs] = await Promise.all([
+      prisma.scrapeJob.count({ where: { status: 'PROCESSING' } }),
+      prisma.scrapeJob.count({ where: { status: 'PENDING' } }),
+      prisma.scrapeJob.count({ where: { status: 'COMPLETED', updatedAt: { gte: oneDayAgo } } }),
+      prisma.scrapeJob.count({ where: { status: 'FAILED', updatedAt: { gte: oneDayAgo } } }),
+    ]);
+
+    // Get API error rate from ApiCallLog (last 24h)
+    let apiErrorRate = 0;
+    let avgResponseTime = 0;
+    try {
+      const [totalCalls, failedCalls, responseTimeAgg] = await Promise.all([
+        prisma.apiCallLog.count({ where: { createdAt: { gte: oneDayAgo } } }),
+        prisma.apiCallLog.count({ where: { createdAt: { gte: oneDayAgo }, success: false } }),
+        prisma.apiCallLog.aggregate({
+          where: { createdAt: { gte: oneDayAgo } },
+          _avg: { responseTimeMs: true },
+        }),
+      ]);
+      apiErrorRate = totalCalls > 0 ? Math.round((failedCalls / totalCalls) * 100 * 10) / 10 : 0;
+      avgResponseTime = Math.round(responseTimeAgg._avg.responseTimeMs || 0);
+    } catch {
+      // ApiCallLog might not exist
+    }
+
+    // System metrics
+    const uptime = process.uptime();
+    const memoryUsage = process.memoryUsage();
+
+    return {
+      queue: {
+        active: activeJobs,
+        pending: pendingJobs,
+        completed: completedJobs,
+        failed: failedJobs,
+      },
+      system: {
+        uptime: Math.floor(uptime),
+        uptimeFormatted: formatUptime(uptime),
+        memoryUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+        memoryTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+        memoryPercent: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100),
+      },
+      api: {
+        errorRate: apiErrorRate,
+        avgResponseTime,
+      },
+    };
+  });
+}
+
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
 }

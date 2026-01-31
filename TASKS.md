@@ -1,7 +1,7 @@
-# Summer Studios - Project Tasks
+# Boko - Project Tasks
 
 ## Overview
-Lead Scraping & Management Backend for Summer Studios
+Lead Scraping & Management Backend for Boko
 
 ---
 
@@ -112,7 +112,7 @@ NEXT_PUBLIC_API_URL=https://your-backend.railway.app/api
 
 ## Default Admin Credentials
 After seeding the database:
-- **Email:** admin@summerstudios.in
+- **Email:** admin@boko.app
 - **Password:** admin123
 
 ⚠️ Change this password immediately after first login!

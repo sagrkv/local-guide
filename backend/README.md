@@ -1,6 +1,6 @@
-# Summer Studios Lead Management Backend
+# Boko Lead Management Backend
 
-A backend system for Summer Studios to automate lead generation through web scraping and manage leads through a CRM pipeline.
+A backend system for Boko to automate lead generation through web scraping and manage leads through a CRM pipeline.
 
 ## Tech Stack
 
@@ -97,7 +97,7 @@ npm run start
 
 After running the seed:
 
-- Email: `admin@summerstudios.in`
+- Email: `admin@boko.app`
 - Password: `admin123`
 
 **Important**: Change these credentials in production!

@@ -37,7 +37,7 @@ const frontendUrl = getRequiredEnv("FRONTEND_URL", "http://localhost:3000");
 // Database URL - required (no safe default)
 const databaseUrl = getRequiredEnv(
   "DATABASE_URL",
-  "postgresql://localhost:5432/quadrant-a",
+  "postgresql://localhost:5432/boko",
 );
 
 // JWT Secret - required in production (insecure default only for dev)

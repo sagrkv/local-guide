@@ -131,7 +131,7 @@ export default function AboutPage() {
               <h2 className="text-3xl lg:text-4xl font-bold mb-6">Our Story</h2>
               <div className="space-y-4 text-[var(--gray-400)] text-lg leading-relaxed">
                 <p>
-                  Quadrant A started with a simple frustration: finding quality B2B
+                  Boko started with a simple frustration: finding quality B2B
                   leads was too expensive and time-consuming for growing
                   businesses.
                 </p>
@@ -174,7 +174,7 @@ export default function AboutPage() {
                 </div>
 
                 <span className="text-6xl md:text-[8rem] lg:text-[12rem] font-bold text-[var(--accent)]/20 relative z-10">
-                  {`{S}`}
+                  {`{B}`}
                 </span>
 
                 {/* Glow */}

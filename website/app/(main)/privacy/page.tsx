@@ -54,7 +54,7 @@ export default function PrivacyPage() {
             <p className="text-lg text-[var(--gray-400)] leading-relaxed">
               Your privacy is important to us. This policy explains how we
               collect, use, and protect your personal information when you use
-              Quadrant A.
+              Boko.
             </p>
           </motion.div>
         </div>
@@ -234,7 +234,7 @@ export default function PrivacyPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  We use the following third-party services to operate Quadrant A. Each
+                  We use the following third-party services to operate Boko. Each
                   has their own privacy policy:
                 </p>
 
@@ -384,10 +384,10 @@ export default function PrivacyPage() {
                     most of these rights directly through your account settings.
                     For assistance, email{" "}
                     <a
-                      href="mailto:privacy@quadrant.io"
+                      href="mailto:hello@boko.app"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      privacy@quadrant.io
+                      hello@boko.app
                     </a>
                     . We will respond within 30 days.
                   </p>
@@ -553,19 +553,19 @@ export default function PrivacyPage() {
                   <li>
                     <strong className="text-[var(--gray-300)]">Privacy Inquiries:</strong>{" "}
                     <a
-                      href="mailto:privacy@quadrant.io"
+                      href="mailto:hello@boko.app"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      privacy@quadrant.io
+                      hello@boko.app
                     </a>
                   </li>
                   <li>
                     <strong className="text-[var(--gray-300)]">General Support:</strong>{" "}
                     <a
-                      href="mailto:hello@quadrant.io"
+                      href="mailto:hello@boko.app"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      hello@quadrant.io
+                      hello@boko.app
                     </a>
                   </li>
                   <li>
@@ -574,7 +574,7 @@ export default function PrivacyPage() {
                       href="/contact"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      quadrant.io/contact
+                      boko.app/contact
                     </Link>
                   </li>
                 </ul>

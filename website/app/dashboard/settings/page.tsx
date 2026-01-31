@@ -167,25 +167,28 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-4">
-        {/* Main Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="border border-gray-800 rounded-lg bg-gray-900 divide-y divide-gray-800/50"
-        >
-          {/* Profile Section - 4 Column Grid */}
-          <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-gray-200">Profile Information</h2>
-              <span className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-blue-500/10 text-blue-400 capitalize">
-                {user?.role?.toLowerCase() || "user"}
+      {/* Main Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="border border-gray-800 rounded-lg bg-gray-900 divide-y divide-gray-800/50"
+      >
+        {/* Profile Section */}
+        <div className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-gray-200">Profile</h2>
+            <span className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-blue-500/10 text-blue-400 capitalize">
+              {user?.role?.toLowerCase() || "user"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+              <span className="text-xl font-semibold text-accent">
+                {user?.name?.charAt(0).toUpperCase() || "U"}
               </span>
             </div>
-
-            {/* 4 Column Grid for Profile Data */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-500">Name</label>
                 <div className="h-9 px-3 flex items-center rounded-md border border-gray-800 bg-gray-800/50 text-[13px] text-gray-200">
@@ -205,245 +208,124 @@ export default function SettingsPage() {
                     ? new Date(user.createdAt).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
-                        day: "numeric",
                       })
                     : "N/A"}
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500">Avatar</label>
-                <div className="h-9 px-3 flex items-center gap-2 rounded-md border border-gray-800 bg-gray-800/50">
-                  <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
-                    <span className="text-xs font-semibold text-accent">
-                      {user?.name?.charAt(0).toUpperCase() || "U"}
-                    </span>
-                  </div>
-                  <span className="text-[13px] text-gray-400">Change</span>
-                </div>
-              </div>
             </div>
           </div>
+        </div>
 
-          {/* Password Section - Inline Fields */}
-          <form onSubmit={handlePasswordChange} className="p-4 space-y-3">
-            <h2 className="text-sm font-medium text-gray-200">Change Password</h2>
+        {/* Password Section */}
+        <form onSubmit={handlePasswordChange} className="p-4 space-y-3">
+          <h2 className="text-sm font-medium text-gray-200">Change Password</h2>
 
-            {/* Password Fields - All Inline */}
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="space-y-1 flex-1 min-w-[150px]">
-                <label className="text-xs font-medium text-gray-500">Current *</label>
-                <input
-                  type="password"
-                  value={passwordForm.currentPassword}
-                  onChange={(e) =>
-                    setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
-                  }
-                  className="w-full h-9 px-3 rounded-md border border-gray-800 bg-gray-900 text-[13px] text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-700"
-                  placeholder="Current"
-                  required
-                />
-              </div>
-              <div className="space-y-1 flex-1 min-w-[150px]">
-                <label className="text-xs font-medium text-gray-500">New *</label>
-                <input
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) =>
-                    setPasswordForm({ ...passwordForm, newPassword: e.target.value })
-                  }
-                  className="w-full h-9 px-3 rounded-md border border-gray-800 bg-gray-900 text-[13px] text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-700"
-                  placeholder="New password"
-                  minLength={8}
-                  required
-                />
-              </div>
-              <div className="space-y-1 flex-1 min-w-[150px]">
-                <label className="text-xs font-medium text-gray-500">Confirm *</label>
-                <input
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
-                  }
-                  className="w-full h-9 px-3 rounded-md border border-gray-800 bg-gray-900 text-[13px] text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-700"
-                  placeholder="Confirm"
-                  minLength={8}
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={changingPassword}
-                className="h-9 px-4 rounded-md bg-white text-gray-900 hover:bg-gray-100 disabled:bg-gray-700 disabled:text-gray-500 text-[13px] font-medium transition-colors disabled:cursor-not-allowed inline-flex items-center gap-1.5"
-              >
-                {changingPassword ? (
-                  <>
-                    <LoadingSpinner className="h-3.5 w-3.5" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <LockIcon className="h-3.5 w-3.5" />
-                    Update
-                  </>
-                )}
-              </button>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1 flex-1 min-w-[140px]">
+              <label className="text-xs font-medium text-gray-500">Current</label>
+              <input
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(e) =>
+                  setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                }
+                className="w-full h-9 px-3 rounded-md border border-gray-800 bg-gray-900 text-[13px] text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-700"
+                placeholder="Current"
+                required
+              />
             </div>
-          </form>
+            <div className="space-y-1 flex-1 min-w-[140px]">
+              <label className="text-xs font-medium text-gray-500">New</label>
+              <input
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) =>
+                  setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                }
+                className="w-full h-9 px-3 rounded-md border border-gray-800 bg-gray-900 text-[13px] text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-700"
+                placeholder="New password"
+                minLength={8}
+                required
+              />
+            </div>
+            <div className="space-y-1 flex-1 min-w-[140px]">
+              <label className="text-xs font-medium text-gray-500">Confirm</label>
+              <input
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) =>
+                  setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                }
+                className="w-full h-9 px-3 rounded-md border border-gray-800 bg-gray-900 text-[13px] text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-700"
+                placeholder="Confirm"
+                minLength={8}
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={changingPassword}
+              className="h-9 px-4 rounded-md bg-white text-gray-900 hover:bg-gray-100 disabled:bg-gray-700 disabled:text-gray-500 text-[13px] font-medium transition-colors disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+            >
+              {changingPassword ? (
+                <>
+                  <LoadingSpinner className="h-3.5 w-3.5" />
+                  Updating...
+                </>
+              ) : (
+                "Update"
+              )}
+            </button>
+          </div>
+        </form>
 
-          {/* Privacy & Data Section */}
-          <div className="p-4 space-y-3">
+        {/* Privacy & Data Section */}
+        <div className="p-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldIcon className="h-4 w-4 text-accent" />
               <h2 className="text-sm font-medium text-gray-200">Privacy & Data</h2>
             </div>
-
-            {/* Data Actions - Horizontal */}
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={handleExportData}
-                disabled={exportingData}
-                className="h-9 px-3 rounded-md border border-gray-700 text-[13px] text-gray-300 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
-              >
-                {exportingData ? (
-                  <>
-                    <LoadingSpinner className="h-3.5 w-3.5" />
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    <DownloadIcon className="h-3.5 w-3.5" />
-                    Export Data
-                  </>
-                )}
-              </button>
-
-              {/* Data Rights Badges */}
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-800/50">
-                  <CheckIcon className="h-3 w-3 text-emerald-400" />
-                  Access
-                </span>
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-800/50">
-                  <CheckIcon className="h-3 w-3 text-emerald-400" />
-                  Portability
-                </span>
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-800/50">
-                  <CheckIcon className="h-3 w-3 text-emerald-400" />
-                  Erasure
-                </span>
-              </div>
-            </div>
+            <button
+              onClick={handleExportData}
+              disabled={exportingData}
+              className="h-9 px-3 rounded-md border border-gray-700 text-[13px] text-gray-300 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+            >
+              {exportingData ? (
+                <>
+                  <LoadingSpinner className="h-3.5 w-3.5" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <DownloadIcon className="h-3.5 w-3.5" />
+                  Export Data
+                </>
+              )}
+            </button>
           </div>
+        </div>
 
-          {/* Danger Zone */}
-          <div className="p-4 bg-red-500/5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <WarningIcon className="h-4 w-4 text-red-400" />
-                <div>
-                  <div className="text-[13px] font-medium text-gray-300">Delete Account</div>
-                  <div className="text-xs text-gray-500">Permanent deletion with 30-day grace period</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="h-9 px-3 rounded-md border border-red-500/30 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors inline-flex items-center gap-1.5"
-              >
-                <TrashIcon className="h-3.5 w-3.5" />
-                Delete
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Sidebar */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="space-y-4"
-        >
-          {/* Account Summary Card */}
-          <div className="border border-gray-800 rounded-lg bg-gray-900 p-4 space-y-3">
-            <h3 className="text-sm font-medium text-gray-200">Account Summary</h3>
-
+        {/* Danger Zone */}
+        <div className="p-4 bg-red-500/5">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
-                <span className="text-xl font-semibold text-accent">
-                  {user?.name?.charAt(0).toUpperCase() || "U"}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-medium text-gray-100 truncate">{user?.name || "User"}</div>
-                <div className="text-xs text-gray-500 truncate">{user?.email}</div>
+              <WarningIcon className="h-4 w-4 text-red-400" />
+              <div>
+                <div className="text-[13px] font-medium text-gray-300">Delete Account</div>
+                <div className="text-xs text-gray-500">30-day grace period before permanent deletion</div>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-800/50">
-              <div className="p-2 rounded bg-gray-800/30">
-                <div className="text-xs text-gray-500">Status</div>
-                <div className="text-[13px] font-medium text-emerald-400">Active</div>
-              </div>
-              <div className="p-2 rounded bg-gray-800/30">
-                <div className="text-xs text-gray-500">Role</div>
-                <div className="text-[13px] font-medium text-gray-200 capitalize">{user?.role?.toLowerCase() || "User"}</div>
-              </div>
-            </div>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="h-9 px-3 rounded-md border border-red-500/30 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors inline-flex items-center gap-1.5"
+            >
+              <TrashIcon className="h-3.5 w-3.5" />
+              Delete
+            </button>
           </div>
-
-          {/* Quick Links Card */}
-          <div className="border border-gray-800 rounded-lg bg-gray-900 p-4 space-y-2">
-            <h3 className="text-sm font-medium text-gray-200">Quick Links</h3>
-
-            <div className="space-y-1">
-              <Link
-                href="/dashboard/settings/credits"
-                className="flex items-center justify-between h-9 px-3 rounded-md hover:bg-gray-800/50 transition-colors group"
-              >
-                <span className="text-[13px] text-gray-400 group-hover:text-white">Credit Balance</span>
-                <ChevronRightIcon className="h-4 w-4 text-gray-600 group-hover:text-gray-400" />
-              </Link>
-              <Link
-                href="/dashboard"
-                className="flex items-center justify-between h-9 px-3 rounded-md hover:bg-gray-800/50 transition-colors group"
-              >
-                <span className="text-[13px] text-gray-400 group-hover:text-white">Dashboard</span>
-                <ChevronRightIcon className="h-4 w-4 text-gray-600 group-hover:text-gray-400" />
-              </Link>
-              <Link
-                href="/dashboard/leads"
-                className="flex items-center justify-between h-9 px-3 rounded-md hover:bg-gray-800/50 transition-colors group"
-              >
-                <span className="text-[13px] text-gray-400 group-hover:text-white">My Leads</span>
-                <ChevronRightIcon className="h-4 w-4 text-gray-600 group-hover:text-gray-400" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Security Card */}
-          <div className="border border-gray-800 rounded-lg bg-gray-900 p-4 space-y-2">
-            <h3 className="text-sm font-medium text-gray-200">Security</h3>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between py-1">
-                <span className="text-[13px] text-gray-400">Two-factor auth</span>
-                <span className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-400">
-                  Not enabled
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="text-[13px] text-gray-400">Last login</span>
-                <span className="text-[13px] text-gray-300">Today</span>
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="text-[13px] text-gray-400">Sessions</span>
-                <span className="text-[13px] text-gray-300">1 active</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
       {/* Delete Account Modal */}
       <AnimatePresence>
@@ -565,14 +447,6 @@ function LoadingSpinner({ className }: { className?: string }) {
   );
 }
 
-function LockIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  );
-}
-
 function ShieldIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -585,14 +459,6 @@ function DownloadIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
     </svg>
   );
 }
@@ -617,14 +483,6 @@ function TrashIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
     </svg>
   );
 }

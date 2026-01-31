@@ -41,7 +41,7 @@ export async function login(email: string, password: string): Promise<AuthToken>
  */
 export async function getAdminToken(): Promise<string> {
   if (!cachedAdminToken) {
-    cachedAdminToken = await login('admin@quadrant-a.io', 'admin123');
+    cachedAdminToken = await login('admin@boko.app', 'admin123');
   }
   return cachedAdminToken.token;
 }
@@ -51,7 +51,7 @@ export async function getAdminToken(): Promise<string> {
  */
 export async function getAdminUser(): Promise<AuthToken['user']> {
   if (!cachedAdminToken) {
-    cachedAdminToken = await login('admin@quadrant-a.io', 'admin123');
+    cachedAdminToken = await login('admin@boko.app', 'admin123');
   }
   return cachedAdminToken.user;
 }

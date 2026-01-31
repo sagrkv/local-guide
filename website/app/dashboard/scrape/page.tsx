@@ -307,10 +307,12 @@ function JobCard({
   job,
   index,
   onCancel,
+  progress,
 }: {
   job: ScrapeJob;
   index: number;
   onCancel: (id: string) => void;
+  progress?: JobProgress;
 }) {
   const isActive = job.status === "RUNNING" || job.status === "PENDING";
 

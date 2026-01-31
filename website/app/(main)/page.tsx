@@ -335,7 +335,7 @@ export default function Home() {
       role: "Founder, WebCraft Agency",
     },
     {
-      quote: "The AI sales intelligence is a game-changer. We closed 3 deals in the first week just from the insights Quadrant A provided about each prospect.",
+      quote: "The AI sales intelligence is a game-changer. We closed 3 deals in the first week just from the insights Boko provided about each prospect.",
       author: "Priya M.",
       role: "Sales Lead, Digital Solutions",
     },
@@ -477,7 +477,7 @@ export default function Home() {
               <span className="text-gradient">find perfect leads</span>
             </h2>
             <p className="text-[var(--gray-400)] max-w-2xl mx-auto">
-              From discovery to deal close, Quadrant A gives you the tools to find, qualify, and convert B2B leads in India.
+              From discovery to deal close, Boko gives you the tools to find, qualify, and convert B2B leads in India.
             </p>
           </motion.div>
 

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { apiClient } from '@/lib/api-client';
 
 interface ServiceStatus {
   name: string;
@@ -10,23 +12,48 @@ interface ServiceStatus {
   required: boolean;
 }
 
+interface HealthMetrics {
+  queue: {
+    active: number;
+    pending: number;
+    completed: number;
+    failed: number;
+  };
+  system: {
+    uptime: number;
+    uptimeFormatted: string;
+    memoryUsed: number;
+    memoryTotal: number;
+    memoryPercent: number;
+  };
+  api: {
+    errorRate: number;
+    avgResponseTime: number;
+  };
+}
+
 export default function StatusPage() {
+  const params = useParams();
+  const adminPrefix = params.adminPrefix as string;
   const [services, setServices] = useState<ServiceStatus[]>([
     { name: 'Backend API', status: 'checking', message: 'Checking...', required: true },
   ]);
   const [apiUrl, setApiUrl] = useState<string>('');
+  const [healthMetrics, setHealthMetrics] = useState<HealthMetrics | null>(null);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
     setApiUrl(url);
 
     // Check backend connection
-    checkBackendHealth(url);
+    // Health endpoint is at root level, not under /api
+    const baseUrl = url.replace(/\/api\/?$/, '');
+    checkBackendHealth(baseUrl);
   }, []);
 
-  const checkBackendHealth = async (url: string) => {
+  const checkBackendHealth = async (baseUrl: string) => {
     try {
-      const response = await fetch(`${url}/health`, {
+      const response = await fetch(`${baseUrl}/health`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000),
       });
@@ -37,7 +64,7 @@ export default function StatusPage() {
           {
             name: 'Backend API',
             status: 'connected',
-            message: `Connected to ${url}`,
+            message: `Connected to ${baseUrl}`,
             required: true,
           },
           {
@@ -53,6 +80,14 @@ export default function StatusPage() {
             required: false,
           },
         ]);
+
+        // Fetch health metrics if backend is connected
+        try {
+          const metrics = await apiClient.getAdminHealthMetrics();
+          setHealthMetrics(metrics);
+        } catch {
+          // Health metrics endpoint might not be available yet
+        }
       } else {
         setServices([
           {
@@ -68,7 +103,7 @@ export default function StatusPage() {
         {
           name: 'Backend API',
           status: 'error',
-          message: `Cannot connect to backend at ${url}`,
+          message: `Cannot connect to backend at ${baseUrl}`,
           required: true,
         },
       ]);
@@ -109,7 +144,7 @@ export default function StatusPage() {
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
         <Link
-          href="/admin"
+          href={`/${adminPrefix}`}
           className="text-sm text-gray-400 hover:text-white transition-colors mb-2 inline-block"
         >
           ← Back to Dashboard
@@ -154,6 +189,102 @@ export default function StatusPage() {
           ))}
         </div>
       </div>
+
+      {/* Health Metrics */}
+      {healthMetrics && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Queue Stats */}
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+              </svg>
+              Queue Stats (24h)
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-700/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Active</p>
+                <p className="text-xl font-bold text-yellow-400">{healthMetrics.queue.active}</p>
+              </div>
+              <div className="bg-gray-700/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Pending</p>
+                <p className="text-xl font-bold text-blue-400">{healthMetrics.queue.pending}</p>
+              </div>
+              <div className="bg-gray-700/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Completed</p>
+                <p className="text-xl font-bold text-green-400">{healthMetrics.queue.completed}</p>
+              </div>
+              <div className="bg-gray-700/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Failed</p>
+                <p className="text-xl font-bold text-red-400">{healthMetrics.queue.failed}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* System Metrics */}
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+              </svg>
+              System Metrics
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-400">Uptime</span>
+                  <span className="text-white font-medium">{healthMetrics.system.uptimeFormatted}</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-400">Memory</span>
+                  <span className="text-white font-medium">
+                    {healthMetrics.system.memoryUsed}MB / {healthMetrics.system.memoryTotal}MB
+                  </span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full ${
+                      healthMetrics.system.memoryPercent > 80
+                        ? 'bg-red-500'
+                        : healthMetrics.system.memoryPercent > 60
+                        ? 'bg-yellow-500'
+                        : 'bg-green-500'
+                    }`}
+                    style={{ width: `${healthMetrics.system.memoryPercent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* API Stats */}
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              API Stats (24h)
+            </h2>
+            <div className="space-y-4">
+              <div className="bg-gray-700/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Error Rate</p>
+                <p className={`text-xl font-bold ${
+                  healthMetrics.api.errorRate > 5 ? 'text-red-400' :
+                  healthMetrics.api.errorRate > 1 ? 'text-yellow-400' : 'text-green-400'
+                }`}>
+                  {healthMetrics.api.errorRate}%
+                </p>
+              </div>
+              <div className="bg-gray-700/50 rounded-lg p-3">
+                <p className="text-xs text-gray-400">Avg Response Time</p>
+                <p className="text-xl font-bold text-white">{healthMetrics.api.avgResponseTime}ms</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Current Configuration */}
       <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">

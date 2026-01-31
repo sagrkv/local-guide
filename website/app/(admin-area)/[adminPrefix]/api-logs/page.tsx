@@ -54,6 +54,8 @@ function parseMetadata(metadata: string | null): ParsedMetadata | null {
   }
 }
 
+type DateRange = "today" | "7days" | "30days" | "custom";
+
 export default function ApiLogsPage() {
   const [stats, setStats] = useState<ApiStats | null>(null);
   const [logs, setLogs] = useState<ApiLog[]>([]);
@@ -62,28 +64,120 @@ export default function ApiLogsPage() {
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange>("7days");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+
+  // Get date range for API call
+  const getDateParams = () => {
+    const now = new Date();
+    let startDate: string | undefined;
+    let endDate: string | undefined;
+
+    switch (dateRange) {
+      case "today":
+        startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+        break;
+      case "7days":
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        break;
+      case "30days":
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        break;
+      case "custom":
+        if (customStartDate) startDate = new Date(customStartDate).toISOString();
+        if (customEndDate) endDate = new Date(customEndDate + "T23:59:59").toISOString();
+        break;
+    }
+
+    return { startDate, endDate };
+  };
+
+  // Export logs to CSV
+  const exportToCSV = () => {
+    if (logs.length === 0) return;
+
+    const headers = [
+      "Date",
+      "Time",
+      "Provider",
+      "Endpoint",
+      "Status Code",
+      "Success",
+      "Response Time (ms)",
+      "Estimated Cost",
+      "Error",
+      "Business Name",
+      "City",
+    ];
+
+    const rows = logs.map((log) => {
+      const metadata = parseMetadata(log.metadata);
+      const date = new Date(log.createdAt);
+      return [
+        date.toLocaleDateString(),
+        date.toLocaleTimeString(),
+        log.provider,
+        log.endpoint,
+        log.statusCode,
+        log.success ? "Yes" : "No",
+        log.responseTimeMs,
+        log.estimatedCost?.toFixed(4) || "",
+        log.error || "",
+        metadata?.businessName || "",
+        metadata?.city || "",
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `api-logs-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+  };
 
   const fetchData = useCallback(async () => {
     try {
+      const { startDate, endDate } = getDateParams();
       const [statsData, logsData] = await Promise.all([
-        apiClient.getApiLogsStats(
-          selectedProvider ? { provider: selectedProvider } : undefined,
-        ),
-        apiClient.getRecentApiLogs(200),
+        apiClient.getApiLogsStats({
+          provider: selectedProvider || undefined,
+          startDate,
+          endDate,
+        }),
+        apiClient.getRecentApiLogs(500),
       ]);
       setStats(statsData);
-      setLogs(
-        selectedProvider
-          ? logsData.logs.filter((l) => l.provider === selectedProvider)
-          : logsData.logs,
-      );
+
+      // Filter logs by provider and date range
+      let filteredLogs = logsData.logs;
+      if (selectedProvider) {
+        filteredLogs = filteredLogs.filter((l) => l.provider === selectedProvider);
+      }
+      if (startDate) {
+        const start = new Date(startDate);
+        filteredLogs = filteredLogs.filter((l) => new Date(l.createdAt) >= start);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        filteredLogs = filteredLogs.filter((l) => new Date(l.createdAt) <= end);
+      }
+
+      setLogs(filteredLogs);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load API logs");
     } finally {
       setLoading(false);
     }
-  }, [selectedProvider]);
+  }, [selectedProvider, dateRange, customStartDate, customEndDate]);
 
   useEffect(() => {
     fetchData();
@@ -123,28 +217,86 @@ export default function ApiLogsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">API Call Logs</h1>
-          <p className="text-zinc-400 mt-1">
-            Monitor external API calls and costs
-          </p>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">API Call Logs</h1>
+            <p className="text-zinc-400 mt-1">
+              Monitor external API calls and costs
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-zinc-400">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="rounded border-zinc-600 bg-zinc-800 text-indigo-500 focus:ring-indigo-500"
+              />
+              Auto-refresh
+            </label>
+            <button
+              onClick={fetchData}
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-zinc-400">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded border-zinc-600 bg-zinc-800 text-indigo-500 focus:ring-indigo-500"
-            />
-            Auto-refresh
-          </label>
+
+        {/* Date Range Filter */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-1 p-1 bg-zinc-800/50 rounded-lg">
+            {(["today", "7days", "30days", "custom"] as DateRange[]).map((range) => (
+              <button
+                key={range}
+                onClick={() => setDateRange(range)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  dateRange === range
+                    ? "bg-zinc-700 text-white"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                {range === "today"
+                  ? "Today"
+                  : range === "7days"
+                  ? "7 Days"
+                  : range === "30days"
+                  ? "30 Days"
+                  : "Custom"}
+              </button>
+            ))}
+          </div>
+
+          {dateRange === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+              />
+              <span className="text-zinc-500">to</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          )}
+
+          <div className="flex-1" />
+
           <button
-            onClick={fetchData}
-            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
+            onClick={exportToCSV}
+            disabled={logs.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-lg transition-colors"
           >
-            Refresh
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export CSV
           </button>
         </div>
       </div>

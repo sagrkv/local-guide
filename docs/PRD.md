@@ -1,13 +1,13 @@
-# Quadrant A - Product Requirements Document
+# Boko - Product Requirements Document
 
 ## Executive Summary
 
-**Product Name:** Quadrant A
+**Product Name:** Boko
 **Tagline:** Powerful B2B Lead Generation SaaS
 **Version:** 1.0 (MVP)
 **Last Updated:** January 2026
 
-Quadrant A is a B2B lead generation SaaS platform that enables businesses to discover, qualify, and manage leads through automated web scraping, technical analysis (Lighthouse), and sales intelligence. The platform operates on a credit-based system with coupon distribution for early adopters.
+Boko is a B2B lead generation SaaS platform that enables businesses to discover, qualify, and manage leads through automated web scraping, technical analysis (Lighthouse), and sales intelligence. The platform operates on a credit-based system with coupon distribution for early adopters.
 
 ---
 
@@ -46,7 +46,7 @@ Finding quality B2B leads is expensive and time-consuming. Existing tools are ei
 - Lacking website quality analysis for sales qualification
 
 ### Solution
-Quadrant A provides an affordable, focused lead generation tool that:
+Boko provides an affordable, focused lead generation tool that:
 - Automates lead discovery through Google Maps and web scraping
 - Qualifies leads based on website quality (Lighthouse scores)
 - Enriches leads with sales intelligence
@@ -2276,11 +2276,11 @@ node -e "console.log('nucleus-admin-' + require('crypto').randomBytes(4).toStrin
 ## Appendix C: Welcome Email Template
 
 ```
-Subject: Welcome to Quadrant A - Let's find some leads!
+Subject: Welcome to Boko - Let's find some leads!
 
 Hi {name},
 
-Welcome to Quadrant A! You're all set to start discovering B2B leads.
+Welcome to Boko! You're all set to start discovering B2B leads.
 
 Your account:
 - Email: {email}
@@ -2297,7 +2297,7 @@ Need credits? Enter a coupon code in your dashboard, or contact us on WhatsApp: 
 Questions? Just reply to this email.
 
 Happy prospecting!
-The Quadrant A Team
+The Boko Team
 ```
 
 ---

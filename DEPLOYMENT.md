@@ -1,6 +1,6 @@
 # Railway Deployment Guide
 
-This guide walks you through deploying Summer Studios to Railway.
+This guide walks you through deploying Boko to Railway.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ This guide walks you through deploying Summer Studios to Railway.
 
 1. Go to [Railway Dashboard](https://railway.app/dashboard)
 2. Click **New Project** → **Deploy from GitHub repo**
-3. Select your Summer Studios repository
+3. Select your Boko repository
 
 ### 2. Add Database (PostgreSQL)
 
@@ -149,7 +149,7 @@ npx prisma migrate deploy
 ### Default Login Credentials
 
 After first deployment, the database is seeded with:
-- **Email**: `admin@summerstudios.in`
+- **Email**: `admin@boko.app`
 - **Password**: `admin123`
 
 **Important**: Change these credentials immediately after first login!

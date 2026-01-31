@@ -38,7 +38,7 @@ export default function Header({
           <Link href="/dashboard" className="inline-block">
             <span className="font-semibold">
               <span className="text-accent">[</span>
-              Quadrant A
+              Boko
               <span className="text-accent">]</span>
             </span>
           </Link>

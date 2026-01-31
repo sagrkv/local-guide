@@ -63,7 +63,7 @@ export default function DashboardLayout({
             id: "",
             name: clerkUser.fullName ?? clerkUser.firstName ?? "User",
             email: clerkUser.primaryEmailAddress?.emailAddress ?? "",
-            role: "SALES_REP",
+            role: "USER",
             imageUrl: clerkUser.imageUrl,
           });
         } else {

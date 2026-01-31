@@ -1,6 +1,6 @@
 # Railway Deployment Guide
 
-This document covers deploying the Summer Studios backend to Railway, including common issues and their solutions.
+This document covers deploying the Boko backend to Railway, including common issues and their solutions.
 
 ## Prerequisites
 

@@ -83,7 +83,7 @@ export default function Sidebar({
           <Link href="/dashboard" className="block">
             <h1 className="text-xl font-bold">
               <span className="text-accent">[</span>
-              Quadrant A
+              Boko
               <span className="text-accent">]</span>
             </h1>
           </Link>

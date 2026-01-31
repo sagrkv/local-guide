@@ -39,4 +39,17 @@ export async function creditsRoutes(fastify: FastifyInstance) {
 
     return result;
   });
+
+  // Get monthly credit usage stats
+  fastify.get('/monthly-stats', async (request, reply) => {
+    try {
+      const stats = await creditsService.getMonthlyStats(request.user.userId);
+      return stats;
+    } catch (error) {
+      if ((error as Error).message === 'User not found') {
+        return reply.status(404).send({ error: 'User not found' });
+      }
+      throw error;
+    }
+  });
 }

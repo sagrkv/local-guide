@@ -46,6 +46,24 @@ interface UserDetails extends User {
   }>;
 }
 
+interface UserActivity {
+  activityTimeline: Array<{
+    date: string;
+    scrapeJobs: number;
+    leadsCreated: number;
+    creditsUsed: number;
+  }>;
+  creditBurnRate: {
+    daily: number;
+    weekly: number;
+  };
+  lastActive: string | null;
+  apiUsage: {
+    total: number;
+    last30Days: number;
+  };
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
@@ -53,6 +71,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
+  const [userActivity, setUserActivity] = useState<UserActivity | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [creditAmount, setCreditAmount] = useState("");
@@ -89,8 +108,12 @@ export default function AdminUsersPage() {
 
   const handleViewUser = async (userId: string) => {
     try {
-      const user = await apiClient.getAdminUserDetails(userId);
+      const [user, activity] = await Promise.all([
+        apiClient.getAdminUserDetails(userId),
+        apiClient.getAdminUserActivity(userId),
+      ]);
       setSelectedUser(user);
+      setUserActivity(activity);
       setShowModal(true);
     } catch (error) {
       toast.error("Failed to load user details");
@@ -163,6 +186,21 @@ export default function AdminUsersPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return formatDate(dateString);
   };
 
   return (
@@ -443,6 +481,69 @@ export default function AdminUsersPage() {
                   </p>
                 </div>
               </div>
+
+              {/* Enhanced Stats Row */}
+              {userActivity && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gray-900 rounded-lg p-4">
+                    <p className="text-sm text-gray-400">Last Active</p>
+                    <p className="text-lg font-semibold">
+                      {userActivity.lastActive
+                        ? formatRelativeTime(userActivity.lastActive)
+                        : "Never"}
+                    </p>
+                  </div>
+                  <div className="bg-gray-900 rounded-lg p-4">
+                    <p className="text-sm text-gray-400">Daily Burn Rate</p>
+                    <p className="text-lg font-semibold text-orange-400">
+                      {userActivity.creditBurnRate.daily}/day
+                    </p>
+                  </div>
+                  <div className="bg-gray-900 rounded-lg p-4">
+                    <p className="text-sm text-gray-400">Weekly Burn</p>
+                    <p className="text-lg font-semibold text-orange-400">
+                      {userActivity.creditBurnRate.weekly}/week
+                    </p>
+                  </div>
+                  <div className="bg-gray-900 rounded-lg p-4">
+                    <p className="text-sm text-gray-400">API Calls (30d)</p>
+                    <p className="text-lg font-semibold text-blue-400">
+                      {userActivity.apiUsage.last30Days}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Activity Sparkline */}
+              {userActivity && userActivity.activityTimeline.length > 0 && (
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <p className="text-sm text-gray-400 mb-3">30-Day Activity</p>
+                  <div className="flex items-end gap-0.5 h-16">
+                    {userActivity.activityTimeline.map((day, i) => {
+                      const maxCredits = Math.max(
+                        ...userActivity.activityTimeline.map((d) => d.creditsUsed),
+                        1
+                      );
+                      const height = Math.max(
+                        (day.creditsUsed / maxCredits) * 100,
+                        day.creditsUsed > 0 ? 8 : 2
+                      );
+                      return (
+                        <div
+                          key={i}
+                          className="flex-1 bg-accent/60 hover:bg-accent transition-colors rounded-sm"
+                          style={{ height: `${height}%` }}
+                          title={`${day.date}: ${day.creditsUsed} credits, ${day.leadsCreated} leads`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>30 days ago</span>
+                    <span>Today</span>
+                  </div>
+                </div>
+              )}
 
               {/* Credit Actions */}
               <div className="flex gap-2">

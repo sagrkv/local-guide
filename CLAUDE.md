@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Quadrant A is a B2B lead generation SaaS platform that automates lead discovery through web scraping and manages leads through a sales pipeline. It consists of a Fastify backend with BullMQ job queues and a Next.js frontend with user dashboard.
+Boko is a B2B lead generation SaaS platform that automates lead discovery through web scraping and manages leads through a sales pipeline. It consists of a Fastify backend with BullMQ job queues and a Next.js frontend with user dashboard.
 
 **Key Features:**
 - Map-based region selection with Google Places API
@@ -101,7 +101,7 @@ npm run lint    # Run ESLint
 
 ### Local Database Setup
 ```bash
-createdb quadrant-a
+createdb boko
 cd backend && npm run db:push && npm run db:seed
 ```
 
@@ -246,7 +246,7 @@ ScrapePanel → MapSelector → LeafletMap
 ### Backend Environment (`backend/.env`)
 ```env
 # Database
-DATABASE_URL=postgresql://user@localhost:5432/quadrant-a
+DATABASE_URL=postgresql://user@localhost:5432/boko
 
 # Clerk Authentication
 CLERK_SECRET_KEY=sk_test_...
@@ -393,7 +393,7 @@ This project was built using parallel Claude Code agents. Key learnings:
 ## Default Credentials
 
 After running `npm run db:seed`:
-- **Email:** admin@quadrant-a.io
+- **Email:** admin@boko.io
 - **Password:** admin123
 
 For Clerk authentication, sign up with any email through the UI.
