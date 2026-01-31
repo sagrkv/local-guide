@@ -370,7 +370,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
 
     // Get queue stats from scrape jobs
     const [activeJobs, pendingJobs, completedJobs, failedJobs] = await Promise.all([
-      prisma.scrapeJob.count({ where: { status: 'PROCESSING' } }),
+      prisma.scrapeJob.count({ where: { status: 'RUNNING' } }),
       prisma.scrapeJob.count({ where: { status: 'PENDING' } }),
       prisma.scrapeJob.count({ where: { status: 'COMPLETED', updatedAt: { gte: oneDayAgo } } }),
       prisma.scrapeJob.count({ where: { status: 'FAILED', updatedAt: { gte: oneDayAgo } } }),
