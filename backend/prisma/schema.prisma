@@ -1,0 +1,289 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  CITY_ADMIN
+  CONTRIBUTOR
+  VIEWER
+}
+
+enum CityStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CurationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+// ─── User ───────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  role      Role     @default(VIEWER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pois         POI[]
+  itineraries  Itinerary[]
+  collections  Collection[]
+  auditLogs    AuditLog[]
+  activityLogs ActivityLog[]
+  photos       Photo[]
+
+  @@map("users")
+}
+
+// ─── City ───────────────────────────────────────────────
+
+model City {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  tagline   String?
+  status    CityStatus @default(DRAFT)
+  latitude  Float?
+  longitude Float?
+  timezone  String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  theme       CityTheme?
+  pois        POI[]
+  itineraries Itinerary[]
+  collections Collection[]
+
+  @@map("cities")
+}
+
+model CityTheme {
+  id             String @id @default(cuid())
+  cityId         String @unique
+  primaryColor   String
+  secondaryColor String
+  heroImageUrl   String?
+
+  city City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@map("city_themes")
+}
+
+// ─── POI ────────────────────────────────────────────────
+
+model POI {
+  id             String         @id @default(cuid())
+  cityId         String
+  name           String
+  slug           String
+  description    String?
+  address        String?
+  latitude       Float?
+  longitude      Float?
+  googlePlaceId  String?        @unique
+  phone          String?
+  website        String?
+  priceLevel     Int?
+  curationStatus CurationStatus @default(PENDING)
+  createdById    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  city       City              @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  createdBy  User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  photos     Photo[]
+  categories CategoriesOnPOIs[]
+  tags       TagsOnPOIs[]
+  stops      ItineraryStop[]
+
+  @@unique([cityId, slug])
+  @@map("pois")
+}
+
+// ─── Photo ──────────────────────────────────────────────
+
+model Photo {
+  id           String  @id @default(cuid())
+  url          String
+  thumbnailUrl String?
+  caption      String?
+  poiId        String
+  uploadedById String?
+
+  createdAt DateTime @default(now())
+
+  poi        POI   @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  uploadedBy User? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@map("photos")
+}
+
+// ─── Category ───────────────────────────────────────────
+
+model Category {
+  id    String  @id @default(cuid())
+  name  String  @unique
+  slug  String  @unique
+  emoji String?
+  color String?
+
+  pois CategoriesOnPOIs[]
+
+  @@map("categories")
+}
+
+model CategoriesOnPOIs {
+  poiId      String
+  categoryId String
+
+  poi      POI      @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([poiId, categoryId])
+  @@map("categories_on_pois")
+}
+
+// ─── Tag ────────────────────────────────────────────────
+
+model Tag {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  pois TagsOnPOIs[]
+
+  @@map("tags")
+}
+
+model TagsOnPOIs {
+  poiId String
+  tagId String
+
+  poi POI @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([poiId, tagId])
+  @@map("tags_on_pois")
+}
+
+// ─── Itinerary ──────────────────────────────────────────
+
+model Itinerary {
+  id          String         @id @default(cuid())
+  cityId      String
+  name        String
+  slug        String
+  description String?
+  durationMin Int?
+  curationStatus CurationStatus @default(PENDING)
+  createdById String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  city      City            @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  createdBy User?           @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  stops     ItineraryStop[]
+
+  @@unique([cityId, slug])
+  @@map("itineraries")
+}
+
+model ItineraryStop {
+  id          String @id @default(cuid())
+  itineraryId String
+  poiId       String
+  order       Int
+  note        String?
+  durationMin Int?
+
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  poi       POI       @relation(fields: [poiId], references: [id], onDelete: Cascade)
+
+  @@unique([itineraryId, order])
+  @@map("itinerary_stops")
+}
+
+// ─── Collection ─────────────────────────────────────────
+
+model Collection {
+  id          String @id @default(cuid())
+  cityId      String
+  name        String
+  slug        String
+  description String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  city      City  @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([cityId, slug])
+  @@map("collections")
+}
+
+// ─── Media Asset ────────────────────────────────────────
+
+model MediaAsset {
+  id        String   @id @default(cuid())
+  url       String
+  mimeType  String
+  sizeBytes Int?
+  altText   String?
+  createdAt DateTime @default(now())
+
+  @@map("media_assets")
+}
+
+// ─── Audit Log ──────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─── Activity Log ───────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
