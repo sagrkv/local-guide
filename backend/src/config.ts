@@ -9,12 +9,12 @@ function getRequiredEnv(name: string, devDefault?: string): string {
   if (value) return value;
 
   if (isDev && devDefault !== undefined) {
-    console.warn(`⚠️  Using development default for ${name}`);
+    console.warn(`Warning: Using development default for ${name}`);
     return devDefault;
   }
 
   throw new Error(
-    `❌ Required environment variable ${name} is not set. Please configure it before starting the server.`,
+    `Required environment variable ${name} is not set. Please configure it before starting the server.`,
   );
 }
 
@@ -28,8 +28,7 @@ function getOptionalEnv(name: string, defaultValue: string): string {
 
 // Admin URL prefix - obscure URL for security
 // SECURITY: Change this prefix periodically and keep it secret
-// Default: nucleus-admin-x7k9m2 (should be changed in production)
-const adminUrlPrefix = getOptionalEnv("ADMIN_URL_PREFIX", "nucleus-admin-x7k9m2");
+const adminUrlPrefix = getOptionalEnv("ADMIN_URL_PREFIX", "admin-secret-prefix");
 
 // Frontend URL - required in production for CORS
 const frontendUrl = getRequiredEnv("FRONTEND_URL", "http://localhost:3000");
@@ -37,16 +36,8 @@ const frontendUrl = getRequiredEnv("FRONTEND_URL", "http://localhost:3000");
 // Database URL - required (no safe default)
 const databaseUrl = getRequiredEnv(
   "DATABASE_URL",
-  "postgresql://localhost:5432/boko",
+  "postgresql://localhost:5432/localguide",
 );
-
-// JWT Secret - required in production (insecure default only for dev)
-const jwtSecret = getRequiredEnv("JWT_SECRET", "dev-only-insecure-jwt-secret");
-
-// Validate JWT secret is not the dev default in production
-if (!isDev && jwtSecret === "dev-only-insecure-jwt-secret") {
-  throw new Error("❌ JWT_SECRET must be set to a secure value in production");
-}
 
 // CORS origins - parse from env or use frontend URL
 const corsOrigins = process.env.CORS_ORIGINS
@@ -64,32 +55,32 @@ export const config = {
   // SECURITY: Change this periodically to prevent unauthorized access attempts
   adminUrlPrefix,
 
-  // JWT
-  jwtSecret,
-  jwtExpiresIn: getOptionalEnv("JWT_EXPIRES_IN", "7d"),
-
   // Database
   databaseUrl,
 
-  // Redis (optional - scraping queue disabled if not provided)
+  // Redis (optional - job queue disabled if not provided)
   redisUrl: getOptionalEnv("REDIS_URL", ""),
 
   // CORS
   corsOrigins,
 
-  // Scraping
-  scrapeDelayMs: parseInt(getOptionalEnv("SCRAPE_DELAY_MS", "3000"), 10),
-  scrapeMaxRequestsPerMinute: parseInt(
-    getOptionalEnv("SCRAPE_MAX_REQUESTS_PER_MINUTE", "10"),
-    10,
+  // Google Places API (for POI discovery)
+  googlePlacesApiKey: getOptionalEnv("GOOGLE_PLACES_API_KEY", ""),
+
+  // Anthropic API (for AI-powered POI enrichment)
+  anthropicApiKey: getOptionalEnv("ANTHROPIC_API_KEY", ""),
+
+  // CDN base URL for media assets
+  cdnBaseUrl: getOptionalEnv("CDN_BASE_URL", ""),
+
+  // Default map tile URL
+  defaultMapTileUrl: getOptionalEnv(
+    "DEFAULT_MAP_TILE_URL",
+    "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png",
   ),
 
-  // Perplexity (optional - AI enrichment disabled if not provided)
-  perplexityApiKey: getOptionalEnv("PERPLEXITY_API_KEY", ""),
-
-  // Google Places API (optional - Google Places search disabled if not provided)
-  googlePlacesApiKey: getOptionalEnv("GOOGLE_PLACES_API_KEY", ""),
-  googlePlacesSearchRadius: 2000, // meters - covers most city areas well
+  // JWT Secret (for simple auth)
+  jwtSecret: getOptionalEnv("JWT_SECRET", "local-guide-dev-secret"),
 
   // Frontend
   frontendUrl,
@@ -100,21 +91,21 @@ export const config = {
 // =============================================================================
 
 if (isDev) {
-  console.log("📋 Configuration loaded (development mode)");
+  console.log("Configuration loaded (development mode)");
 } else {
-  console.log("📋 Configuration loaded (production mode)");
+  console.log("Configuration loaded (production mode)");
   console.log(
-    `   ✓ Database: ${databaseUrl.includes("@") ? databaseUrl.split("@")[1]?.split("/")[0] : "configured"}`,
+    `   Database: ${databaseUrl.includes("@") ? databaseUrl.split("@")[1]?.split("/")[0] : "configured"}`,
   );
-  console.log(`   ✓ Frontend: ${frontendUrl}`);
-  console.log(`   ✓ CORS: ${corsOrigins.join(", ")}`);
+  console.log(`   Frontend: ${frontendUrl}`);
+  console.log(`   CORS: ${corsOrigins.join(", ")}`);
   console.log(
-    `   ${config.redisUrl ? "✓" : "○"} Redis: ${config.redisUrl ? "configured" : "not configured (scraping queue disabled)"}`,
-  );
-  console.log(
-    `   ${config.perplexityApiKey ? "✓" : "○"} Perplexity: ${config.perplexityApiKey ? "configured" : "not configured"}`,
+    `   ${config.redisUrl ? "+" : "-"} Redis: ${config.redisUrl ? "configured" : "not configured (job queue disabled)"}`,
   );
   console.log(
-    `   ${config.googlePlacesApiKey ? "✓" : "○"} Google Places: ${config.googlePlacesApiKey ? "configured" : "not configured"}`,
+    `   ${config.googlePlacesApiKey ? "+" : "-"} Google Places: ${config.googlePlacesApiKey ? "configured" : "not configured"}`,
+  );
+  console.log(
+    `   ${config.anthropicApiKey ? "+" : "-"} Anthropic: ${config.anthropicApiKey ? "configured" : "not configured"}`,
   );
 }

@@ -1,35 +1,111 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import Link from "next/link";
 
 // ============================================
+// TYPES
+// ============================================
+interface City {
+  id: string;
+  name: string;
+  slug: string;
+  tagline?: string;
+  poiCount?: number;
+  primaryColor?: string;
+}
+
+// ============================================
+// STATIC FALLBACK DATA
+// ============================================
+const FALLBACK_CITIES: City[] = [
+  {
+    id: "1",
+    name: "Mysore",
+    slug: "mysore",
+    tagline: "City of Palaces",
+    poiCount: 45,
+    primaryColor: "#8B6914",
+  },
+  {
+    id: "2",
+    name: "Bangalore",
+    slug: "bangalore",
+    tagline: "Garden City",
+    poiCount: 62,
+    primaryColor: "#2D6A4F",
+  },
+  {
+    id: "3",
+    name: "Hampi",
+    slug: "hampi",
+    tagline: "Ruins & Boulders",
+    poiCount: 38,
+    primaryColor: "#B85C38",
+  },
+  {
+    id: "4",
+    name: "Coorg",
+    slug: "coorg",
+    tagline: "Scotland of India",
+    poiCount: 28,
+    primaryColor: "#2D5F2D",
+  },
+  {
+    id: "5",
+    name: "Goa",
+    slug: "goa",
+    tagline: "Sun, Sand & Soul",
+    poiCount: 55,
+    primaryColor: "#1E6091",
+  },
+  {
+    id: "6",
+    name: "Pondicherry",
+    slug: "pondicherry",
+    tagline: "French Quarter Charm",
+    poiCount: 32,
+    primaryColor: "#C2703E",
+  },
+];
+
+// ============================================
 // ANIMATED COUNTER COMPONENT
 // ============================================
-function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: string }) {
+function AnimatedCounter({
+  value,
+  suffix = "",
+}: {
+  value: number;
+  suffix?: string;
+}) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
   const [count, setCount] = useState(0);
 
-  if (isInView && count === 0) {
-    let start = 0;
-    const duration = 2000;
-    const increment = value / (duration / 16);
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= value) {
-        setCount(value);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
-      }
-    }, 16);
-  }
+  useEffect(() => {
+    if (isInView && count === 0) {
+      let start = 0;
+      const duration = 2000;
+      const increment = value / (duration / 16);
+      const timer = setInterval(() => {
+        start += increment;
+        if (start >= value) {
+          setCount(value);
+          clearInterval(timer);
+        } else {
+          setCount(Math.floor(start));
+        }
+      }, 16);
+      return () => clearInterval(timer);
+    }
+  }, [isInView, count, value]);
 
   return (
     <span ref={ref} className="tabular-nums">
-      {count.toLocaleString()}{suffix}
+      {count.toLocaleString()}
+      {suffix}
     </span>
   );
 }
@@ -41,7 +117,7 @@ function FeatureCard({
   icon,
   title,
   description,
-  index
+  index,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -62,74 +138,102 @@ function FeatureCard({
           {icon}
         </div>
         <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-        <p className="text-[var(--gray-400)] text-sm leading-relaxed">{description}</p>
+        <p className="text-[var(--gray-400)] text-sm leading-relaxed">
+          {description}
+        </p>
       </div>
     </motion.div>
   );
 }
 
 // ============================================
-// PRICING CARD COMPONENT
+// CITY CARD COMPONENT
 // ============================================
-function PricingCard({
-  name,
-  price,
-  credits,
-  features,
-  popular = false,
-  index
-}: {
-  name: string;
-  price: string;
-  credits: string;
-  features: string[];
-  popular?: boolean;
-  index: number;
-}) {
+function CityCard({ city, index }: { city: City; index: number }) {
+  const color = city.primaryColor || "#1E3A5F";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      className={`relative p-8 rounded-2xl border ${
-        popular
-          ? "bg-gradient-to-b from-[var(--gray-800)] to-[var(--gray-850)] border-[var(--accent)]/50"
-          : "bg-[var(--gray-850)] border-[var(--gray-700)]"
-      }`}
+      transition={{ duration: 0.5, delay: index * 0.08 }}
     >
-      {popular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="badge badge-accent">Most Popular</span>
-        </div>
-      )}
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-white mb-2">{name}</h3>
-        <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-bold text-white">{price}</span>
-          <span className="text-[var(--gray-400)]">/month</span>
-        </div>
-        <p className="text-[var(--accent)] text-sm mt-2">{credits}</p>
-      </div>
-      <ul className="space-y-3 mb-8">
-        {features.map((feature, i) => (
-          <li key={i} className="flex items-start gap-3 text-sm text-[var(--gray-300)]">
-            <svg className="w-5 h-5 text-[var(--success)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            {feature}
-          </li>
-        ))}
-      </ul>
       <Link
-        href="/sign-up"
-        className={`block w-full text-center py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
-          popular
-            ? "bg-[var(--accent)] text-[var(--background)] hover:bg-[#FF8C40]"
-            : "bg-[var(--gray-800)] text-white border border-[var(--gray-600)] hover:bg-[var(--gray-700)]"
-        }`}
+        href={`/explore/${city.slug}`}
+        className="group block relative p-6 rounded-2xl border border-[var(--gray-700)] hover:border-[var(--gray-600)] transition-all duration-300 overflow-hidden h-full"
+        style={{
+          background: `linear-gradient(135deg, ${color}15, var(--gray-850))`,
+        }}
       >
-        Get Started
+        {/* Color accent bar */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1 opacity-60 group-hover:opacity-100 transition-opacity duration-300"
+          style={{ background: color }}
+        />
+
+        {/* Glow on hover */}
+        <div
+          className="absolute -top-20 -right-20 w-40 h-40 rounded-full blur-[80px] opacity-0 group-hover:opacity-20 transition-opacity duration-500"
+          style={{ background: color }}
+        />
+
+        <div className="relative">
+          {/* City icon */}
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
+            style={{ background: `${color}20`, border: `1px solid ${color}30` }}
+          >
+            <svg
+              className="w-5 h-5"
+              style={{ color }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </div>
+
+          <h3 className="text-xl font-semibold text-white mb-1">
+            {city.name}
+          </h3>
+          {city.tagline && (
+            <p className="text-[var(--gray-400)] text-sm mb-3">
+              {city.tagline}
+            </p>
+          )}
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[var(--gray-500)]">
+              {city.poiCount ? `${city.poiCount} places` : "Coming soon"}
+            </span>
+            <svg
+              className="w-4 h-4 text-[var(--gray-500)] group-hover:text-white group-hover:translate-x-1 transition-all duration-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </div>
+        </div>
       </Link>
     </motion.div>
   );
@@ -138,7 +242,15 @@ function PricingCard({
 // ============================================
 // FAQ ITEM COMPONENT
 // ============================================
-function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
+function FAQItem({
+  question,
+  answer,
+  index,
+}: {
+  question: string;
+  answer: string;
+  index: number;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -168,7 +280,9 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
         transition={{ duration: 0.3 }}
         className="overflow-hidden"
       >
-        <p className="pb-5 text-[var(--gray-400)] text-sm leading-relaxed">{answer}</p>
+        <p className="pb-5 text-[var(--gray-400)] text-sm leading-relaxed">
+          {answer}
+        </p>
       </motion.div>
     </motion.div>
   );
@@ -186,170 +300,249 @@ export default function Home() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
   const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
 
+  const [cities, setCities] = useState<City[]>(FALLBACK_CITIES);
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const res = await fetch("/api/v1/cities?status=PUBLISHED", {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setCities(
+            data.map((c: Record<string, unknown>) => ({
+              id: String(c.id || ""),
+              name: String(c.name || ""),
+              slug: String(c.slug || ""),
+              tagline: c.tagline ? String(c.tagline) : undefined,
+              poiCount:
+                typeof c.poiCount === "number" ? c.poiCount : undefined,
+              primaryColor: c.primaryColor
+                ? String(c.primaryColor)
+                : undefined,
+            }))
+          );
+        }
+      } catch {
+        // Silently fall back to static data
+      }
+    };
+    fetchCities();
+  }, []);
+
   const features = [
     {
       icon: (
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+          />
         </svg>
       ),
-      title: "Map-Based Targeting",
-      description: "Draw rectangles on a map to define your target regions. Our grid system divides areas into 2km cells for precise local business discovery.",
+      title: "Curated Maps",
+      description:
+        "Every city gets a beautifully designed, interactive map with hand-picked places. No algorithm noise -- just the spots locals actually love.",
     },
     {
       icon: (
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+          />
         </svg>
       ),
-      title: "Smart Pre-Filters",
-      description: "Set criteria before scraping. Only pay for leads that match your exact requirements - no wasted credits on unqualified prospects.",
+      title: "City-Themed Design",
+      description:
+        "Each city gets its own unique visual identity -- colors, typography, and vibe that capture the character of the place.",
     },
     {
       icon: (
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M13 10V3L4 14h7v7l9-11h-7z"
+          />
         </svg>
       ),
-      title: "Website Analysis",
-      description: "Lighthouse scores reveal which businesses have poor or no websites. Focus on leads that actually need your web services.",
+      title: "Ready-Made Itineraries",
+      description:
+        "One-day, two-day, or weekend itineraries crafted by people who know the city. Just follow the route and enjoy.",
     },
     {
       icon: (
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+          />
         </svg>
       ),
-      title: "AI Sales Intelligence",
-      description: "Perplexity AI researches each lead - decision makers, company size, pain points. Close deals faster with deep insights.",
+      title: "Mobile-First",
+      description:
+        "Maps and guides that work perfectly on your phone. Pull up a map while walking, find nearby spots, and navigate with ease.",
     },
     {
       icon: (
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
-      title: "Pay Per Lead",
-      description: "Credit-based pricing means you only pay for results. 1 credit = 1 qualified lead. No subscriptions, no hidden fees.",
+      title: "100% Free",
+      description:
+        "No subscriptions, no hidden paywalls. Every map and itinerary is free to use, forever. Open source and community-driven.",
     },
     {
       icon: (
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          />
         </svg>
       ),
-      title: "GDPR Compliant",
-      description: "Full data export, deletion requests, and audit logging. Your data stays yours. Built for privacy-conscious businesses.",
+      title: "Local First",
+      description:
+        "Every recommendation comes from people who live there. No sponsored listings, no paid placements. Just honest, local knowledge.",
     },
   ];
 
   const steps = [
     {
       number: "01",
-      title: "Define Your Target",
-      description: "Draw a region on the map or select from preset city zones. Set your filters: business category, website quality, location.",
+      title: "Pick a City",
+      description:
+        "Browse our growing collection of curated city maps. From Mysore to Goa, find the destination you are heading to.",
     },
     {
       number: "02",
-      title: "Launch Smart Scrape",
-      description: "Our system searches Google Places, validates each business against your criteria, and only charges for matches.",
+      title: "Explore the Map",
+      description:
+        "Discover hand-picked cafes, temples, viewpoints, and hidden gems placed on a beautiful interactive map.",
     },
     {
       number: "03",
-      title: "Close More Deals",
-      description: "Get qualified leads with contact info, website analysis, and AI-generated sales intelligence. Start outreach immediately.",
-    },
-  ];
-
-  const pricing = [
-    {
-      name: "Starter",
-      price: "₹999",
-      credits: "100 credits included",
-      features: [
-        "100 lead credits",
-        "Map-based region selection",
-        "Basic lead filtering",
-        "CSV export",
-        "Email support",
-      ],
-    },
-    {
-      name: "Growth",
-      price: "₹2,499",
-      credits: "300 credits included",
-      popular: true,
-      features: [
-        "300 lead credits",
-        "Everything in Starter",
-        "Lighthouse website analysis",
-        "Tech stack detection",
-        "Priority support",
-      ],
-    },
-    {
-      name: "Scale",
-      price: "₹4,999",
-      credits: "750 credits included",
-      features: [
-        "750 lead credits",
-        "Everything in Growth",
-        "AI sales intelligence",
-        "API access",
-        "Dedicated account manager",
-      ],
+      title: "Travel Like a Local",
+      description:
+        "Follow ready-made itineraries or build your own. Navigate on your phone and enjoy the city like someone who lives there.",
     },
   ];
 
   const faqs = [
     {
-      question: "How does the credit system work?",
-      answer: "Each credit equals one qualified lead. You only spend credits when a lead matches your pre-set filters. No matches = no charge. Credits never expire and can be topped up anytime.",
+      question: "Is Local Guide really free?",
+      answer:
+        "Yes, completely free. All maps, curated places, and itineraries are available without any payment or subscription. We believe travel information should be accessible to everyone.",
     },
     {
-      question: "What data do I get for each lead?",
-      answer: "Each lead includes business name, address, phone, email (when available), website, Google rating, category, and location coordinates. Premium features add Lighthouse scores, tech stack, and AI-generated sales insights.",
+      question: "How are places curated?",
+      answer:
+        "Every place is hand-picked by locals who know the city. We don't accept paid listings or sponsored placements. If a place is on our map, it's because someone who lives there genuinely recommends it.",
     },
     {
-      question: "How accurate is the lead data?",
-      answer: "We source data from Google Places API (official), which is highly accurate for business information. We deduplicate leads and validate contact details before delivery.",
+      question: "Which cities are available?",
+      answer:
+        "We're starting with cities across India and expanding continuously. Each city launch includes a curated map, categorized places, and at least one ready-made itinerary.",
     },
     {
-      question: "Can I filter leads before scraping?",
-      answer: "Yes! Set pre-filters for business category, minimum rating, website presence, location radius, and more. You only pay for leads that match ALL your criteria.",
+      question: "Can I suggest a place or city?",
+      answer:
+        "Absolutely! We welcome suggestions from locals and travelers. Open an issue on our GitHub repository or contribute directly.",
     },
     {
-      question: "Is there an API for integration?",
-      answer: "Yes, Scale plan includes full API access. Integrate lead data directly into your CRM, outreach tools, or custom workflows.",
+      question: "Do I need an account?",
+      answer:
+        "No account is needed to browse maps and itineraries. Just open a map and start exploring.",
     },
     {
-      question: "What's your refund policy?",
-      answer: "Unused credits can be refunded within 30 days of purchase. Used credits are non-refundable since they represent delivered leads.",
+      question: "Is Local Guide open source?",
+      answer:
+        "Yes. Our platform is open source and community-driven. The code is on GitHub and contributions are welcome -- whether that's code, city data, or local knowledge.",
     },
   ];
 
   const testimonials = [
     {
-      quote: "Found 200+ qualified leads in Bangalore in under an hour. The website quality filter saved us from wasting time on businesses that don't need our services.",
-      author: "Rajesh K.",
-      role: "Founder, WebCraft Agency",
+      quote:
+        "Used the Mysore map for our weekend trip and discovered amazing cafes and viewpoints we never would have found on Google Maps. Felt like a local.",
+      author: "Ananya R.",
+      role: "Travel Blogger",
     },
     {
-      quote: "The AI sales intelligence is a game-changer. We closed 3 deals in the first week just from the insights Boko provided about each prospect.",
-      author: "Priya M.",
-      role: "Sales Lead, Digital Solutions",
+      quote:
+        "The itineraries are perfect -- no planning needed. Just followed the one-day Goa route and had the best day. The hidden beach recommendation was unreal.",
+      author: "Karthik V.",
+      role: "Weekend Traveler",
     },
     {
-      quote: "Finally, a lead gen tool that understands the Indian market. Map targeting for specific localities is exactly what we needed.",
-      author: "Amit S.",
-      role: "Business Development, TechServe",
+      quote:
+        "Finally, a travel guide that doesn't feel like an advertisement. Real places, real recommendations. This is how travel apps should work.",
+      author: "Meera S.",
+      role: "Solo Traveler",
     },
   ];
 
   return (
     <div className="min-h-screen">
       {/* ==================== HERO SECTION ==================== */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section
+        ref={heroRef}
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      >
         {/* Background Effects */}
         <div className="absolute inset-0 grid-pattern opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--background)]" />
@@ -371,7 +564,7 @@ export default function Home() {
           >
             <span className="badge badge-accent">
               <span className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse" />
-              Now in Beta
+              Free &amp; Open Source
             </span>
           </motion.div>
 
@@ -382,9 +575,9 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-balance"
           >
-            Find leads that
+            Travel like
             <br />
-            <span className="text-accent-gradient">actually convert.</span>
+            <span className="text-accent-gradient">a local.</span>
           </motion.h1>
 
           {/* Subheadline */}
@@ -394,9 +587,9 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg md:text-xl text-[var(--gray-400)] max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            B2B lead generation for India. Target businesses by location, filter by website quality,
-            and get AI-powered sales intelligence.{" "}
-            <span className="text-white">Pay only for qualified leads.</span>
+            Beautifully curated, city-themed tourist maps. Hand-picked places,
+            ready-made itineraries, and local knowledge.{" "}
+            <span className="text-white">Completely free, forever.</span>
           </motion.p>
 
           {/* CTA Buttons */}
@@ -406,13 +599,26 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
-            <Link href="/sign-up" className="btn-primary text-lg px-8 py-4">
-              Start Free Trial
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            <Link href="/explore" className="btn-primary text-lg px-8 py-4">
+              Explore Cities
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
               </svg>
             </Link>
-            <Link href="#how-it-works" className="btn-secondary text-lg px-8 py-4">
+            <Link
+              href="#how-it-works"
+              className="btn-secondary text-lg px-8 py-4"
+            >
               See How It Works
             </Link>
           </motion.div>
@@ -425,15 +631,17 @@ export default function Home() {
             className="flex flex-wrap items-center justify-center gap-8 md:gap-16"
           >
             {[
-              { value: 50000, suffix: "+", label: "Leads Generated" },
-              { value: 500, suffix: "+", label: "Active Users" },
-              { value: 98, suffix: "%", label: "Data Accuracy" },
+              { value: 12, suffix: "+", label: "Cities Mapped" },
+              { value: 500, suffix: "+", label: "Curated Places" },
+              { value: 100, suffix: "%", label: "Free Forever" },
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-white">
                   <AnimatedCounter value={stat.value} suffix={stat.suffix} />
                 </div>
-                <div className="text-sm text-[var(--gray-500)]">{stat.label}</div>
+                <div className="text-sm text-[var(--gray-500)]">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </motion.div>
@@ -460,9 +668,65 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* ==================== FEATURES SECTION ==================== */}
+      {/* ==================== CITY GRID SECTION ==================== */}
       <section className="section relative">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-[var(--gray-900)] to-[var(--background)]" />
+        <div className="container relative">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <span className="badge mb-4">Cities</span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+              Explore curated
+              <br />
+              <span className="text-gradient">city maps</span>
+            </h2>
+            <p className="text-[var(--gray-400)] max-w-2xl mx-auto">
+              Each city gets its own identity, curated places, and hand-crafted
+              itineraries. Pick a city and start exploring.
+            </p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {cities.map((city, index) => (
+              <CityCard key={city.id} city={city} index={index} />
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mt-12"
+          >
+            <Link
+              href="/explore"
+              className="btn-secondary px-8 py-3 inline-flex items-center gap-2"
+            >
+              View All Cities
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ==================== FEATURES SECTION ==================== */}
+      <section className="section relative">
         <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -474,10 +738,11 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
               Everything you need to
               <br />
-              <span className="text-gradient">find perfect leads</span>
+              <span className="text-gradient">explore any city</span>
             </h2>
             <p className="text-[var(--gray-400)] max-w-2xl mx-auto">
-              From discovery to deal close, Boko gives you the tools to find, qualify, and convert B2B leads in India.
+              Curated maps, local recommendations, and ready-made itineraries.
+              Travel smarter, not harder.
             </p>
           </motion.div>
 
@@ -491,7 +756,8 @@ export default function Home() {
 
       {/* ==================== HOW IT WORKS SECTION ==================== */}
       <section id="how-it-works" className="section relative">
-        <div className="container">
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-[var(--gray-900)] to-[var(--background)]" />
+        <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -502,7 +768,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
               Three steps to
               <br />
-              <span className="text-gradient">qualified leads</span>
+              <span className="text-gradient">your best trip</span>
             </h2>
           </motion.div>
 
@@ -521,50 +787,18 @@ export default function Home() {
                   <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px bg-gradient-to-r from-[var(--gray-600)] to-transparent" />
                 )}
 
-                <div className="text-6xl font-bold text-[var(--gray-800)] mb-4">{step.number}</div>
-                <h3 className="text-xl font-semibold text-white mb-3">{step.title}</h3>
-                <p className="text-[var(--gray-400)] text-sm leading-relaxed">{step.description}</p>
+                <div className="text-6xl font-bold text-[var(--gray-800)] mb-4">
+                  {step.number}
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-3">
+                  {step.title}
+                </h3>
+                <p className="text-[var(--gray-400)] text-sm leading-relaxed">
+                  {step.description}
+                </p>
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ==================== PRICING SECTION ==================== */}
-      <section className="section relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-[var(--gray-900)] to-[var(--background)]" />
-        <div className="container relative">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <span className="badge mb-4">Pricing</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Simple, credit-based
-              <br />
-              <span className="text-gradient">pricing</span>
-            </h2>
-            <p className="text-[var(--gray-400)] max-w-2xl mx-auto">
-              No subscriptions. No hidden fees. Buy credits, use them when you need leads.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {pricing.map((plan, index) => (
-              <PricingCard key={index} {...plan} index={index} />
-            ))}
-          </div>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center text-[var(--gray-500)] text-sm mt-8"
-          >
-            All plans include 7-day free trial with 10 credits. No credit card required.
-          </motion.p>
         </div>
       </section>
 
@@ -579,7 +813,7 @@ export default function Home() {
           >
             <span className="badge mb-4">Testimonials</span>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Trusted by sales teams
+              Loved by travelers
               <br />
               <span className="text-gradient">across India</span>
             </h2>
@@ -595,15 +829,23 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="p-6 rounded-2xl bg-[var(--gray-850)] border border-[var(--gray-700)]"
               >
-                <div className="text-[var(--accent)] text-4xl mb-4">"</div>
-                <p className="text-[var(--gray-300)] mb-6 leading-relaxed">{testimonial.quote}</p>
+                <div className="text-[var(--accent)] text-4xl mb-4">
+                  &ldquo;
+                </div>
+                <p className="text-[var(--gray-300)] mb-6 leading-relaxed">
+                  {testimonial.quote}
+                </p>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent)] to-[#FF8C40] flex items-center justify-center text-white font-semibold text-sm">
                     {testimonial.author.charAt(0)}
                   </div>
                   <div>
-                    <div className="text-white font-medium text-sm">{testimonial.author}</div>
-                    <div className="text-[var(--gray-500)] text-xs">{testimonial.role}</div>
+                    <div className="text-white font-medium text-sm">
+                      {testimonial.author}
+                    </div>
+                    <div className="text-[var(--gray-500)] text-xs">
+                      {testimonial.role}
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -612,9 +854,139 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ==================== FAQ SECTION ==================== */}
+      {/* ==================== OPEN SOURCE SECTION ==================== */}
       <section className="section relative">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-[var(--gray-900)] to-[var(--background)]" />
+        <div className="container relative">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <span className="badge mb-4">Open Source</span>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+                Built in
+                <br />
+                <span className="text-gradient">the open</span>
+              </h2>
+              <p className="text-[var(--gray-400)] max-w-2xl mx-auto text-lg leading-relaxed">
+                Local Guide is fully open source. We believe travel information
+                should be free and community-driven. Our code, our data, our
+                process -- everything is transparent and open to contributions.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="relative p-8 md:p-12 rounded-2xl border border-[var(--gray-700)] overflow-hidden"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(30,58,95,0.15), var(--gray-850))",
+              }}
+            >
+              {/* Subtle glow */}
+              <div className="absolute -top-32 -right-32 w-64 h-64 bg-[var(--accent)]/5 rounded-full blur-[100px]" />
+
+              <div className="relative grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <svg
+                      className="w-8 h-8 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                    </svg>
+                    <span className="text-white font-semibold text-lg">
+                      sagrkv/local-guide
+                    </span>
+                  </div>
+                  <p className="text-[var(--gray-400)] text-sm leading-relaxed mb-6">
+                    The entire platform -- frontend, backend, city data, and map
+                    configurations -- lives in a single repository. Fork it, run
+                    it locally, contribute a city, or improve the code.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href="https://github.com/sagrkv/local-guide"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-[#0d1117] font-semibold text-sm hover:bg-gray-200 transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                      </svg>
+                      Star on GitHub
+                    </a>
+                    <a
+                      href="https://github.com/sagrkv/local-guide#contributing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-[var(--gray-600)] text-white font-semibold text-sm hover:bg-[var(--gray-800)] transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                      Contribute a City
+                    </a>
+                  </div>
+                </div>
+
+                {/* Visual element */}
+                <div className="hidden md:flex flex-col items-center justify-center">
+                  <div className="space-y-3 w-full max-w-xs">
+                    {[
+                      { label: "Next.js + React", color: "#61DAFB" },
+                      { label: "Fastify + Prisma", color: "#10B981" },
+                      { label: "TypeScript", color: "#3178C6" },
+                      { label: "Tailwind CSS", color: "#38BDF8" },
+                    ].map((tech, i) => (
+                      <motion.div
+                        key={tech.label}
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.2 + i * 0.1 }}
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[var(--gray-800)]/80 border border-[var(--gray-700)]"
+                      >
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ background: tech.color }}
+                        />
+                        <span className="text-sm text-[var(--gray-300)]">
+                          {tech.label}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== FAQ SECTION ==================== */}
+      <section className="section relative">
         <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -651,24 +1023,46 @@ export default function Home() {
             className="text-center max-w-3xl mx-auto"
           >
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-              Ready to find your
+              Ready to explore
               <br />
-              <span className="text-accent-gradient">next 100 customers?</span>
+              <span className="text-accent-gradient">your next city?</span>
             </h2>
             <p className="text-lg text-[var(--gray-400)] mb-10 leading-relaxed">
-              Start your free trial today. No credit card required.
-              Get 10 free credits to test the platform.
+              Pick a city, open the map, and discover places you never knew
+              existed. No sign-up required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/sign-up" className="btn-primary text-lg px-8 py-4">
-                Start Free Trial
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              <Link href="/explore" className="btn-primary text-lg px-8 py-4">
+                Explore Cities
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
                 </svg>
               </Link>
-              <Link href="/contact" className="btn-secondary text-lg px-8 py-4">
-                Contact Sales
-              </Link>
+              <a
+                href="https://github.com/sagrkv/local-guide"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary text-lg px-8 py-4 inline-flex items-center gap-2"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                </svg>
+                View on GitHub
+              </a>
             </div>
           </motion.div>
         </div>

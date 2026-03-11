@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Toaster } from "sonner";
-import { useUser, useAuth } from "@clerk/nextjs";
-import { apiClient, setClerkTokenGetter } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { Sidebar, Header } from "@/components/dashboard";
 
 interface User {
@@ -12,7 +11,6 @@ interface User {
   name: string;
   email: string;
   role: string;
-  creditBalance?: number;
   imageUrl?: string;
 }
 
@@ -23,30 +21,16 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user: clerkUser, isLoaded: clerkLoaded, isSignedIn } = useUser();
-  const { getToken, signOut } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [creditBalance, setCreditBalance] = useState(0);
-
-  // Set up Clerk token getter for API client
-  useEffect(() => {
-    if (getToken) {
-      setClerkTokenGetter(getToken);
-    }
-  }, [getToken]);
 
   // Check authentication on mount
   useEffect(() => {
-    // Wait for Clerk to load
-    if (!clerkLoaded) {
-      return;
-    }
-
-    // If not signed in with Clerk, redirect to sign-in
-    if (!isSignedIn) {
+    const token = localStorage.getItem("lg_token");
+    if (!token) {
       router.push("/sign-in");
+      setLoading(false);
       return;
     }
 
@@ -54,32 +38,18 @@ export default function DashboardLayout({
       try {
         const data = await apiClient.getCurrentUser();
         setUser(data.user);
-        setCreditBalance(data.user.creditBalance ?? 100);
       } catch (error) {
-        // If Clerk is signed in but backend user doesn't exist yet,
-        // use Clerk data while waiting for webhook
-        if (clerkUser) {
-          setUser({
-            id: "",
-            name: clerkUser.fullName ?? clerkUser.firstName ?? "User",
-            email: clerkUser.primaryEmailAddress?.emailAddress ?? "",
-            role: "USER",
-            imageUrl: clerkUser.imageUrl,
-          });
-        } else {
-          router.push("/sign-in");
-        }
+        router.push("/sign-in");
       } finally {
         setLoading(false);
       }
     };
 
     checkAuth();
-  }, [router, clerkLoaded, isSignedIn, clerkUser]);
+  }, [router]);
 
-  const handleLogout = async () => {
-    localStorage.removeItem("token");
-    await signOut();
+  const handleLogout = () => {
+    localStorage.removeItem("lg_token");
     router.push("/sign-in");
   };
 
@@ -114,7 +84,6 @@ export default function DashboardLayout({
       {/* Mobile header */}
       <Header
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        creditBalance={creditBalance}
       />
 
       {/* Sidebar */}
@@ -122,7 +91,6 @@ export default function DashboardLayout({
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         user={user}
-        creditBalance={creditBalance}
         onLogout={handleLogout}
       />
 

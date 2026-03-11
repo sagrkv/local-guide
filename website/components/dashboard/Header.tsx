@@ -1,18 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import CreditBadge from "./CreditBadge";
 
 interface HeaderProps {
   onMenuClick: () => void;
-  creditBalance: number;
   title?: string;
   subtitle?: string;
 }
 
 export default function Header({
   onMenuClick,
-  creditBalance,
   title,
   subtitle,
 }: HeaderProps) {
@@ -38,16 +35,14 @@ export default function Header({
           <Link href="/dashboard" className="inline-block">
             <span className="font-semibold">
               <span className="text-accent">[</span>
-              Boko
+              Local Guide
               <span className="text-accent">]</span>
             </span>
           </Link>
         )}
       </div>
 
-      <Link href="/dashboard/settings/credits">
-        <CreditBadge balance={creditBalance} size="sm" showLabel={false} />
-      </Link>
+      <div className="w-8" />
     </header>
   );
 }

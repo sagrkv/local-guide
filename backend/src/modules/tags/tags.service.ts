@@ -2,11 +2,13 @@ import { prisma } from '../../lib/prisma.js';
 
 interface CreateTagData {
   name: string;
+  slug: string;
   color?: string;
 }
 
 interface UpdateTagData {
   name?: string;
+  slug?: string;
   color?: string;
 }
 
@@ -16,7 +18,7 @@ export const tagsService = {
       orderBy: { name: 'asc' },
       include: {
         _count: {
-          select: { leads: true },
+          select: { pois: true },
         },
       },
     });
@@ -27,7 +29,7 @@ export const tagsService = {
       where: { id },
       include: {
         _count: {
-          select: { leads: true },
+          select: { pois: true },
         },
       },
     });
@@ -44,7 +46,7 @@ export const tagsService = {
       data,
       include: {
         _count: {
-          select: { leads: true },
+          select: { pois: true },
         },
       },
     });
@@ -57,7 +59,7 @@ export const tagsService = {
         data,
         include: {
           _count: {
-            select: { leads: true },
+            select: { pois: true },
           },
         },
       });

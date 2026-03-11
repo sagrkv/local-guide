@@ -1,6 +1,6 @@
-# Boko Lead Management Backend
+# Local Guide Backend
 
-A backend system for Boko to automate lead generation through web scraping and manage leads through a CRM pipeline.
+A backend system for Local Guide — curated tourist maps. Manages cities, points of interest, itineraries, and user accounts.
 
 ## Tech Stack
 
@@ -97,7 +97,7 @@ npm run start
 
 After running the seed:
 
-- Email: `admin@boko.app`
+- Email: `admin@localguide.in`
 - Password: `admin123`
 
 **Important**: Change these credentials in production!

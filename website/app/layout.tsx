@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -12,46 +12,45 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "Boko | Lead Generation SaaS",
-    template: "%s | Boko",
+    default: "Local Guide — Curated Tourist Maps",
+    template: "%s | Local Guide",
   },
   description:
-    "Powerful lead generation platform. Discover, qualify, and manage B2B leads with automated scraping, technical analysis, and sales intelligence.",
+    "Beautifully curated, city-themed tourist maps. Travel like a local.",
   keywords: [
-    "lead generation",
-    "B2B leads",
-    "sales intelligence",
-    "lead scraping",
-    "prospect discovery",
-    "website analysis",
-    "business leads",
-    "SaaS",
+    "tourist maps",
+    "curated travel",
+    "city guide",
+    "local travel",
+    "itineraries",
+    "travel maps",
+    "explore cities",
   ],
-  authors: [{ name: "Boko" }],
-  creator: "Boko",
+  authors: [{ name: "Local Guide" }],
+  creator: "Local Guide",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://boko.app",
-    siteName: "Boko",
-    title: "Boko | Lead Generation SaaS",
+    url: "https://localguide.in",
+    siteName: "Local Guide",
+    title: "Local Guide — Curated Tourist Maps",
     description:
-      "Powerful lead generation platform. Discover, qualify, and manage B2B leads with automated scraping and sales intelligence.",
+      "Beautifully curated, city-themed tourist maps. Travel like a local.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/api/og?title=Local+Guide&subtitle=Curated+Tourist+Maps",
         width: 1200,
         height: 630,
-        alt: "Boko",
+        alt: "Local Guide",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Boko | Lead Generation SaaS",
+    title: "Local Guide — Curated Tourist Maps",
     description:
-      "Powerful lead generation platform. Discover, qualify, and manage B2B leads with automated scraping and sales intelligence.",
-    images: ["/og-image.png"],
+      "Beautifully curated, city-themed tourist maps. Travel like a local.",
+    images: ["/api/og?title=Local+Guide&subtitle=Curated+Tourist+Maps"],
   },
   robots: {
     index: true,
@@ -68,12 +67,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className={`${spaceGrotesk.variable} antialiased`}>
-          <ThemeProvider>{children}</ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#1E3A5F" />
+      </head>
+      <body className={`${spaceGrotesk.variable} antialiased`}>
+        <ThemeProvider>
+          {children}
+          <ServiceWorkerRegistration />
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }

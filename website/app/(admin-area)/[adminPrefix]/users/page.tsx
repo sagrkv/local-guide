@@ -10,13 +10,10 @@ interface User {
   name: string;
   role: string;
   isActive: boolean;
-  creditBalance: number;
   createdAt: string;
   updatedAt: string;
   _count: {
-    ownedLeads: number;
-    scrapeJobs: number;
-    creditTransactions: number;
+    curatedPOIs: number;
   };
 }
 
@@ -28,20 +25,10 @@ interface Pagination {
 }
 
 interface UserDetails extends User {
-  recentTransactions: Array<{
+  recentActivity: Array<{
     id: string;
-    amount: number;
     type: string;
     description: string | null;
-    reference: string | null;
-    createdAt: string;
-  }>;
-  recentScrapeJobs: Array<{
-    id: string;
-    type: string;
-    query: string;
-    status: string;
-    leadsCreated: number;
     createdAt: string;
   }>;
 }
@@ -49,14 +36,8 @@ interface UserDetails extends User {
 interface UserActivity {
   activityTimeline: Array<{
     date: string;
-    scrapeJobs: number;
-    leadsCreated: number;
-    creditsUsed: number;
+    poisCreated: number;
   }>;
-  creditBurnRate: {
-    daily: number;
-    weekly: number;
-  };
   lastActive: string | null;
   apiUsage: {
     total: number;
@@ -73,11 +54,6 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
   const [userActivity, setUserActivity] = useState<UserActivity | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [showCreditsModal, setShowCreditsModal] = useState(false);
-  const [creditAmount, setCreditAmount] = useState("");
-  const [creditReason, setCreditReason] = useState("");
-  const [creditAction, setCreditAction] = useState<"add" | "deduct">("add");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -132,43 +108,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleCreditsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedUser) return;
-
-    const amount = parseInt(creditAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
-
-    if (!creditReason.trim()) {
-      toast.error("Please provide a reason");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      if (creditAction === "add") {
-        await apiClient.addUserCredits(selectedUser.id, amount, creditReason);
-        toast.success(`Added ${amount} credits to ${selectedUser.name}`);
-      } else {
-        await apiClient.deductUserCredits(selectedUser.id, amount, creditReason);
-        toast.success(`Deducted ${amount} credits from ${selectedUser.name}`);
-      }
-      setShowCreditsModal(false);
-      setCreditAmount("");
-      setCreditReason("");
-      fetchUsers();
-      // Refresh selected user details
-      const updatedUser = await apiClient.getAdminUserDetails(selectedUser.id);
-      setSelectedUser(updatedUser);
-    } catch (error) {
-      toast.error("Failed to update credits");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -250,9 +189,9 @@ export default function AdminUsersPage() {
             </p>
           </div>
           <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-            <p className="text-xs font-medium text-gray-400">Total Leads</p>
+            <p className="text-xs font-medium text-gray-400">Total POIs</p>
             <p className="text-xl font-semibold mt-0.5 text-blue-400">
-              {users.reduce((sum, u) => sum + u._count.ownedLeads, 0)}
+              {users.reduce((sum, u) => sum + u._count.curatedPOIs, 0)}
             </p>
           </div>
         </div>
@@ -280,13 +219,7 @@ export default function AdminUsersPage() {
                     Role
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    Credits
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    Leads
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    Jobs
+                    POIs
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
                     Status
@@ -327,16 +260,8 @@ export default function AdminUsersPage() {
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-[13px] text-accent">
-                        {user.creditBalance.toLocaleString()}
-                      </span>
-                    </td>
                     <td className="px-4 py-3 text-[13px] text-gray-300">
-                      {user._count.ownedLeads}
-                    </td>
-                    <td className="px-4 py-3 text-[13px] text-gray-300">
-                      {user._count.scrapeJobs}
+                      {user._count.curatedPOIs}
                     </td>
                     <td className="px-4 py-3">
                       <button
@@ -455,54 +380,30 @@ export default function AdminUsersPage() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-900 rounded-lg p-4">
-                  <p className="text-sm text-gray-400">Credits</p>
+                  <p className="text-sm text-gray-400">Curated POIs</p>
                   <p className="text-2xl font-bold text-accent">
-                    {selectedUser.creditBalance.toLocaleString()}
+                    {selectedUser._count.curatedPOIs}
                   </p>
                 </div>
                 <div className="bg-gray-900 rounded-lg p-4">
-                  <p className="text-sm text-gray-400">Leads</p>
+                  <p className="text-sm text-gray-400">Joined</p>
                   <p className="text-2xl font-bold">
-                    {selectedUser._count.ownedLeads}
-                  </p>
-                </div>
-                <div className="bg-gray-900 rounded-lg p-4">
-                  <p className="text-sm text-gray-400">Scrape Jobs</p>
-                  <p className="text-2xl font-bold">
-                    {selectedUser._count.scrapeJobs}
-                  </p>
-                </div>
-                <div className="bg-gray-900 rounded-lg p-4">
-                  <p className="text-sm text-gray-400">Transactions</p>
-                  <p className="text-2xl font-bold">
-                    {selectedUser._count.creditTransactions}
+                    {formatDate(selectedUser.createdAt)}
                   </p>
                 </div>
               </div>
 
               {/* Enhanced Stats Row */}
               {userActivity && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-900 rounded-lg p-4">
                     <p className="text-sm text-gray-400">Last Active</p>
                     <p className="text-lg font-semibold">
                       {userActivity.lastActive
                         ? formatRelativeTime(userActivity.lastActive)
                         : "Never"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-900 rounded-lg p-4">
-                    <p className="text-sm text-gray-400">Daily Burn Rate</p>
-                    <p className="text-lg font-semibold text-orange-400">
-                      {userActivity.creditBurnRate.daily}/day
-                    </p>
-                  </div>
-                  <div className="bg-gray-900 rounded-lg p-4">
-                    <p className="text-sm text-gray-400">Weekly Burn</p>
-                    <p className="text-lg font-semibold text-orange-400">
-                      {userActivity.creditBurnRate.weekly}/week
                     </p>
                   </div>
                   <div className="bg-gray-900 rounded-lg p-4">
@@ -520,20 +421,20 @@ export default function AdminUsersPage() {
                   <p className="text-sm text-gray-400 mb-3">30-Day Activity</p>
                   <div className="flex items-end gap-0.5 h-16">
                     {userActivity.activityTimeline.map((day, i) => {
-                      const maxCredits = Math.max(
-                        ...userActivity.activityTimeline.map((d) => d.creditsUsed),
+                      const maxPOIs = Math.max(
+                        ...userActivity.activityTimeline.map((d) => d.poisCreated),
                         1
                       );
                       const height = Math.max(
-                        (day.creditsUsed / maxCredits) * 100,
-                        day.creditsUsed > 0 ? 8 : 2
+                        (day.poisCreated / maxPOIs) * 100,
+                        day.poisCreated > 0 ? 8 : 2
                       );
                       return (
                         <div
                           key={i}
                           className="flex-1 bg-accent/60 hover:bg-accent transition-colors rounded-sm"
                           style={{ height: `${height}%` }}
-                          title={`${day.date}: ${day.creditsUsed} credits, ${day.leadsCreated} leads`}
+                          title={`${day.date}: ${day.poisCreated} POIs`}
                         />
                       );
                     })}
@@ -545,94 +446,24 @@ export default function AdminUsersPage() {
                 </div>
               )}
 
-              {/* Credit Actions */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setCreditAction("add");
-                    setShowCreditsModal(true);
-                  }}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors"
-                >
-                  Add Credits
-                </button>
-                <button
-                  onClick={() => {
-                    setCreditAction("deduct");
-                    setShowCreditsModal(true);
-                  }}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
-                >
-                  Deduct Credits
-                </button>
-              </div>
-
-              {/* Recent Transactions */}
+              {/* Recent Activity */}
               <div>
-                <h4 className="font-semibold mb-3">Recent Transactions</h4>
-                {selectedUser.recentTransactions.length === 0 ? (
-                  <p className="text-gray-400 text-sm">No transactions yet</p>
+                <h4 className="font-semibold mb-3">Recent Activity</h4>
+                {selectedUser.recentActivity.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No activity yet</p>
                 ) : (
                   <div className="space-y-2">
-                    {selectedUser.recentTransactions.map((tx) => (
+                    {selectedUser.recentActivity.map((item) => (
                       <div
-                        key={tx.id}
+                        key={item.id}
                         className="flex items-center justify-between bg-gray-900 rounded-lg px-4 py-3"
                       >
                         <div>
                           <p className="text-sm font-medium">
-                            {tx.description || tx.type}
+                            {item.description || item.type}
                           </p>
                           <p className="text-xs text-gray-400">
-                            {formatDateTime(tx.createdAt)}
-                          </p>
-                        </div>
-                        <span
-                          className={`font-mono font-bold ${
-                            tx.amount > 0 ? "text-green-400" : "text-red-400"
-                          }`}
-                        >
-                          {tx.amount > 0 ? "+" : ""}
-                          {tx.amount}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Recent Scrape Jobs */}
-              <div>
-                <h4 className="font-semibold mb-3">Recent Scrape Jobs</h4>
-                {selectedUser.recentScrapeJobs.length === 0 ? (
-                  <p className="text-gray-400 text-sm">No scrape jobs yet</p>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedUser.recentScrapeJobs.map((job) => (
-                      <div
-                        key={job.id}
-                        className="flex items-center justify-between bg-gray-900 rounded-lg px-4 py-3"
-                      >
-                        <div>
-                          <p className="text-sm font-medium">{job.query}</p>
-                          <p className="text-xs text-gray-400">
-                            {job.type} - {formatDateTime(job.createdAt)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              job.status === "COMPLETED"
-                                ? "bg-green-500/20 text-green-400"
-                                : job.status === "FAILED"
-                                  ? "bg-red-500/20 text-red-400"
-                                  : "bg-yellow-500/20 text-yellow-400"
-                            }`}
-                          >
-                            {job.status}
-                          </span>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {job.leadsCreated} leads
+                            {formatDateTime(item.createdAt)}
                           </p>
                         </div>
                       </div>
@@ -645,90 +476,6 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* Credits Modal */}
-      {showCreditsModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1100] p-4">
-          <div className="bg-gray-800 rounded-2xl border border-gray-700 max-w-md w-full">
-            <div className="border-b border-gray-700 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold">
-                {creditAction === "add" ? "Add Credits" : "Deduct Credits"}
-              </h2>
-              <button
-                onClick={() => setShowCreditsModal(false)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <form onSubmit={handleCreditsSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={creditAmount}
-                  onChange={(e) => setCreditAmount(e.target.value)}
-                  placeholder="Enter amount"
-                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Reason
-                </label>
-                <textarea
-                  value={creditReason}
-                  onChange={(e) => setCreditReason(e.target.value)}
-                  placeholder="Enter reason for this adjustment"
-                  rows={3}
-                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-accent resize-none"
-                  required
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCreditsModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 ${
-                    creditAction === "add"
-                      ? "bg-green-600 hover:bg-green-500"
-                      : "bg-red-600 hover:bg-red-500"
-                  }`}
-                >
-                  {isSubmitting
-                    ? "Processing..."
-                    : creditAction === "add"
-                      ? "Add Credits"
-                      : "Deduct Credits"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

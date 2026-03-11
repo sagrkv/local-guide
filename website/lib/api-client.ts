@@ -6,7 +6,7 @@ const API_BASE_URL = (() => {
 
   // Development fallback only
   if (process.env.NODE_ENV === "development" || typeof window === "undefined") {
-    return "http://localhost:3001/api";
+    return "http://localhost:3002/api/v1";
   }
 
   // In production browser, warn and try to construct from current origin
@@ -19,38 +19,13 @@ const API_BASE_URL = (() => {
 // Change this periodically and keep it secret
 const ADMIN_API_PREFIX = process.env.NEXT_PUBLIC_ADMIN_PREFIX || "nucleus-admin-x7k9m2";
 
-// Clerk token getter - set by the auth provider
-let clerkGetToken: (() => Promise<string | null>) | null = null;
-
-/**
- * Set the Clerk token getter function
- * This should be called from a component that has access to Clerk's useAuth hook
- */
-export function setClerkTokenGetter(getter: () => Promise<string | null>) {
-  clerkGetToken = getter;
-}
-
 class ApiClient {
   /**
-   * Get authentication token
-   * Prefers Clerk token if available, falls back to localStorage for legacy support
+   * Get authentication token from localStorage
    */
   private async getToken(): Promise<string | null> {
-    // Try Clerk token first
-    if (clerkGetToken) {
-      try {
-        const clerkToken = await clerkGetToken();
-        if (clerkToken) {
-          return clerkToken;
-        }
-      } catch (error) {
-        console.error("Failed to get Clerk token:", error);
-      }
-    }
-
-    // Fall back to legacy localStorage token
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("token");
+    return localStorage.getItem("lg_token");
   }
 
   private async request<T>(
@@ -76,7 +51,7 @@ class ApiClient {
     } catch (error) {
       // Network error - server is likely not running
       throw new Error(
-        "Unable to connect to server. Please make sure the backend is running on port 3001.",
+        "Unable to connect to server. Please make sure the backend is running on port 3002.",
       );
     }
 
@@ -118,7 +93,7 @@ class ApiClient {
       });
     } catch (error) {
       throw new Error(
-        "Unable to connect to server. Please make sure the backend is running on port 3001.",
+        "Unable to connect to server. Please make sure the backend is running on port 3002.",
       );
     }
 
@@ -165,146 +140,6 @@ class ApiClient {
     });
   }
 
-  // Leads
-  async getLeads(params?: {
-    page?: number;
-    limit?: number;
-    stage?: string;
-    category?: string;
-    priority?: string;
-    city?: string;
-    hasWebsite?: string;
-    minScore?: number;
-    search?: string;
-    sortBy?: string;
-    sortOrder?: string;
-  }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) searchParams.set(key, String(value));
-      });
-    }
-    return this.request<{ data: any[]; pagination: any }>(
-      `/leads?${searchParams}`,
-    );
-  }
-
-  async getLead(id: string) {
-    return this.request<any>(`/leads/${id}`);
-  }
-
-  async createLead(data: any) {
-    return this.request("/leads", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateLead(id: string, data: any) {
-    return this.request(`/leads/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteLead(id: string) {
-    return this.request(`/leads/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  async changeLeadStage(id: string, stage: string, notes?: string) {
-    return this.request(`/leads/${id}/stage`, {
-      method: "PATCH",
-      body: JSON.stringify({ stage, notes }),
-    });
-  }
-
-  async assignLead(id: string, userId: string | null) {
-    return this.request(`/leads/${id}/assign`, {
-      method: "POST",
-      body: JSON.stringify({ userId }),
-    });
-  }
-
-  // Activities
-  async getActivities(params?: {
-    leadId?: string;
-    page?: number;
-    limit?: number;
-  }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) searchParams.set(key, String(value));
-      });
-    }
-    return this.request<{ data: any[]; pagination: any }>(
-      `/activities?${searchParams}`,
-    );
-  }
-
-  async createActivity(data: any) {
-    return this.request("/activities", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async completeActivity(id: string, outcome?: string) {
-    return this.request(`/activities/${id}/complete`, {
-      method: "POST",
-      body: JSON.stringify({ outcome }),
-    });
-  }
-
-  async getLeadActivities(leadId: string, params?: { page?: number; limit?: number }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) searchParams.set(key, String(value));
-      });
-    }
-    return this.request<{
-      data: Array<{
-        id: string;
-        type: string;
-        title: string;
-        description: string | null;
-        outcome: string | null;
-        scheduledAt: string | null;
-        completedAt: string | null;
-        createdAt: string;
-        user: { id: string; name: string };
-      }>;
-      pagination: {
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-      };
-    }>(`/leads/${leadId}/activities?${searchParams}`);
-  }
-
-  async updateActivity(id: string, data: {
-    title?: string;
-    description?: string;
-    outcome?: string;
-    scheduledAt?: string;
-  }) {
-    return this.request(`/activities/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteActivity(id: string) {
-    return this.request(`/activities/${id}`, {
-      method: "DELETE",
-    });
-  }
-
   // Tags
   async getTags() {
     return this.request<any[]>("/tags");
@@ -313,6 +148,13 @@ class ApiClient {
   async createTag(data: { name: string; color?: string }) {
     return this.request("/tags", {
       method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTag(id: string, data: { name?: string; color?: string }) {
+    return this.request(`/tags/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(data),
     });
   }
@@ -346,82 +188,6 @@ class ApiClient {
 
   async getConversionRates() {
     return this.request<any>("/dashboard/conversion-rates");
-  }
-
-  // Scraping
-  async getScrapeJobs(params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-  }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) searchParams.set(key, String(value));
-      });
-    }
-    return this.request<{ data: any[]; pagination: any }>(
-      `/scraping/jobs?${searchParams}`,
-    );
-  }
-
-  async getScrapeJob(id: string) {
-    return this.request<any>(`/scraping/jobs/${id}`);
-  }
-
-  async createScrapeJob(data: {
-    type: string;
-    query: string;
-    location?: string;
-    category?: string;
-    regionId?: string;
-    maxResults?: number;
-  }) {
-    return this.request("/scraping/jobs", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async cancelScrapeJob(id: string) {
-    return this.request(`/scraping/jobs/${id}/cancel`, {
-      method: "POST",
-    });
-  }
-
-  async getScrapingStats() {
-    return this.request<any>("/scraping/stats");
-  }
-
-  // Regions
-  async getRegions() {
-    return this.request<any[]>("/regions");
-  }
-
-  async createRegion(data: { name: string; cities: string[]; state?: string }) {
-    return this.request("/regions", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateRegion(id: string, data: any) {
-    return this.request(`/regions/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteRegion(id: string) {
-    return this.request(`/regions/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  async toggleRegion(id: string) {
-    return this.request(`/regions/${id}/toggle`, {
-      method: "POST",
-    });
   }
 
   // Contact Form (public - no auth required)
@@ -495,288 +261,6 @@ class ApiClient {
     }>("/contact/stats");
   }
 
-  // Zones
-  async getZones(params?: { city?: string; type?: string }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) searchParams.set(key, String(value));
-      });
-    }
-    return this.request<{
-      cities: Array<{
-        name: string;
-        state: string;
-        zones: Array<{
-          name: string;
-          lat: number;
-          lng: number;
-          radiusKm: number;
-          type: string;
-          businessTypes: string[];
-          priority: number;
-          description?: string;
-        }>;
-        totalZones: number;
-        zonesByType: Record<string, number>;
-      }>;
-      businessTypes: string[];
-      summary: { totalCities: number; totalZones: number };
-    }>(`/scraping/zones?${searchParams}`);
-  }
-
-  async getZonesSummary() {
-    return this.request<{
-      cities: Array<{
-        name: string;
-        state: string;
-        totalZones: number;
-        zonesByType: Record<string, number>;
-        topZones: Array<{ name: string; priority: number; type: string }>;
-      }>;
-      totalZones: number;
-      businessTypes: number;
-    }>("/scraping/zones/summary");
-  }
-
-  // API Logs
-  async getApiLogsStats(params?: {
-    startDate?: string;
-    endDate?: string;
-    provider?: string;
-    scrapeJobId?: string;
-  }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) searchParams.set(key, String(value));
-      });
-    }
-    return this.request<{
-      totalCalls: number;
-      successfulCalls: number;
-      failedCalls: number;
-      totalCost: number;
-      byProvider: Record<
-        string,
-        { calls: number; cost: number; errors: number }
-      >;
-    }>(`/scraping/api-logs/stats?${searchParams}`);
-  }
-
-  async getRecentApiLogs(limit: number = 100) {
-    return this.request<{
-      logs: Array<{
-        id: string;
-        provider: string;
-        endpoint: string;
-        statusCode: number;
-        responseTimeMs: number;
-        success: boolean;
-        error: string | null;
-        estimatedCost: number | null;
-        createdAt: string;
-        scrapeJobId: string | null;
-        metadata: string | null; // JSON string with details
-      }>;
-    }>(`/scraping/api-logs/recent?limit=${limit}`);
-  }
-
-  // ===== Perplexity Enhanced Features =====
-
-  // Deep research a lead for comprehensive sales intelligence
-  async deepResearchLead(leadId: string) {
-    return this.request<{
-      email?: string;
-      phone?: string;
-      website?: string;
-      ownerName?: string;
-      hasWebsite: boolean;
-      decisionMakers?: Array<{
-        name: string;
-        title?: string;
-        email?: string;
-        linkedin?: string;
-      }>;
-      companySize?: string;
-      estimatedRevenue?: string;
-      foundedYear?: number;
-      industry?: string;
-      specializations?: string[];
-      painPoints?: string[];
-      webServiceNeeds?: string[];
-      recentNews?: string[];
-      competitorWebsites?: string[];
-      personalizedPitch?: string;
-      rawAnalysis?: string;
-    }>("/scraping/perplexity/deep-research", {
-      method: "POST",
-      body: JSON.stringify({ prospectId: leadId }),
-    });
-  }
-
-  // Deep research a business by name (without existing lead)
-  async deepResearchBusiness(business: {
-    name: string;
-    address?: string;
-    city?: string;
-    website?: string;
-    category?: string;
-  }) {
-    return this.request<{
-      email?: string;
-      phone?: string;
-      website?: string;
-      ownerName?: string;
-      hasWebsite: boolean;
-      decisionMakers?: Array<{
-        name: string;
-        title?: string;
-        email?: string;
-        linkedin?: string;
-      }>;
-      companySize?: string;
-      estimatedRevenue?: string;
-      foundedYear?: number;
-      industry?: string;
-      specializations?: string[];
-      painPoints?: string[];
-      webServiceNeeds?: string[];
-      recentNews?: string[];
-      competitorWebsites?: string[];
-      personalizedPitch?: string;
-      rawAnalysis?: string;
-    }>("/scraping/perplexity/deep-research", {
-      method: "POST",
-      body: JSON.stringify({ business }),
-    });
-  }
-
-  // Find decision makers for a lead
-  async findDecisionMakers(leadId: string) {
-    return this.request<{
-      decisionMakers: Array<{
-        name: string;
-        title?: string;
-        email?: string;
-        linkedin?: string;
-      }>;
-    }>("/scraping/perplexity/decision-makers", {
-      method: "POST",
-      body: JSON.stringify({ prospectId: leadId }),
-    });
-  }
-
-  // Generate personalized outreach email for a lead
-  async generateOutreachEmail(leadId: string) {
-    return this.request<{
-      subject: string;
-      body: string;
-    }>("/scraping/perplexity/generate-email", {
-      method: "POST",
-      body: JSON.stringify({ prospectId: leadId }),
-    });
-  }
-
-  // ===== Website Analysis =====
-
-  // Rerun Lighthouse analysis on a lead
-  async rerunLighthouse(leadId: string) {
-    return this.request<{
-      success: boolean;
-      results?: {
-        performance: number;
-        seo: number;
-        accessibility: number;
-        bestPractices: number;
-      };
-      error?: string;
-      redirected?: boolean;
-      finalUrl?: string;
-      originalUrl?: string;
-      domainStatus?: "active" | "expired" | "parked" | "error";
-      statusMessage?: string;
-    }>("/scraping/analyze/lighthouse", {
-      method: "POST",
-      body: JSON.stringify({ leadId }),
-    });
-  }
-
-  // Detect technology stack of a website
-  async detectTechStack(leadId: string) {
-    return this.request<{
-      cms?: string;
-      framework?: string;
-      hosting?: string;
-      ecommerce?: string;
-      analytics?: string[];
-      marketing?: string[];
-      security?: {
-        hasSSL: boolean;
-        sslIssuer?: string;
-      };
-      mobile?: {
-        isResponsive: boolean;
-        hasMobileApp?: boolean;
-      };
-      performance?: {
-        estimatedLoadTime?: string;
-        issues?: string[];
-      };
-      seoTools?: string[];
-      socialIntegrations?: string[];
-      paymentGateways?: string[];
-      chatbots?: string[];
-      otherTechnologies?: string[];
-      recommendations?: string[];
-    }>("/scraping/analyze/tech-stack", {
-      method: "POST",
-      body: JSON.stringify({ leadId }),
-    });
-  }
-
-  // ===== Map-Based Scraping =====
-
-  // Estimate scraping costs for a geographic region
-  async estimateScrapingRegion(bounds: {
-    ne: { lat: number; lng: number };
-    sw: { lat: number; lng: number };
-  }) {
-    return this.request<{
-      cellCount: number;
-      estimatedLeads: number;
-      estimatedCredits: number;
-      areaKm2: number;
-    }>("/scraping/estimate", {
-      method: "POST",
-      body: JSON.stringify({ bounds }),
-    });
-  }
-
-  // Create scrape job with geographic bounds
-  async createScrapeJobWithBounds(data: {
-    type: string;
-    query: string;
-    bounds: {
-      ne: { lat: number; lng: number };
-      sw: { lat: number; lng: number };
-    };
-    category?: string;
-    maxResults?: number;
-    filters?: {
-      hasWebsite?: boolean;
-      hasEmail?: boolean;
-      hasPhone?: boolean;
-      minRating?: number;
-      minReviews?: number;
-    };
-  }) {
-    return this.request("/scraping/jobs", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
   // ===== Admin Panel =====
   // SECURITY: All admin API endpoints use the obscure URL prefix
 
@@ -795,13 +279,10 @@ class ApiClient {
         name: string;
         role: string;
         isActive: boolean;
-        creditBalance: number;
         createdAt: string;
         updatedAt: string;
         _count: {
-          ownedLeads: number;
-          scrapeJobs: number;
-          creditTransactions: number;
+          curatedPOIs: number;
         };
       }>;
       pagination: {
@@ -820,28 +301,15 @@ class ApiClient {
       name: string;
       role: string;
       isActive: boolean;
-      creditBalance: number;
       createdAt: string;
       updatedAt: string;
       _count: {
-        ownedLeads: number;
-        scrapeJobs: number;
-        creditTransactions: number;
+        curatedPOIs: number;
       };
-      recentTransactions: Array<{
+      recentActivity: Array<{
         id: string;
-        amount: number;
         type: string;
         description: string | null;
-        reference: string | null;
-        createdAt: string;
-      }>;
-      recentScrapeJobs: Array<{
-        id: string;
-        type: string;
-        query: string;
-        status: string;
-        leadsCreated: number;
         createdAt: string;
       }>;
     }>(`/${ADMIN_API_PREFIX}/users/${userId}`);
@@ -851,14 +319,8 @@ class ApiClient {
     return this.request<{
       activityTimeline: Array<{
         date: string;
-        scrapeJobs: number;
-        leadsCreated: number;
-        creditsUsed: number;
+        poisCreated: number;
       }>;
-      creditBurnRate: {
-        daily: number;
-        weekly: number;
-      };
       lastActive: string | null;
       apiUsage: {
         total: number;
@@ -873,33 +335,12 @@ class ApiClient {
       name?: string;
       isActive?: boolean;
       role?: "ADMIN" | "USER";
-      creditBalance?: number;
     }
   ) {
     return this.request(`/${ADMIN_API_PREFIX}/users/${userId}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
-  }
-
-  async addUserCredits(userId: string, amount: number, reason: string) {
-    return this.request<{ message: string; newBalance: number }>(
-      `/${ADMIN_API_PREFIX}/users/${userId}/credits`,
-      {
-        method: "POST",
-        body: JSON.stringify({ amount, reason }),
-      }
-    );
-  }
-
-  async deductUserCredits(userId: string, amount: number, reason: string) {
-    return this.request<{ message: string; newBalance: number }>(
-      `/${ADMIN_API_PREFIX}/users/${userId}/credits/deduct`,
-      {
-        method: "POST",
-        body: JSON.stringify({ amount, reason }),
-      }
-    );
   }
 
   // Admin Analytics
@@ -1626,6 +1067,317 @@ class ApiClient {
   async deleteReminder(id: string) {
     return this.request<{ message: string }>(`/reminders/${id}`, {
       method: "DELETE",
+    });
+  }
+
+  // ===== Local Guide: Cities =====
+
+  async getCities(params?: { status?: string; search?: string; page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      data: any[];
+      meta: { page: number; limit: number; total: number; totalPages: number; hasMore: boolean };
+    }>(`/cities?${searchParams}`);
+  }
+
+  async getCityBySlug(slug: string) {
+    return this.request<{ data: any }>(`/cities/${slug}`);
+  }
+
+  async createCity(data: Record<string, unknown>) {
+    return this.request<{ data: any }>("/cities", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCity(id: string, data: Record<string, unknown>) {
+    return this.request<{ data: any }>(`/cities/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCityStatus(id: string, status: string) {
+    return this.request<{ data: any }>(`/cities/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // ===== Local Guide: Themes =====
+
+  async getCityTheme(cityId: string) {
+    return this.request<{ data: any }>(`/cities/${cityId}/theme`);
+  }
+
+  async upsertCityTheme(cityId: string, data: Record<string, unknown>) {
+    return this.request<{ data: any }>(`/cities/${cityId}/theme`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ===== Local Guide: Categories =====
+
+  async getCategories(params?: { cityId?: string; isGlobal?: boolean; page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      data: any[];
+      meta: { page: number; limit: number; total: number; totalPages: number; hasMore: boolean };
+    }>(`/categories?${searchParams}`);
+  }
+
+  async createCategory(data: Record<string, unknown>) {
+    return this.request<{ data: any }>("/categories", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCategory(id: string, data: Record<string, unknown>) {
+    return this.request<{ data: any }>(`/categories/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteCategory(id: string) {
+    return this.request<{ data: any }>(`/categories/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // ===== Local Guide: POIs =====
+
+  async getCityPOIs(cityId: string, params?: Record<string, string | number | undefined>) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      data: any[];
+      meta: { page: number; limit: number; total: number; totalPages: number; hasMore: boolean };
+    }>(`/cities/${cityId}/pois?${searchParams}`);
+  }
+
+  async getCityPOIStats(cityId: string) {
+    return this.request<{ data: any }>(`/cities/${cityId}/pois/stats`);
+  }
+
+  async getReviewQueue(cityId: string, params?: { page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      data: any[];
+      meta: { page: number; limit: number; total: number; totalPages: number; hasMore: boolean };
+    }>(`/cities/${cityId}/pois/review-queue?${searchParams}`);
+  }
+
+  async getPOI(id: string) {
+    return this.request<{ data: any }>(`/pois/${id}`);
+  }
+
+  async createPOI(data: Record<string, unknown>) {
+    return this.request<{ data: any }>("/pois", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePOI(id: string, data: Record<string, unknown>) {
+    return this.request<{ data: any }>(`/pois/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async approvePOI(id: string) {
+    return this.request<{ data: any }>(`/pois/${id}/approve`, {
+      method: "POST",
+    });
+  }
+
+  async rejectPOI(id: string, reason: string) {
+    return this.request<{ data: any }>(`/pois/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async publishPOI(id: string) {
+    return this.request<{ data: any }>(`/pois/${id}/publish`, {
+      method: "POST",
+    });
+  }
+
+  // ===== Local Guide: POI Photos =====
+
+  async getPOIPhotos(poiId: string) {
+    return this.request<{ data: any[] }>(`/pois/${poiId}/photos`);
+  }
+
+  async addPOIPhoto(poiId: string, data: { url: string; caption?: string; isPrimary?: boolean }) {
+    return this.request<{ data: any }>(`/pois/${poiId}/photos`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePOIPhoto(photoId: string) {
+    return this.request<{ data: any }>(`/photos/${photoId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // ===== Local Guide: Places Search =====
+
+  async searchPlaces(query: string, bounds: { northLat: number; southLat: number; eastLng: number; westLng: number }) {
+    return this.request<{ data: any[] }>("/places/search", {
+      method: "POST",
+      body: JSON.stringify({ query, bounds }),
+    });
+  }
+
+  // ===== Local Guide: Itineraries =====
+
+  async getCityItineraries(cityId: string, params?: Record<string, string | number | undefined>) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      data: any[];
+      meta: { page: number; limit: number; total: number; totalPages: number; hasMore: boolean };
+    }>(`/cities/${cityId}/itineraries?${searchParams}`);
+  }
+
+  async getItinerary(id: string) {
+    return this.request<{ data: any }>(`/itineraries/${id}`);
+  }
+
+  async createItinerary(data: Record<string, unknown>) {
+    return this.request<{ data: any }>("/itineraries", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateItinerary(id: string, data: Record<string, unknown>) {
+    return this.request<{ data: any }>(`/itineraries/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteItinerary(id: string) {
+    return this.request<{ data: any }>(`/itineraries/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async addItineraryStop(itineraryId: string, data: Record<string, unknown>) {
+    return this.request<{ data: any }>(`/itineraries/${itineraryId}/stops`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeItineraryStop(stopId: string) {
+    return this.request<{ data: any }>(`/itinerary-stops/${stopId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // ===== Local Guide: Collections =====
+
+  async getCityCollections(cityId: string, params?: Record<string, string | number | undefined>) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      data: any[];
+      meta: { page: number; limit: number; total: number; totalPages: number; hasMore: boolean };
+    }>(`/cities/${cityId}/collections?${searchParams}`);
+  }
+
+  async getCollection(id: string) {
+    return this.request<{ data: any }>(`/collections/${id}`);
+  }
+
+  async createCollection(data: Record<string, unknown>) {
+    return this.request<{ data: any }>("/collections", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCollection(id: string, data: Record<string, unknown>) {
+    return this.request<{ data: any }>(`/collections/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteCollection(id: string) {
+    return this.request<{ data: any }>(`/collections/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async addCollectionItem(collectionId: string, data: Record<string, unknown>) {
+    return this.request<{ data: any }>(`/collections/${collectionId}/items`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeCollectionItem(itemId: string) {
+    return this.request<{ data: any }>(`/collection-items/${itemId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // ===== Local Guide: Discovery =====
+
+  async getDiscoveryJobs(params?: Record<string, string | number | undefined>) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.set(key, String(value));
+      });
+    }
+    return this.request<{
+      data: any[];
+      meta: { page: number; limit: number; total: number; totalPages: number; hasMore: boolean };
+    }>(`/discovery-jobs?${searchParams}`);
+  }
+
+  async startDiscovery(cityId: string, data: { categorySlug?: string; searchQuery?: string }) {
+    return this.request<{ data: any }>(`/cities/${cityId}/discover`, {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 }

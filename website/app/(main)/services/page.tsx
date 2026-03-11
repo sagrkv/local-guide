@@ -18,59 +18,59 @@ import {
 const services = [
   {
     id: 1,
-    title: "Web Design",
+    title: "Curated City Maps",
     description:
-      "Every project starts with design. We create custom interfaces that look incredible and convert visitors into customers. No templates, no shortcuts.",
+      "Every city gets a beautifully designed interactive map with hand-picked places. Cafes, temples, viewpoints, restaurants -- all curated by locals who know the city.",
     features: [
-      "Brand-aligned visual design",
-      "Mobile-first responsive layouts",
-      "Interactive prototypes",
-      "Design system documentation",
+      "Hand-picked places by locals",
+      "Categorized markers (food, culture, nature, nightlife)",
+      "Beautiful city-themed design",
+      "Works on any device",
     ],
     Icon: LayersIcon,
     color: "#3B82F6",
   },
   {
     id: 2,
-    title: "Web Development",
+    title: "Ready-Made Itineraries",
     description:
-      "Clean, modern code that's fast and maintainable. We use the latest frameworks to build sites that perform.",
+      "One-day, two-day, and weekend itineraries crafted by people who live there. No planning needed -- just follow the route.",
     features: [
-      "Custom frontend development",
-      "CMS integration (if needed)",
-      "Performance optimization",
-      "SEO fundamentals",
-      "Cross-browser testing",
+      "Optimized routes and timing",
+      "Multiple duration options",
+      "Budget-friendly suggestions",
+      "Offline-friendly guides",
+      "Walking and driving routes",
     ],
     Icon: CodeIcon,
     color: "#10B981",
   },
   {
     id: 3,
-    title: "Web Applications",
+    title: "City-Themed Design",
     description:
-      "Need more than a website? We build custom tools, dashboards, and platforms with proper databases, authentication, and admin panels.",
+      "Each city gets its own unique visual identity. Colors, typography, and atmosphere that reflect the character and spirit of the place.",
     features: [
-      "Full-stack development",
-      "Database design",
-      "User authentication",
-      "Admin dashboards",
-      "API integrations",
+      "Custom color palettes per city",
+      "Locally-inspired typography",
+      "Atmospheric background design",
+      "Consistent brand across platforms",
+      "Dark and light mode support",
     ],
     Icon: ServerIcon,
     color: "#F59E0B",
   },
   {
     id: 4,
-    title: "Ongoing Support",
+    title: "Open & Community-Driven",
     description:
-      "Websites need care. We offer maintenance packages to keep your site secure, updated, and running smoothly.",
+      "Local Guide is open source and free forever. Anyone can suggest places, contribute data, or help expand to new cities.",
     features: [
-      "Regular updates and backups",
-      "Security monitoring",
-      "Performance checks",
-      "Content updates",
-      "Priority support",
+      "100% free to use",
+      "Open source codebase",
+      "Community contributions welcome",
+      "No sponsored listings",
+      "Transparent curation process",
     ],
     Icon: ShieldIcon,
     color: "#8B5CF6",
@@ -81,15 +81,15 @@ const technologies = [
   { name: "Next.js", category: "Framework" },
   { name: "React", category: "Framework" },
   { name: "TypeScript", category: "Language" },
+  { name: "MapLibre GL", category: "Maps" },
   { name: "Tailwind CSS", category: "Styling" },
   { name: "Framer Motion", category: "Animation" },
-  { name: "GSAP", category: "Animation" },
-  { name: "Three.js", category: "3D" },
   { name: "PostgreSQL", category: "Database" },
   { name: "Prisma", category: "ORM" },
+  { name: "Fastify", category: "Backend" },
   { name: "Vercel", category: "Hosting" },
-  { name: "Railway", category: "Hosting" },
-  { name: "Stripe", category: "Payments" },
+  { name: "Supabase", category: "Database" },
+  { name: "Stadia Maps", category: "Tiles" },
 ];
 
 export default function ServicesPage() {
@@ -122,11 +122,11 @@ export default function ServicesPage() {
             transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Services
+              Features
             </h1>
             <p className="text-xl text-[var(--gray-400)] max-w-2xl leading-relaxed">
-              We focus on what we're great at: designing and building websites
-              that help businesses grow.
+              Everything that makes Local Guide the best way to explore
+              a new city.
             </p>
           </motion.div>
         </div>
@@ -263,11 +263,11 @@ export default function ServicesPage() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-              Technologies we use
+              Built with modern tech
             </h2>
             <p className="text-[var(--gray-400)] text-lg max-w-xl mx-auto">
-              We work with modern tools and frameworks to deliver fast,
-              scalable, and maintainable solutions.
+              Open source and built with the best tools for performance,
+              accessibility, and beautiful design.
             </p>
           </motion.div>
 
@@ -315,14 +315,14 @@ export default function ServicesPage() {
             transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
           >
             <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-              Ready to get started?
+              Ready to explore?
             </h2>
             <p className="text-[var(--gray-400)] text-lg mb-8 max-w-xl mx-auto">
-              Check out our pricing or get in touch to discuss your project.
+              Pick a city and start discovering. No sign-up required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button href="/pricing" size="lg">
-                View Pricing
+              <Button href="/explore" size="lg">
+                Explore Cities
               </Button>
               <Button href="/contact" variant="secondary" size="lg">
                 Contact Us

@@ -15,99 +15,62 @@ import {
 const packages = [
   {
     id: 1,
-    name: "Starter",
-    price: "₹50,000",
-    priceShort: "₹50K",
-    description: "Startups, MVPs, campaign landing pages",
+    name: "Free",
+    price: "₹0",
+    priceShort: "Free",
+    description: "Everything you need to explore any city",
     features: [
-      "Single-page responsive website",
-      "Custom design (not a template)",
-      "Contact form integration",
-      "Basic SEO setup",
-      "Mobile optimization",
-      "2 rounds of revisions",
+      "All curated city maps",
+      "All hand-picked places",
+      "All ready-made itineraries",
+      "Mobile-friendly interface",
+      "No account required",
+      "No ads, no sponsored listings",
     ],
-    timeline: "1-2 weeks",
-    color: "#3B82F6",
-    popular: false,
-  },
-  {
-    id: 2,
-    name: "Business",
-    price: "₹1,00,000",
-    priceShort: "₹1L",
-    description: "Growing businesses, professional services",
-    features: [
-      "5-7 page responsive website",
-      "Custom design + brand alignment",
-      "Contact forms + basic analytics",
-      "SEO optimization",
-      "CMS for easy updates (optional)",
-      "3 rounds of revisions",
-    ],
-    timeline: "3-4 weeks",
+    timeline: "forever",
     color: "#10B981",
     popular: true,
   },
   {
-    id: 3,
-    name: "Professional",
-    price: "₹2,00,000",
-    priceShort: "₹2L",
-    description: "E-commerce, SaaS products, complex needs",
+    id: 2,
+    name: "Contributor",
+    price: "Free",
+    priceShort: "Free",
+    description: "Help grow the community",
     features: [
-      "Full web application",
-      "Database integration",
-      "User authentication",
-      "Admin dashboard",
-      "API integrations",
-      "Comprehensive documentation",
-      "30 days post-launch support",
+      "Everything in Free",
+      "Suggest new places",
+      "Rate and review spots",
+      "Create custom itineraries",
+      "Save favorite places",
+      "Request new cities",
     ],
-    timeline: "6-8 weeks",
-    color: "#F59E0B",
-    popular: false,
-  },
-  {
-    id: 4,
-    name: "Custom",
-    price: "Let's talk",
-    priceShort: "Custom",
-    description: "Complex applications, mobile apps, enterprise",
-    features: [
-      "Custom scoping and planning",
-      "Dedicated project management",
-      "Flexible milestone payments",
-      "Extended support options",
-      "Full documentation",
-      "Training and handover",
-    ],
-    timeline: "Varies",
-    color: "#8B5CF6",
+    timeline: "forever",
+    color: "#3B82F6",
     popular: false,
   },
 ];
 
 const faqs = [
   {
-    question: "What's your payment structure?",
+    question: "Is Local Guide really free?",
     answer:
-      "50% upfront to begin, 50% on completion. For larger projects, we can discuss milestone-based payments.",
+      "Yes, 100% free. No hidden costs, no premium tiers, no subscriptions. All maps and itineraries are available to everyone.",
   },
   {
-    question: "Do you offer ongoing maintenance?",
+    question: "How can I contribute?",
     answer:
-      "Yes. We offer monthly maintenance packages starting at ₹5,000/month.",
+      "Create a free account and start suggesting places, writing reviews, or requesting new cities. We review all contributions to maintain quality.",
   },
   {
-    question: "Can you work with my existing brand guidelines?",
+    question: "How do you keep the lights on?",
     answer:
-      "Absolutely. We'll work within your brand or help refine it if needed.",
+      "We are open source and community-supported. We may explore ethical sponsorships in the future, but will never add ads or paid listings.",
   },
   {
-    question: "What if I need changes after launch?",
+    question: "Can I use this for my travel business?",
     answer:
-      "Minor tweaks within 2 weeks of launch are included. Larger changes are billed at our hourly rate.",
+      "Yes! The maps and data are freely available. If you want to embed our maps or use our API, get in touch.",
   },
 ];
 
@@ -144,11 +107,11 @@ export default function PricingPage() {
             className="text-center"
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Transparent Pricing
+              Free Forever
             </h1>
             <p className="text-xl text-[var(--gray-400)] max-w-2xl mx-auto leading-relaxed">
-              No surprises. No hidden fees. Pick a package or tell us what you
-              need.
+              No subscriptions. No paywalls. Every map and itinerary is free
+              to use.
             </p>
           </motion.div>
         </div>
@@ -227,7 +190,7 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="py-16 lg:py-24">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
             {packages.map((pkg, index) => (
               <motion.div
                 key={pkg.id}
@@ -292,11 +255,11 @@ export default function PricingPage() {
                   </ul>
 
                   <Button
-                    href="/contact"
+                    href={pkg.id === 2 ? "/sign-up" : "/explore"}
                     variant={pkg.popular ? "primary" : "secondary"}
                     className="w-full"
                   >
-                    {pkg.id === 4 ? "Schedule a Call" : "Get Started"}
+                    {pkg.id === 2 ? "Create Account" : "Start Exploring"}
                   </Button>
                 </Card>
               </motion.div>
@@ -392,14 +355,14 @@ export default function PricingPage() {
             transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
           >
             <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-              Not sure which package?
+              Ready to explore?
             </h2>
             <p className="text-[var(--gray-400)] text-lg mb-8 max-w-xl mx-auto">
-              Tell us about your project and we'll recommend the best option for
-              your needs and budget.
+              Pick a city and start discovering curated places and itineraries.
+              No sign-up needed.
             </p>
-            <Button href="/contact" size="lg">
-              Let's Talk
+            <Button href="/explore" size="lg">
+              Explore Cities
             </Button>
           </motion.div>
         </div>

@@ -1,27 +1,27 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import jwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
+import compress from "@fastify/compress";
+import fastifyJwt from "@fastify/jwt";
+import { randomUUID } from "crypto";
 import { authRoutes } from "./modules/auth/auth.routes.js";
-import { leadsRoutes } from "./modules/leads/leads.routes.js";
-import { activitiesRoutes } from "./modules/activities/activities.routes.js";
 import { tagsRoutes } from "./modules/tags/tags.routes.js";
-import { scrapingRoutes } from "./modules/scraping/scraping.routes.js";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.routes.js";
-import { regionsRoutes } from "./modules/scraping/regions.routes.js";
-import { contactRoutes } from "./modules/contact/contact.routes.js";
-import { prospectsRoutes } from "./modules/prospects/prospects.routes.js";
-import { creditsRoutes } from "./modules/credits/credits.routes.js";
 import { auditRoutes } from "./modules/audit/audit.routes.js";
-import { couponsRoutes } from "./modules/coupons/coupons.routes.js";
-import { gdprRoutes } from "./modules/gdpr/gdpr.routes.js";
 import { adminRoutes } from "./modules/admin/admin.routes.js";
-import { analysisRoutes } from "./modules/analysis/analysis.routes.js";
-import { remindersRoutes } from "./modules/reminders/reminders.routes.js";
-import { savedRegionsRoutes } from "./modules/saved-regions/saved-regions.routes.js";
+import { citiesRoutes } from "./modules/cities/cities.routes.js";
+import { themesRoutes } from "./modules/themes/themes.routes.js";
+import { categoriesRoutes, cityCategoriesRoutes } from "./modules/categories/categories.routes.js";
+import { poisRoutes } from "./modules/pois/pois.routes.js";
+import { poiPhotosRoutes } from "./modules/poi-photos/poi-photos.routes.js";
+import { syncRoutes } from "./modules/sync/sync.routes.js";
+import { itinerariesRoutes } from "./modules/itineraries/itineraries.routes.js";
+import { collectionsRoutes } from "./modules/collections/collections.routes.js";
+import { discoveryRoutes } from "./modules/discovery/discovery.routes.js";
+import { placesRoutes } from "./modules/places/places.routes.js";
+import { enrichmentRoutes } from "./modules/ai/enrichment.routes.js";
 import { config } from "./config.js";
-import { scrapeQueue, worker } from "./jobs/queue.js";
-import { clerkAuthenticate, isClerkConfigured } from "./middleware/clerk.js";
+import { jwtAuthenticate } from "./middleware/jwt.js";
 
 // Only use pino-pretty in dev if available, otherwise use standard JSON logging
 // In production, always use JSON logging for better log aggregation
@@ -40,39 +40,62 @@ const fastify = Fastify({
 });
 
 async function main() {
-  // Register plugins
-  await fastify.register(cors, {
-    origin: config.corsOrigins,
-    credentials: true,
-  });
+  // =========================================================================
+  // Plugins
+  // =========================================================================
 
-  await fastify.register(jwt, {
+  // Response compression
+  await fastify.register(compress, { global: true });
+
+  // JWT plugin for simple auth
+  await fastify.register(fastifyJwt, {
     secret: config.jwtSecret,
   });
 
+  // CORS - allow requests without Origin header (for mobile clients - #52)
+  await fastify.register(cors, {
+    origin: (origin, cb) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) {
+        cb(null, true);
+        return;
+      }
+      // Check against configured origins
+      if (config.corsOrigins.includes(origin)) {
+        cb(null, true);
+        return;
+      }
+      cb(new Error("Not allowed by CORS"), false);
+    },
+    credentials: true,
+  });
+
+  // Rate limiting with per-route config (#56)
   await fastify.register(rateLimit, {
-    max: config.isDev ? 1000 : 100, // Higher limit for dev/testing
+    max: config.isDev ? 1000 : 100,
     timeWindow: "1 minute",
   });
 
-  // Decorate with authenticate method
-  // Uses Clerk authentication if configured, falls back to JWT for legacy support
-  fastify.decorate("authenticate", async function (request: any, reply: any) {
-    // If Clerk is configured, use Clerk authentication
-    if (isClerkConfigured()) {
-      await clerkAuthenticate(request, reply);
-      return;
-    }
+  // =========================================================================
+  // Hooks
+  // =========================================================================
 
-    // Fall back to legacy JWT authentication
-    try {
-      await request.jwtVerify();
-    } catch (err) {
-      reply.status(401).send({ error: "Unauthorized" });
-    }
+  // Add X-Request-Id header to all responses
+  fastify.addHook("onRequest", async (request, reply) => {
+    const requestId = (request.headers["x-request-id"] as string) || randomUUID();
+    reply.header("X-Request-Id", requestId);
   });
 
-  // Health check - available at both /health and /api/health
+  // =========================================================================
+  // Authentication decorator
+  // =========================================================================
+  fastify.decorate("authenticate", async function (request: any, reply: any) {
+    await jwtAuthenticate(request, reply);
+  });
+
+  // =========================================================================
+  // Health check (no version prefix)
+  // =========================================================================
   const healthHandler = async () => {
     let database = false;
     let redis = false;
@@ -92,50 +115,78 @@ async function main() {
     return {
       status: "ok",
       timestamp: new Date().toISOString(),
+      version: "1.0.0",
       database,
       redis,
     };
   };
 
   fastify.get("/health", healthHandler);
-  fastify.get("/api/health", healthHandler);
 
-  // Register routes
-  await fastify.register(authRoutes, { prefix: "/api/auth" });
-  await fastify.register(leadsRoutes, { prefix: "/api/leads" });
-  await fastify.register(activitiesRoutes, { prefix: "/api/activities" });
-  await fastify.register(tagsRoutes, { prefix: "/api/tags" });
-  await fastify.register(scrapingRoutes, { prefix: "/api/scraping" });
-  await fastify.register(regionsRoutes, { prefix: "/api/regions" });
-  await fastify.register(dashboardRoutes, { prefix: "/api/dashboard" });
-  await fastify.register(contactRoutes, { prefix: "/api/contact" });
-  await fastify.register(prospectsRoutes, { prefix: "/api/prospects" });
-  await fastify.register(creditsRoutes, { prefix: "/api/credits" });
+  // =========================================================================
+  // API v1 Routes
+  // =========================================================================
+
+  // Auth routes
+  await fastify.register(authRoutes, { prefix: "/api/v1/auth" });
+
+  // Tags
+  await fastify.register(tagsRoutes, { prefix: "/api/v1/tags" });
+
+  // Dashboard
+  await fastify.register(dashboardRoutes, { prefix: "/api/v1/dashboard" });
+
   // Admin routes use obscure URL prefix for security
-  // SECURITY: The admin URL prefix should be kept secret and changed periodically
-  await fastify.register(auditRoutes, { prefix: `/api/${config.adminUrlPrefix}/audit-logs` });
-  await fastify.register(couponsRoutes, { prefix: "/api" });
-  await fastify.register(gdprRoutes, { prefix: "/api/user" });
-  await fastify.register(adminRoutes, { prefix: `/api/${config.adminUrlPrefix}` });
-  await fastify.register(analysisRoutes, { prefix: "/api/leads" });
-  await fastify.register(remindersRoutes, { prefix: "/api/reminders" });
-  await fastify.register(savedRegionsRoutes, { prefix: "/api/saved-regions" });
+  await fastify.register(auditRoutes, {
+    prefix: `/api/v1/${config.adminUrlPrefix}/audit-logs`,
+  });
+  await fastify.register(adminRoutes, {
+    prefix: `/api/v1/${config.adminUrlPrefix}`,
+  });
 
+  // Cities
+  await fastify.register(citiesRoutes, { prefix: "/api/v1/cities" });
+
+  // Themes (nested under cities)
+  await fastify.register(themesRoutes, { prefix: "/api/v1" });
+
+  // Categories
+  await fastify.register(categoriesRoutes, { prefix: "/api/v1/categories" });
+  await fastify.register(cityCategoriesRoutes, { prefix: "/api/v1" });
+
+  // POIs (routes define /cities/:cityId/pois and /pois/:id internally)
+  await fastify.register(poisRoutes, { prefix: "/api/v1" });
+
+  // POI Photos (routes define /pois/:poiId/photos and /photos/:id internally)
+  await fastify.register(poiPhotosRoutes, { prefix: "/api/v1" });
+
+  // Sync endpoint
+  await fastify.register(syncRoutes, { prefix: "/api/v1" });
+
+  // Itineraries (routes define /cities/:cityId/itineraries and /itineraries/:id internally)
+  await fastify.register(itinerariesRoutes, { prefix: "/api/v1" });
+
+  // Collections (routes define /cities/:cityId/collections and /collections/:id internally)
+  await fastify.register(collectionsRoutes, { prefix: "/api/v1" });
+
+  // Discovery jobs
+  await fastify.register(discoveryRoutes, { prefix: "/api/v1" });
+
+  // Google Places search
+  await fastify.register(placesRoutes, { prefix: "/api/v1" });
+
+  // AI Enrichment
+  await fastify.register(enrichmentRoutes, { prefix: "/api/v1" });
+
+  // =========================================================================
   // Start server
+  // =========================================================================
   try {
     await fastify.listen({ port: config.port, host: "0.0.0.0" });
-    console.log(`🚀 Server running on port ${config.port}`);
+    console.log(`Server running on port ${config.port}`);
     if (config.isDev) {
       console.log(`   Local: http://localhost:${config.port}`);
-    }
-
-    // Log queue/worker status
-    if (scrapeQueue && worker) {
-      console.log("Scrape queue and worker initialized (Redis connected)");
-    } else {
-      console.warn(
-        "WARNING: Scrape queue not available - Redis not configured. Google Maps/Google Search scraping will not work.",
-      );
+      console.log(`   Health: http://localhost:${config.port}/health`);
     }
   } catch (err) {
     fastify.log.error(err);
@@ -149,12 +200,5 @@ main();
 declare module "fastify" {
   interface FastifyInstance {
     authenticate: (request: any, reply: any) => Promise<void>;
-  }
-}
-
-declare module "@fastify/jwt" {
-  interface FastifyJWT {
-    payload: { userId: string; email: string; role: string };
-    user: { userId: string; email: string; role: string };
   }
 }

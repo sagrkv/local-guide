@@ -1,7 +1,7 @@
-# Boko - Project Tasks
+# Local Guide - Project Tasks
 
 ## Overview
-Lead Scraping & Management Backend for Boko
+Curated Tourist Map Platform - Local Guide
 
 ---
 
@@ -112,7 +112,7 @@ NEXT_PUBLIC_API_URL=https://your-backend.railway.app/api
 
 ## Default Admin Credentials
 After seeding the database:
-- **Email:** admin@boko.app
+- **Email:** admin@localguide.in
 - **Password:** admin123
 
 ⚠️ Change this password immediately after first login!

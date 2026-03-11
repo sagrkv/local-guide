@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
@@ -7,74 +8,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Enums
+
 enum UserRole {
   ADMIN
-  USER
+  CURATOR
+  VIEWER
 }
 
-enum LeadStage {
-  NEW
-  CONTACTED
-  INTERESTED
-  CLOSED
+enum CityStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
-enum LeadPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
+enum POIStatus {
+  AI_SUGGESTED
+  UNDER_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
 }
 
-enum LeadCategory {
-  STARTUP
-  RESTAURANT
-  HOTEL
-  ECOMMERCE
-  SALON
-  CLINIC
-  GYM
-  RETAIL
-  EDUCATION
-  REAL_ESTATE
-  AGENCY
-  OTHER
+enum POIPriority {
+  MUST_VISIT
+  RECOMMENDED
+  HIDDEN_GEM
+  OPTIONAL
 }
 
-enum LeadSource {
-  GOOGLE_SEARCH
-  GOOGLE_MAPS
-  GOOGLE_PLACES
-  WEBSITE_CONTACT
-  REFERRAL
-  MANUAL
-  PERPLEXITY
+enum BestSeason {
+  SPRING
+  SUMMER
+  AUTUMN
+  WINTER
+  MONSOON
+  ALL_YEAR
 }
 
-enum LeadType {
-  NO_WEBSITE
-  OUTDATED_WEBSITE
-  CONTACT_FORM
-  REFERRAL
-  MANUAL
+enum TimeOfDay {
+  EARLY_MORNING
+  MORNING
+  AFTERNOON
+  EVENING
+  NIGHT
+  ANY_TIME
 }
 
-enum ActivityType {
-  NOTE
-  CALL
-  EMAIL
-  MEETING
-  TASK
+enum TransportMode {
+  WALK
+  BICYCLE
+  AUTO_RICKSHAW
+  TAXI
+  BUS
+  METRO
+  TRAIN
+  BOAT
+  CABLE_CAR
+  NONE
 }
 
-enum ScrapeJobType {
-  GOOGLE_SEARCH
-  GOOGLE_MAPS
-  PERPLEXITY
-  DISCOVERY_PIPELINE
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
-enum ScrapeJobStatus {
+enum DiscoveryJobStatus {
   PENDING
   RUNNING
   COMPLETED
@@ -82,230 +82,435 @@ enum ScrapeJobStatus {
   CANCELLED
 }
 
-enum ProspectStatus {
-  PROSPECT // Raw scraped business, awaiting review
-  LEAD // Promoted to sales pipeline
-  NOT_INTERESTED // Reviewed and rejected
-  ARCHIVED // Soft deleted / hidden
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
 }
+
+// Models
 
 model User {
-  id            String   @id @default(cuid())
-  clerkId       String?  @unique // Clerk user ID - will be required after migration
-  email         String   @unique
-  password      String?  // Optional - Clerk handles auth, kept for legacy migration
-  name          String
-  imageUrl      String?  // Profile image URL from Clerk
-  role          UserRole @default(USER)
-  isActive      Boolean  @default(true)
-  creditBalance Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // GDPR compliance fields
-  deletedAt         DateTime? // Actual deletion date (set after grace period)
-  deleteRequestedAt DateTime? // When user requested account deletion
-  dataExportedAt    DateTime? // Last data export timestamp
-
-  // Relations
-  ownedLeads         Lead[]              @relation("OwnedLeads") // Leads this user owns (multi-tenancy)
-  leads              Lead[] // Leads assigned to this user
-  activities         Activity[]
-  scrapeJobs         ScrapeJob[]
-  promotedLeads      Lead[]              @relation("PromotedLeads")
-  creditTransactions CreditTransaction[]
-  auditLogs          AuditLog[]
-  createdCoupons     Coupon[]            @relation("CouponCreator")
-  couponRedemptions  CouponRedemption[]
-  reminders          Reminder[]
-  savedRegions       SavedRegion[]
-
-  @@map("users")
-}
-
-model Lead {
-  id            String       @id @default(cuid())
-  googlePlaceId String?      @unique // For deduplication with Google Places API
-  businessName  String
-  contactPerson String?
-  email         String?
-  phone         String?
-  website       String?
-  address       String?
-  city          String?
-  state         String?
-  locality      String? // Neighborhood/area within city
-  country       String       @default("India")
-  latitude      Float?
-  longitude     Float?
-  category      LeadCategory @default(OTHER)
-  stage         LeadStage    @default(NEW)
-  priority      LeadPriority @default(MEDIUM)
-  score         Int          @default(0) // 0-100
-  source        LeadSource   @default(MANUAL)
-  leadType      LeadType     @default(MANUAL)
-
-  // Website analysis
-  hasWebsite              Boolean @default(false)
-  lighthouseScore         Int? // Performance score 0-100
-  lighthouseSeo           Int? // SEO score 0-100
-  lighthouseAccessibility Int?
-  lighthouseBestPractices Int?
-  websiteNeedsRedesign    Boolean @default(false)
-
-  // AI analysis
-  perplexityAnalysis String? @db.Text
-  salesIntelligence  Json? // Structured deep research data (decision makers, company info, pain points, etc.)
-  qualificationError String? // Error message if Lighthouse/qualification failed
-
-  // Contact status
-  emailVerified   Boolean   @default(false)
-  lastContactedAt DateTime?
-  nextFollowUpAt  DateTime?
-
-  // Notes
-  notes String? @db.Text
-
-  // Prospect management
-  prospectStatus      ProspectStatus @default(PROSPECT)
-  promotedAt          DateTime? // When promoted from PROSPECT to LEAD
-  promotedById        String? // Who promoted it
-  reviewedAt          DateTime? // When last reviewed
-  notInterestedReason String? // Optional reason for NOT_INTERESTED
-
-  // Metadata
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations - Multi-tenancy: userId is the owner of this lead
-  userId       String // Owner of this lead for data isolation
-  user         User        @relation("OwnedLeads", fields: [userId], references: [id])
-  assignedToId String?
-  assignedTo   User?       @relation(fields: [assignedToId], references: [id])
-  promotedBy   User?       @relation("PromotedLeads", fields: [promotedById], references: [id])
-  activities   Activity[]
-  tags         TagOnLead[]
-  scrapeJobId  String?
-  scrapeJob    ScrapeJob?  @relation(fields: [scrapeJobId], references: [id])
-  reminders    Reminder[]
-
-  @@index([userId]) // Critical for multi-tenancy queries
-  @@index([userId, stage])
-  @@index([userId, prospectStatus])
-  @@index([stage])
-  @@index([category])
-  @@index([score])
-  @@index([assignedToId])
-  @@index([city, state])
-  @@index([prospectStatus])
-  @@index([prospectStatus, createdAt])
-  @@index([prospectStatus, scrapeJobId])
-  @@map("leads")
-}
-
-model Tag {
-  id        String      @id @default(cuid())
-  name      String      @unique
-  color     String      @default("#6366f1") // Indigo
-  createdAt DateTime    @default(now())
-  leads     TagOnLead[]
-
-  @@map("tags")
-}
-
-model TagOnLead {
-  leadId    String
-  tagId     String
-  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@id([leadId, tagId])
-  @@map("tags_on_leads")
-}
-
-model Activity {
-  id          String       @id @default(cuid())
-  type        ActivityType
-  title       String
-  description String?      @db.Text
-  outcome     String?
-  scheduledAt DateTime?
-  completedAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  // Relations
-  leadId String
-  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  @@index([userId]) // Critical for multi-tenancy queries
-  @@index([leadId])
-  @@index([type])
-  @@map("activities")
-}
-
-model ScrapingRegion {
   id        String   @id @default(cuid())
-  name      String   @unique
-  cities    String[] // Array of city names
-  state     String?
-  country   String   @default("India")
+  email     String   @unique
+  name      String
+  imageUrl  String?
+  password  String?
+  role      UserRole @default(VIEWER)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  scrapeJobs ScrapeJob[]
+  curatedPOIs        POI[]          @relation("CuratedBy")
+  createdItineraries Itinerary[]
+  createdCollections Collection[]
+  uploadedMedia      Media[]
+  discoveryJobs      DiscoveryJob[]
+  auditLogs          AuditLog[]
 
-  @@map("scraping_regions")
+  @@map("users")
 }
 
-model ScrapeJob {
-  id       String          @id @default(cuid())
-  type     ScrapeJobType
-  query    String
-  location String?
-  category LeadCategory?
-  status   ScrapeJobStatus @default(PENDING)
+model City {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  tagline     String?
+  description String?    @db.Text
+  country     String     @default("India")
+  state       String?
 
-  // Pre-scrape filters (JSON object with filter criteria)
-  // Example: { hasWebsite: true, hasEmail: true, minRating: 3.5, minReviews: 10 }
-  filters Json?
+  heroImageUrl String?
+  ogImageUrl   String?
 
-  // Results
-  leadsFound      Int @default(0)
-  leadsCreated    Int @default(0)
-  leadsDuplicate  Int @default(0)
-  leadsSkipped    Int @default(0) // Businesses skipped because they have good websites
-  totalFound      Int @default(0) // Total leads discovered before any filtering
-  matchedFilters  Int @default(0) // Leads that matched user's pre-scrape filters
+  centerLat    Float
+  centerLng    Float
+  defaultZoom  Int        @default(13)
+  boundsNorthLat Float?
+  boundsSouthLat Float?
+  boundsEastLng  Float?
+  boundsWestLng  Float?
 
-  // Error tracking
+  timezone  String     @default("Asia/Kolkata")
+  currency  String     @default("INR")
+  language  String     @default("en")
+  status    CityStatus @default(DRAFT)
+  sortOrder Int        @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  theme         CityTheme?
+  pois          POI[]
+  categories    Category[]
+  itineraries   Itinerary[]
+  collections   Collection[]
+  media         Media[]
+  discoveryJobs DiscoveryJob[]
+
+  @@index([status])
+  @@index([slug])
+  @@index([sortOrder])
+  @@map("cities")
+}
+
+model CityTheme {
+  id     String @id @default(cuid())
+  cityId String @unique
+
+  themePresetId   String @default("default")
+
+  colorPrimary    String @default("#1E3A5F")
+  colorSecondary  String @default("#F5E6D3")
+  colorAccent     String @default("#D4A574")
+  colorBackground String @default("#FAFAF8")
+  colorText       String @default("#1A1A1A")
+
+  displayFontUrl    String?
+  displayFontFamily String @default("'Playfair Display', serif")
+  bodyFontUrl       String?
+  bodyFontFamily    String @default("'Inter', sans-serif")
+
+  logoUrl              String?
+  emblemUrl            String?
+  backgroundPatternUrl String?
+
+  mapStyleJson Json?
+  mapTileUrl   String?
+  iconPack     String @default("default")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@map("city_themes")
+}
+
+model POI {
+  id     String @id @default(cuid())
+  cityId String
+  slug   String
+
+  name             String
+  shortDescription String?
+  longDescription  String?    @db.Text
+  latitude         Float
+  longitude        Float
+  googlePlaceId    String?    @unique
+
+  categoryId  String
+  subcategory String?
+
+  estimatedTimeToSpend String?
+  bestTimeToVisit      TimeOfDay  @default(ANY_TIME)
+  bestSeason           BestSeason @default(ALL_YEAR)
+  entryFee             String?
+  openingHours         Json?
+  dressCode            String?
+
+  phone           String?
+  website         String?
+  instagram       String?
+  address         String?
+  directionsNote  String?    @db.Text
+  nearestLandmark String?
+
+  parkingAvailable     Boolean @default(false)
+  wheelchairAccessible Boolean @default(false)
+  petFriendly          Boolean @default(false)
+  wifiAvailable        Boolean @default(false)
+  familyFriendly       Boolean @default(true)
+  budgetFriendly       Boolean @default(false)
+
+  localTip    String? @db.Text
+  warningNote String? @db.Text
+
+  status          POIStatus   @default(AI_SUGGESTED)
+  curatedById     String?
+  aiSuggestedAt   DateTime?
+  humanApprovedAt DateTime?
+  verifiedAt      DateTime?
+  qualityScore    Int?
+  rejectionReason String?
+
+  priority      POIPriority @default(RECOMMENDED)
+  iconOverride  String?
+  colorOverride String?
+  sortOrder     Int         @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city            City             @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  category        Category         @relation(fields: [categoryId], references: [id])
+  curatedBy       User?            @relation("CuratedBy", fields: [curatedById], references: [id])
+  photos          POIPhoto[]
+  tags            TagsOnPOIs[]
+  itineraryStops  ItineraryStop[]
+  collectionItems CollectionItem[]
+
+  @@unique([cityId, slug])
+  @@index([cityId, status])
+  @@index([cityId, categoryId])
+  @@index([cityId, priority])
+  @@index([status])
+  @@index([categoryId])
+  @@index([latitude, longitude])
+  @@index([qualityScore])
+  @@index([sortOrder])
+  @@map("pois")
+}
+
+model POIPhoto {
+  id        String  @id @default(cuid())
+  poiId     String
+  url       String
+  caption   String?
+  source    String?
+  isPrimary Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  poi POI @relation(fields: [poiId], references: [id], onDelete: Cascade)
+
+  @@index([poiId, sortOrder])
+  @@index([poiId, isPrimary])
+  @@map("poi_photos")
+}
+
+model Category {
+  id       String  @id @default(cuid())
+  name     String
+  slug     String
+  icon     String?
+  color    String  @default("#6366f1")
+  emoji    String?
+
+  isGlobal  Boolean @default(true)
+  cityId    String?
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city City? @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  pois POI[]
+
+  @@unique([slug, cityId])
+  @@index([isGlobal])
+  @@index([cityId])
+  @@index([sortOrder])
+  @@map("categories")
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+  slug  String @unique
+  color String @default("#6366f1")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pois TagsOnPOIs[]
+
+  @@map("tags")
+}
+
+model TagsOnPOIs {
+  poiId String
+  tagId String
+
+  poi POI @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([poiId, tagId])
+  @@map("tags_on_pois")
+}
+
+model Itinerary {
+  id          String        @id @default(cuid())
+  cityId      String
+  title       String
+  slug        String
+  description String?       @db.Text
+  duration    String
+  coverImageUrl String?
+  difficulty    String?
+  estimatedBudget String?
+  status      ContentStatus @default(DRAFT)
+  sortOrder   Int           @default(0)
+
+  createdById String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city      City            @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  createdBy User            @relation(fields: [createdById], references: [id])
+  stops     ItineraryStop[]
+
+  @@unique([cityId, slug])
+  @@index([cityId, status])
+  @@index([cityId, sortOrder])
+  @@map("itineraries")
+}
+
+model ItineraryStop {
+  id            String        @id @default(cuid())
+  itineraryId   String
+  poiId         String
+  order         Int
+  timeOfDay     TimeOfDay     @default(ANY_TIME)
+  duration      String?
+  note          String?       @db.Text
+  transportToNext TransportMode @default(NONE)
+  transportNote   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  poi       POI       @relation(fields: [poiId], references: [id], onDelete: Cascade)
+
+  @@unique([itineraryId, order])
+  @@index([itineraryId])
+  @@index([poiId])
+  @@map("itinerary_stops")
+}
+
+model Collection {
+  id            String        @id @default(cuid())
+  cityId        String
+  title         String
+  slug          String
+  description   String?       @db.Text
+  coverImageUrl String?
+  status        ContentStatus @default(DRAFT)
+  sortOrder     Int           @default(0)
+
+  createdById String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city      City             @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  createdBy User             @relation(fields: [createdById], references: [id])
+  items     CollectionItem[]
+
+  @@unique([cityId, slug])
+  @@index([cityId, status])
+  @@index([cityId, sortOrder])
+  @@map("collections")
+}
+
+model CollectionItem {
+  id           String  @id @default(cuid())
+  collectionId String
+  poiId        String
+  order        Int
+  note         String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  poi        POI        @relation(fields: [poiId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, poiId])
+  @@unique([collectionId, order])
+  @@index([collectionId])
+  @@index([poiId])
+  @@map("collection_items")
+}
+
+model Media {
+  id        String    @id @default(cuid())
+  url       String
+  filename  String
+  mimeType  String
+  sizeBytes Int
+  width     Int?
+  height    Int?
+  alt       String?
+  type      MediaType @default(IMAGE)
+
+  cityId       String?
+  uploadedById String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city       City? @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  uploadedBy User  @relation(fields: [uploadedById], references: [id])
+
+  @@index([cityId])
+  @@index([uploadedById])
+  @@index([type])
+  @@map("media")
+}
+
+model DiscoveryJob {
+  id     String @id @default(cuid())
+  cityId String
+
+  categorySlug String?
+  searchQuery  String?
+  source       String  @default("google_places")
+
+  status DiscoveryJobStatus @default(PENDING)
+
+  candidatesFound   Int @default(0)
+  approved          Int @default(0)
+  rejected          Int @default(0)
+  duplicatesSkipped Int @default(0)
+
   errorMessage String? @db.Text
   errorStack   String? @db.Text
 
-  // Timing
   startedAt   DateTime?
   completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 
-  // Relations
-  regionId          String?
-  region            ScrapingRegion?     @relation(fields: [regionId], references: [id])
-  createdById       String
-  createdBy         User                @relation(fields: [createdById], references: [id])
-  leads             Lead[]
-  apiCallLogs       ApiCallLog[]
-  zoneScrapeHistory ZoneScrapeHistory[]
+  createdById String
 
-  @@index([createdById]) // Critical for multi-tenancy queries
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city      City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([cityId])
   @@index([status])
-  @@index([type])
-  @@map("scrape_jobs")
+  @@index([createdById])
+  @@index([createdAt])
+  @@map("discovery_jobs")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  timestamp    DateTime @default(now())
+  userId       String?
+  action       String
+  resource     String
+  resourceId   String?
+  details      Json?
+  ipAddress    String?
+  userAgent    String?
+  success      Boolean  @default(true)
+  errorMessage String?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([resource])
+  @@map("audit_logs")
 }
 
 model Setting {
@@ -316,215 +521,4 @@ model Setting {
   updatedAt DateTime @updatedAt
 
   @@map("settings")
-}
-
-enum ContactStatus {
-  NEW
-  READ
-  REPLIED
-  ARCHIVED
-}
-
-model ContactSubmission {
-  id        String        @id @default(cuid())
-  name      String
-  email     String
-  company   String?
-  phone     String?
-  service   String?
-  budget    String?
-  message   String        @db.Text
-  status    ContactStatus @default(NEW)
-  notes     String?       @db.Text
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-
-  @@index([status])
-  @@index([createdAt])
-  @@map("contact_submissions")
-}
-
-// API Call Logging for cost tracking
-enum ApiProvider {
-  GOOGLE_PLACES
-  PERPLEXITY
-  GOOGLE_MAPS
-  LIGHTHOUSE
-}
-
-model ApiCallLog {
-  id             String      @id @default(cuid())
-  provider       ApiProvider
-  endpoint       String
-  method         String // GET, POST
-  statusCode     Int
-  responseTimeMs Int
-  success        Boolean
-  error          String?     @db.Text
-  metadata       String?     @db.Text // JSON string
-  estimatedCost  Float?      @default(0)
-
-  // Link to scrape job if applicable
-  scrapeJobId String?
-  scrapeJob   ScrapeJob? @relation(fields: [scrapeJobId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-
-  @@index([provider])
-  @@index([scrapeJobId])
-  @@index([createdAt])
-  @@map("api_call_logs")
-}
-
-// Track which zones have been scraped for each business type
-// This allows the scraper to skip already-scraped zones and find new leads
-model ZoneScrapeHistory {
-  id           String   @id @default(cuid())
-  city         String // e.g., "Bangalore"
-  zoneName     String // e.g., "Koramangala"
-  businessType String // e.g., "gym", "salon", "clinic"
-  leadsFound   Int      @default(0)
-  scrapedAt    DateTime @default(now())
-
-  // Link to scrape job
-  scrapeJobId String?
-  scrapeJob   ScrapeJob? @relation(fields: [scrapeJobId], references: [id], onDelete: SetNull)
-
-  @@unique([city, zoneName, businessType]) // One record per zone+businessType combo
-  @@index([city, businessType])
-  @@index([scrapedAt])
-  @@map("zone_scrape_history")
-}
-
-// Credit System
-enum CreditTransactionType {
-  COUPON_REDEMPTION // Credits added via coupon code
-  LEAD_CHARGE // Credits deducted for valid lead
-  ANALYSIS_CHARGE // Credits deducted for Lighthouse/tech stack/sales intelligence analysis
-  ADMIN_ADJUSTMENT // Manual adjustment by admin
-}
-
-model CreditTransaction {
-  id          String                @id @default(cuid())
-  userId      String
-  amount      Int // Positive for adds, negative for deductions
-  type        CreditTransactionType
-  description String? // Human-readable description
-  reference   String? // Optional reference (e.g., lead ID, coupon code)
-  createdAt   DateTime              @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([type])
-  @@index([createdAt])
-  @@map("credit_transactions")
-}
-
-// Audit logging for compliance and debugging
-model AuditLog {
-  id           String   @id @default(cuid())
-  timestamp    DateTime @default(now())
-  userId       String?
-  action       String // e.g., "LOGIN_SUCCESS", "LEAD_CREATED", "CREDITS_DEDUCTED"
-  resource     String // e.g., "user", "lead", "scrape_job"
-  resourceId   String?
-  details      Json?
-  ipAddress    String?
-  userAgent    String?
-  success      Boolean  @default(true)
-  errorMessage String?
-
-  // Relations
-  user User? @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([action])
-  @@index([timestamp])
-  @@index([resource])
-  @@map("audit_logs")
-}
-
-// Coupon System
-model Coupon {
-  id           String    @id @default(cuid())
-  code         String    @unique
-  creditAmount Int
-  maxUses      Int? // null = unlimited
-  currentUses  Int       @default(0)
-  expiresAt    DateTime?
-  isActive     Boolean   @default(true)
-  createdBy    String
-  createdAt    DateTime  @default(now())
-
-  // Relations
-  creator     User               @relation("CouponCreator", fields: [createdBy], references: [id])
-  redemptions CouponRedemption[]
-
-  @@index([code])
-  @@index([isActive])
-  @@index([expiresAt])
-  @@map("coupons")
-}
-
-model CouponRedemption {
-  id         String   @id @default(cuid())
-  couponId   String
-  userId     String
-  redeemedAt DateTime @default(now())
-
-  // Relations
-  coupon Coupon @relation(fields: [couponId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
-
-  @@unique([couponId, userId]) // Prevent double redemption
-  @@index([userId])
-  @@index([couponId])
-  @@map("coupon_redemptions")
-}
-
-// Follow-up Reminders
-enum ReminderStatus {
-  PENDING
-  COMPLETED
-  DISMISSED
-}
-
-model Reminder {
-  id        String         @id @default(cuid())
-  userId    String
-  leadId    String
-  remindAt  DateTime
-  note      String?
-  status    ReminderStatus @default(PENDING)
-  createdAt DateTime       @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-
-  @@index([userId, status, remindAt])
-  @@index([leadId])
-  @@map("reminders")
-}
-
-// Saved Regions - User-defined geographic regions for quick re-scraping (PRD 19.5, 19.7)
-model SavedRegion {
-  id           String   @id @default(cuid())
-  userId       String
-  name         String
-  southwestLat Float
-  southwestLng Float
-  northeastLat Float
-  northeastLng Float
-  lastUsed     DateTime @default(now())
-  timesUsed    Int      @default(0)
-  createdAt    DateTime @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("saved_regions")
 }

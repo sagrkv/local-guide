@@ -240,10 +240,10 @@ export default function ContactPage() {
                         Email
                       </h3>
                       <a
-                        href="mailto:hello@boko.app"
+                        href="mailto:hello@localguide.in"
                         className="text-[var(--accent)] hover:text-white transition-colors"
                       >
-                        hello@boko.app
+                        hello@localguide.in
                       </a>
                     </div>
 
@@ -273,7 +273,7 @@ export default function ContactPage() {
                     </h3>
                     <div className="flex gap-4">
                       <a
-                        href="https://twitter.com/bokoapp"
+                        href="https://twitter.com/localguide_in"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[var(--gray-400)] hover:text-white transition-colors"
@@ -281,7 +281,7 @@ export default function ContactPage() {
                         Twitter / X
                       </a>
                       <a
-                        href="https://linkedin.com/company/bokoapp"
+                        href="https://linkedin.com/company/localguide_in"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[var(--gray-400)] hover:text-white transition-colors"

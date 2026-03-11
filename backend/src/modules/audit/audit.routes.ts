@@ -19,7 +19,7 @@ export async function auditRoutes(fastify: FastifyInstance) {
 
   // Admin-only check for all routes
   fastify.addHook('preHandler', async (request, reply) => {
-    if (request.user.role !== 'ADMIN') {
+    if ((request as any).user.role !== 'ADMIN') {
       return reply.status(403).send({ error: 'Admin access required' });
     }
   });

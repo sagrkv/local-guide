@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname, useParams, notFound } from "next/navigation";
 import Link from "next/link";
 import { Toaster } from "sonner";
-import { useUser, useAuth, UserButton, SignOutButton } from "@clerk/nextjs";
-import { apiClient, setClerkTokenGetter } from "@/lib/api-client";
+import { useAuth, AuthProvider } from "@/lib/auth";
 import { isValidAdminPrefix, getAdminPrefix } from "@/lib/admin-config";
 
 interface User {
@@ -16,28 +15,15 @@ interface User {
   imageUrl?: string;
 }
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
-  const { user: clerkUser, isLoaded: clerkLoaded, isSignedIn } = useUser();
-  const { getToken } = useAuth();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: authUser, loading: authLoading, logout, token } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Get the admin prefix from the URL params
   const adminPrefix = params.adminPrefix as string;
-
-  // Validate the admin prefix - if invalid, show 404
-  // SECURITY: This prevents access via guessed/invalid admin URLs
-  if (!isValidAdminPrefix(adminPrefix)) {
-    notFound();
-  }
 
   // Base path for all admin routes using the current prefix
   const adminBasePath = `/${adminPrefix}`;
@@ -47,71 +33,25 @@ export default function AdminLayout({
   const isStatusPage = pathname === `${adminBasePath}/status`;
   const skipAuth = isLoginPage || isStatusPage;
 
-  // Set up Clerk token getter for API client
   useEffect(() => {
-    if (getToken) {
-      setClerkTokenGetter(getToken);
+    if (skipAuth || authLoading) return;
+
+    // Not authenticated - redirect to login
+    if (!authUser && !authLoading) {
+      router.push(`${adminBasePath}/login`);
     }
-  }, [getToken]);
-
-  useEffect(() => {
-    if (skipAuth) {
-      setLoading(false);
-      return;
-    }
-
-    // Wait for Clerk to load
-    if (!clerkLoaded) {
-      return;
-    }
-
-    // If using Clerk and not signed in, redirect to sign-in
-    if (!isSignedIn) {
-      router.push("/sign-in");
-      return;
-    }
-
-    const checkAuth = async () => {
-      try {
-        const data = await apiClient.getCurrentUser();
-        setUser(data.user);
-      } catch (error) {
-        // If Clerk is signed in but backend user doesn't exist yet,
-        // show a loading state while webhook creates the user
-        if (clerkUser) {
-          // Set a basic user from Clerk data while waiting
-          setUser({
-            id: "",
-            name: clerkUser.fullName ?? clerkUser.firstName ?? "User",
-            email: clerkUser.primaryEmailAddress?.emailAddress ?? "",
-            role: "USER",
-            imageUrl: clerkUser.imageUrl,
-          });
-        } else {
-          router.push("/sign-in");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [router, skipAuth, clerkLoaded, isSignedIn, clerkUser]);
+  }, [authUser, authLoading, skipAuth, router, adminBasePath]);
 
   // SECURITY: Block entire admin portal for non-ADMIN users (return 404 to hide existence)
-  // Only login and status pages are accessible without authentication
   useEffect(() => {
-    if (!loading && user && user.role !== 'ADMIN' && !skipAuth) {
-      // Use notFound() equivalent - redirect to 404 page to hide admin panel existence
+    if (!authLoading && authUser && authUser.role !== 'ADMIN' && !skipAuth) {
       router.replace('/404');
     }
-  }, [loading, user, skipAuth, router]);
+  }, [authLoading, authUser, skipAuth, router]);
 
   const handleLogout = () => {
-    // Clear legacy token
-    localStorage.removeItem("token");
-    // Clerk's SignOutButton handles Clerk sign out
-    router.push("/sign-in");
+    logout();
+    router.push(`${adminBasePath}/login`);
   };
 
   // Show login page without layout
@@ -128,7 +68,7 @@ export default function AdminLayout({
     );
   }
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent" />
@@ -136,13 +76,12 @@ export default function AdminLayout({
     );
   }
 
-  if (!user) {
+  if (!authUser) {
     return null;
   }
 
-  // SECURITY: Block rendering for non-admin users - entire admin portal requires ADMIN role
-  // Redirect to 404 happens via useEffect above, this prevents flash of content
-  if (user.role !== 'ADMIN' && !skipAuth) {
+  // SECURITY: Block rendering for non-admin users
+  if (authUser.role !== 'ADMIN' && !skipAuth) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent" />
@@ -151,18 +90,35 @@ export default function AdminLayout({
   }
 
   // Navigation items using dynamic admin prefix
-  // SECURITY: All admin routes require ADMIN role - no conditional logic needed
   const navItems = [
     { href: adminBasePath, label: "Dashboard", icon: DashboardIcon },
+    { href: `${adminBasePath}/cities`, label: "Cities", icon: CitiesIcon },
+    { href: `${adminBasePath}/categories`, label: "Categories", icon: CategoriesIcon },
+    { href: `${adminBasePath}/tags`, label: "Tags", icon: TagsIcon },
     { href: `${adminBasePath}/users`, label: "Users", icon: UsersIcon },
     { href: `${adminBasePath}/analytics`, label: "Analytics", icon: AnalyticsIcon },
     { href: `${adminBasePath}/coupons`, label: "Coupons", icon: CouponsIcon },
-    { href: `${adminBasePath}/jobs`, label: "Job Monitor", icon: ScrapingIcon },
     { href: `${adminBasePath}/api-logs`, label: "API Logs", icon: ApiLogsIcon },
-    { href: `${adminBasePath}/regions`, label: "Regions", icon: RegionsIcon },
     { href: `${adminBasePath}/settings`, label: "Settings", icon: SettingsIcon },
     { href: `${adminBasePath}/status`, label: "System Status", icon: StatusIcon },
   ];
+
+  // Detect if viewing a city (URL contains /cities/<id>/...)
+  const cityMatch = pathname.match(new RegExp(`^${adminBasePath}/cities/([^/]+)(/|$)`));
+  const viewingCityId = cityMatch ? cityMatch[1] : null;
+  const isOnCitySubpage = viewingCityId && viewingCityId !== "new";
+
+  const citySubNavItems = isOnCitySubpage
+    ? [
+        { href: `${adminBasePath}/cities/${viewingCityId}`, label: "Overview" },
+        { href: `${adminBasePath}/cities/${viewingCityId}/theme`, label: "Theme" },
+        { href: `${adminBasePath}/cities/${viewingCityId}/pois`, label: "POIs" },
+        { href: `${adminBasePath}/cities/${viewingCityId}/review`, label: "Review Queue" },
+        { href: `${adminBasePath}/cities/${viewingCityId}/itineraries`, label: "Itineraries" },
+        { href: `${adminBasePath}/cities/${viewingCityId}/collections`, label: "Collections" },
+        { href: `${adminBasePath}/cities/${viewingCityId}/discover`, label: "AI Discovery" },
+      ]
+    : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -197,26 +153,26 @@ export default function AdminLayout({
             />
           </svg>
         </button>
-        <span className="font-semibold text-accent">Boko</span>
+        <span className="font-semibold text-accent">Local Guide</span>
         <div className="w-8" />
       </div>
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-gray-800 border-r border-gray-700 z-50 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-64 bg-gray-800 border-r border-gray-700 z-50 transform transition-transform duration-200 ease-out lg:translate-x-0 flex flex-col ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="p-4 border-b border-gray-700">
           <h1 className="text-lg font-semibold">
             <span className="text-accent">[</span>
-            Boko
+            Local Guide
             <span className="text-accent">]</span>
             <span className="text-gray-400 ml-2 text-sm font-normal">Admin</span>
           </h1>
         </div>
 
-        <nav className="p-3 space-y-0.5">
+        <nav className="p-3 space-y-0.5 overflow-y-auto flex-1">
           {navItems.map((item) => {
             const isActive =
               pathname === item.href ||
@@ -237,50 +193,56 @@ export default function AdminLayout({
               </Link>
             );
           })}
+
+          {/* City sub-navigation when viewing a city */}
+          {citySubNavItems.length > 0 && (
+            <>
+              <div className="pt-3 mt-3 border-t border-gray-700">
+                <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase">
+                  City
+                </div>
+              </div>
+              {citySubNavItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] transition-colors ${
+                      isActive
+                        ? "bg-accent/10 text-accent"
+                        : "text-gray-400 hover:text-white hover:bg-gray-700"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-gray-700">
           <div className="flex items-center gap-2 mb-3 px-2">
-            {clerkUser ? (
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "w-8 h-8",
-                    userButtonPopoverCard: "bg-gray-800 border-gray-700",
-                    userButtonPopoverActionButton: "text-gray-300 hover:bg-gray-700",
-                    userButtonPopoverActionButtonText: "text-gray-300",
-                    userButtonPopoverFooter: "hidden",
-                  },
-                }}
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm font-medium">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm font-medium">
+              {authUser.name.charAt(0).toUpperCase()}
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-medium text-white truncate">
-                {clerkUser?.fullName ?? user.name}
+                {authUser.name}
               </p>
               <p className="text-[11px] text-gray-400 truncate">
-                {clerkUser?.primaryEmailAddress?.emailAddress ?? user.email}
+                {authUser.email}
               </p>
             </div>
           </div>
-          {clerkUser ? (
-            <SignOutButton>
-              <button className="w-full px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors text-left">
-                Sign out
-              </button>
-            </SignOutButton>
-          ) : (
-            <button
-              onClick={handleLogout}
-              className="w-full px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors text-left"
-            >
-              Sign out
-            </button>
-          )}
+          <button
+            onClick={handleLogout}
+            className="w-full px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors text-left"
+          >
+            Sign out
+          </button>
         </div>
       </aside>
 
@@ -297,6 +259,26 @@ export default function AdminLayout({
         <div className="p-4 lg:p-6">{children}</div>
       </main>
     </div>
+  );
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const params = useParams();
+  const adminPrefix = params.adminPrefix as string;
+
+  // Validate the admin prefix - if invalid, show 404
+  if (!isValidAdminPrefix(adminPrefix)) {
+    notFound();
+  }
+
+  return (
+    <AuthProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </AuthProvider>
   );
 }
 
@@ -318,7 +300,7 @@ function DashboardIcon({ className }: { className?: string }) {
   );
 }
 
-function ScrapingIcon({ className }: { className?: string }) {
+function CitiesIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -330,7 +312,13 @@ function ScrapingIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={1.5}
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
       />
     </svg>
   );
@@ -373,24 +361,6 @@ function StatusIcon({ className }: { className?: string }) {
         strokeLinejoin="round"
         strokeWidth={1.5}
         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function RegionsIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
-        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
       />
     </svg>
   );
@@ -445,6 +415,42 @@ function AnalyticsIcon({ className }: { className?: string }) {
         strokeLinejoin="round"
         strokeWidth={1.5}
         d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+      />
+    </svg>
+  );
+}
+
+function CategoriesIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+      />
+    </svg>
+  );
+}
+
+function TagsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
       />
     </svg>
   );

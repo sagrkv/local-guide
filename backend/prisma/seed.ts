@@ -3,89 +3,172 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 async function main() {
   console.log('Seeding database...');
 
-  // Create admin user
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+  // =========================================================================
+  // Default Admin User
+  // =========================================================================
+  const adminEmail = 'admin@localguide.in';
+  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
 
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@boko.app' },
-    update: {},
-    create: {
-      email: 'admin@boko.app',
-      password: hashedPassword,
-      name: 'Admin',
-      role: 'ADMIN',
-    },
-  });
+  if (!existingAdmin) {
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        password: hashedPassword,
+        name: 'Admin',
+        role: 'ADMIN',
+        isActive: true,
+      },
+    });
+    console.log('Created default admin user: admin@localguide.in / admin123');
+  } else {
+    // Ensure existing admin has a password
+    if (!existingAdmin.password) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await prisma.user.update({
+        where: { email: adminEmail },
+        data: { password: hashedPassword },
+      });
+      console.log('Updated admin user with password');
+    } else {
+      console.log('Admin user already exists');
+    }
+  }
 
-  console.log('Created admin user:', admin.email);
+  // =========================================================================
+  // Default Global Categories (15)
+  // =========================================================================
+  const defaultCategories = [
+    { name: 'Temples & Shrines', icon: 'temple', color: '#E74C3C', emoji: null },
+    { name: 'Forts & Palaces', icon: 'castle', color: '#8E44AD', emoji: null },
+    { name: 'Museums', icon: 'museum', color: '#2980B9', emoji: null },
+    { name: 'Parks & Gardens', icon: 'tree', color: '#27AE60', emoji: null },
+    { name: 'Markets & Bazaars', icon: 'shopping-bag', color: '#F39C12', emoji: null },
+    { name: 'Restaurants', icon: 'utensils', color: '#E67E22', emoji: null },
+    { name: 'Cafes', icon: 'coffee', color: '#795548', emoji: null },
+    { name: 'Street Food', icon: 'food-stall', color: '#FF5722', emoji: null },
+    { name: 'Nightlife', icon: 'moon', color: '#9C27B0', emoji: null },
+    { name: 'Shopping', icon: 'bag', color: '#E91E63', emoji: null },
+    { name: 'Beaches', icon: 'umbrella-beach', color: '#00BCD4', emoji: null },
+    { name: 'Lakes & Rivers', icon: 'water', color: '#0288D1', emoji: null },
+    { name: 'Viewpoints', icon: 'binoculars', color: '#4CAF50', emoji: null },
+    { name: 'Art & Culture', icon: 'palette', color: '#FF9800', emoji: null },
+    { name: 'Wellness & Spas', icon: 'spa', color: '#009688', emoji: null },
+  ];
 
-  // Create default tags
+  for (const [index, cat] of defaultCategories.entries()) {
+    const slug = slugify(cat.name);
+
+    // Global categories have cityId = null, so we find by slug + isGlobal
+    const existing = await prisma.category.findFirst({
+      where: { slug, isGlobal: true, cityId: null },
+    });
+
+    if (!existing) {
+      await prisma.category.create({
+        data: {
+          name: cat.name,
+          slug,
+          icon: cat.icon,
+          color: cat.color,
+          emoji: cat.emoji,
+          isGlobal: true,
+          cityId: null,
+          sortOrder: index,
+        },
+      });
+    }
+  }
+
+  console.log('Created default global categories');
+
+  // =========================================================================
+  // Default Tags (10)
+  // =========================================================================
   const defaultTags = [
-    { name: 'Hot Lead', color: '#ef4444' },
-    { name: 'Follow Up', color: '#f97316' },
-    { name: 'Needs Website', color: '#8b5cf6' },
-    { name: 'Redesign', color: '#06b6d4' },
-    { name: 'E-commerce', color: '#22c55e' },
-    { name: 'Startup', color: '#3b82f6' },
-    { name: 'Local Business', color: '#f59e0b' },
+    { name: 'Family-Friendly', color: '#4CAF50' },
+    { name: 'Instagram-Worthy', color: '#E91E63' },
+    { name: 'Free Entry', color: '#2196F3' },
+    { name: 'Street Food', color: '#FF5722' },
+    { name: 'Hidden Gem', color: '#9C27B0' },
+    { name: 'Budget-Friendly', color: '#4DB6AC' },
+    { name: 'Romantic', color: '#F44336' },
+    { name: 'Photography', color: '#607D8B' },
+    { name: 'Accessible', color: '#00BCD4' },
+    { name: 'Pet-Friendly', color: '#8BC34A' },
   ];
 
   for (const tag of defaultTags) {
     await prisma.tag.upsert({
       where: { name: tag.name },
       update: {},
-      create: tag,
+      create: {
+        name: tag.name,
+        slug: slugify(tag.name),
+        color: tag.color,
+      },
     });
   }
 
   console.log('Created default tags');
 
-  // Create default scraping regions
-  const defaultRegions = [
-    {
-      name: 'Bangalore Tech Hub',
-      cities: ['Bangalore', 'Bengaluru', 'Electronic City', 'Whitefield'],
+  // =========================================================================
+  // Sample City: Mysore
+  // =========================================================================
+  const mysore = await prisma.city.upsert({
+    where: { slug: 'mysore' },
+    update: {},
+    create: {
+      name: 'Mysore',
+      slug: 'mysore',
+      tagline: 'The City of Palaces',
+      description: 'Mysore, officially Mysuru, is a city in the southern part of the Indian state of Karnataka. Known for its glittering royal heritage and magnificent monuments, Mysore is one of the most popular tourist destinations in India.',
+      country: 'India',
       state: 'Karnataka',
+      centerLat: 12.3051,
+      centerLng: 76.6551,
+      defaultZoom: 13,
+      timezone: 'Asia/Kolkata',
+      currency: 'INR',
+      language: 'en',
+      status: 'DRAFT',
+      sortOrder: 0,
     },
-    {
-      name: 'Hyderabad IT Corridor',
-      cities: ['Hyderabad', 'Secunderabad', 'HITEC City', 'Gachibowli'],
-      state: 'Telangana',
-    },
-    {
-      name: 'Mumbai Metro',
-      cities: ['Mumbai', 'Navi Mumbai', 'Thane', 'Andheri'],
-      state: 'Maharashtra',
-    },
-    {
-      name: 'Delhi NCR',
-      cities: ['Delhi', 'Gurgaon', 'Noida', 'Greater Noida', 'Faridabad'],
-      state: 'Delhi NCR',
-    },
-    {
-      name: 'Chennai Tech',
-      cities: ['Chennai', 'OMR', 'Velachery', 'Tambaram'],
-      state: 'Tamil Nadu',
-    },
-    {
-      name: 'Pune IT Park',
-      cities: ['Pune', 'Hinjewadi', 'Kharadi', 'Magarpatta'],
-      state: 'Maharashtra',
-    },
-  ];
+  });
 
-  for (const region of defaultRegions) {
-    await prisma.scrapingRegion.upsert({
-      where: { name: region.name },
-      update: {},
-      create: region,
-    });
-  }
+  console.log('Created sample city: Mysore');
 
-  console.log('Created default scraping regions');
+  // =========================================================================
+  // Mysore Theme
+  // =========================================================================
+  await prisma.cityTheme.upsert({
+    where: { cityId: mysore.id },
+    update: {},
+    create: {
+      cityId: mysore.id,
+      themePresetId: 'mysore',
+      colorPrimary: '#4A154B',
+      colorSecondary: '#8B1A1A',
+      colorAccent: '#2D5016',
+      colorBackground: '#FDF6E3',
+      colorText: '#2E0A2F',
+      displayFontFamily: "'Yatra One', serif",
+      bodyFontFamily: "'Source Sans 3', sans-serif",
+      iconPack: 'default',
+    },
+  });
+
+  console.log('Created Mysore theme');
 
   console.log('Seeding complete!');
 }

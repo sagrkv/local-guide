@@ -4,17 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Boko is a B2B lead generation SaaS platform that automates lead discovery through web scraping and manages leads through a sales pipeline. It consists of a Fastify backend with BullMQ job queues and a Next.js frontend with user dashboard.
+Local Guide is a curated tourist map platform that helps travelers explore cities through beautifully designed, opinionated maps. It consists of a Fastify backend and a Next.js frontend with admin dashboard and public-facing city map pages.
 
 **Key Features:**
-- Map-based region selection with Google Places API
-- Smart scraping with pre-filters (only pay for matching leads)
-- Credit-based monetization (1 credit = 1 valid lead)
-- Lighthouse website analysis for lead qualification
-- AI-powered sales intelligence via Perplexity
+- Curated city maps with hand-picked points of interest
+- City-based subdomain routing (e.g., mysore.localguide.in)
+- MapLibre GL-powered interactive maps
 - Clerk authentication with 2FA support
-- Multi-tenant data isolation
-- Admin panel with analytics
+- Admin panel for city and POI management
+- Mobile-first responsive design
 
 ---
 
@@ -101,7 +99,7 @@ npm run lint    # Run ESLint
 
 ### Local Database Setup
 ```bash
-createdb boko
+createdb local_guide
 cd backend && npm run db:push && npm run db:seed
 ```
 
@@ -246,7 +244,7 @@ ScrapePanel → MapSelector → LeafletMap
 ### Backend Environment (`backend/.env`)
 ```env
 # Database
-DATABASE_URL=postgresql://user@localhost:5432/boko
+DATABASE_URL=postgresql://user@localhost:5432/local_guide
 
 # Clerk Authentication
 CLERK_SECRET_KEY=sk_test_...
@@ -393,7 +391,7 @@ This project was built using parallel Claude Code agents. Key learnings:
 ## Default Credentials
 
 After running `npm run db:seed`:
-- **Email:** admin@boko.io
+- **Email:** admin@localguide.in
 - **Password:** admin123
 
 For Clerk authentication, sign up with any email through the UI.
