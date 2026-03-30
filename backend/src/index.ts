@@ -84,10 +84,16 @@ async function main() {
   // Hooks
   // =========================================================================
 
-  // Add X-Request-Id header to all responses
+  // Add X-Request-Id header to all responses & log mobile platform
   fastify.addHook("onRequest", async (request, reply) => {
     const requestId = (request.headers["x-request-id"] as string) || randomUUID();
     reply.header("X-Request-Id", requestId);
+
+    // Log mobile client platform if provided (#52)
+    const platform = request.headers["x-platform"] as string;
+    if (platform) {
+      request.log.info({ platform }, "Request from mobile client");
+    }
   });
 
   // =========================================================================

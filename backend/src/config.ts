@@ -86,6 +86,9 @@ export const config = {
   // JWT Secret (for simple auth)
   jwtSecret: getOptionalEnv("JWT_SECRET", "paper-maps-dev-secret"),
 
+  // API Keys (for mobile/server-to-server clients)
+  apiKeys: (process.env.API_KEYS || "").split(",").filter(Boolean),
+
   // Frontend
   frontendUrl,
 };

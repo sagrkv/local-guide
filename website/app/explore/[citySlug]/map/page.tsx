@@ -15,6 +15,9 @@ import type maplibregl from "maplibre-gl";
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002/api/v1";
 
+/** Cities with significant elevation changes that benefit from terrain rendering */
+const TERRAIN_CITIES = ["mysore", "goa", "coorg", "ooty", "munnar"];
+
 interface Category {
   id: string;
   name: string;
@@ -361,6 +364,7 @@ export default function CityMapPage() {
           palette={mapPalette}
           highlightPoiIds={moodPoiIds}
           showDayTrips={showDayTrips}
+          enableTerrain={TERRAIN_CITIES.includes(city.slug)}
         />
       </div>
 

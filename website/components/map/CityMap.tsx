@@ -28,6 +28,10 @@ interface CityMapProps {
   highlightPoiIds?: Set<string> | null;
   /** When true, POIs with zone=day_trip are shown; otherwise they are hidden */
   showDayTrips?: boolean;
+  /** Enable 3D perspective with camera pitch and landmark extrusions (default true) */
+  enable3D?: boolean;
+  /** Enable DEM terrain rendering with hillshade for hilly cities (default false) */
+  enableTerrain?: boolean;
 }
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
@@ -266,6 +270,8 @@ export default function CityMap({
   palette,
   highlightPoiIds,
   showDayTrips,
+  enable3D = true,
+  enableTerrain = false,
 }: CityMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -288,6 +294,8 @@ export default function CityMap({
       style: STYLE_URL,
       center,
       zoom,
+      pitch: 0,
+      bearing: enable3D ? -10 : 0,
       attributionControl: {},
       maxZoom: 18,
       minZoom: 3,
@@ -298,9 +306,77 @@ export default function CityMap({
       "bottom-right",
     );
 
-    // Apply cultural tinting once style loads
+    // Apply cultural tinting and 3D extrusions once style loads
     map.on("style.load", () => {
       tintMapLayers(map, effectivePalette);
+
+      if (enable3D) {
+        // Smooth pitch animation on load
+        map.easeTo({ pitch: 45, duration: 1000 });
+
+        // Add landmark-only fill-extrusion layer
+        try {
+          map.addLayer({
+            id: "building-extrusions",
+            source: "openmaptiles",
+            "source-layer": "building",
+            type: "fill-extrusion",
+            minzoom: 14,
+            filter: [
+              "any",
+              ["==", ["get", "class"], "place_of_worship"],
+              ["==", ["get", "class"], "museum"],
+              ["==", ["get", "class"], "monument"],
+              [">", ["coalesce", ["get", "height"], 0], 10],
+            ],
+            paint: {
+              "fill-extrusion-color": effectivePalette.primary,
+              "fill-extrusion-height": ["coalesce", ["get", "height"], 15],
+              "fill-extrusion-base": 0,
+              "fill-extrusion-opacity": 0.6,
+            },
+          });
+        } catch {
+          // Source or source-layer may not exist — graceful degradation
+        }
+      }
+
+      // Add DEM terrain rendering for hilly cities
+      if (enableTerrain) {
+        try {
+          map.addSource("terrain-dem", {
+            type: "raster-dem",
+            url: "https://demotiles.maplibre.org/terrain-tiles/tiles.json",
+            tileSize: 256,
+          });
+
+          map.setTerrain({
+            source: "terrain-dem",
+            exaggeration: 1.3,
+          });
+
+          // Hillshade layer for visual depth — insert below extrusions if present
+          const beforeLayer = map.getLayer("building-extrusions")
+            ? "building-extrusions"
+            : undefined;
+          map.addLayer(
+            {
+              id: "hillshade",
+              type: "hillshade",
+              source: "terrain-dem",
+              paint: {
+                "hillshade-shadow-color": "#000000",
+                "hillshade-highlight-color": "#ffffff",
+                "hillshade-accent-color": "#000000",
+                "hillshade-exaggeration": 0.3,
+              },
+            },
+            beforeLayer,
+          );
+        } catch {
+          // DEM tiles unavailable — fail silently
+        }
+      }
     });
 
     mapRef.current = map;
@@ -319,7 +395,20 @@ export default function CityMap({
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
     tintMapLayers(map, effectivePalette);
-  }, [effectivePalette]);
+
+    // Update extrusion color to match cultural theme
+    if (enable3D && map.getLayer("building-extrusions")) {
+      try {
+        map.setPaintProperty(
+          "building-extrusions",
+          "fill-extrusion-color",
+          effectivePalette.primary,
+        );
+      } catch {
+        // skip
+      }
+    }
+  }, [effectivePalette, enable3D]);
 
   // Update center/zoom when props change
   useEffect(() => {
