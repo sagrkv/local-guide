@@ -4,69 +4,129 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Local Guide is a curated tourist map platform that helps travelers explore cities through beautifully designed, opinionated maps. It consists of a Fastify backend and a Next.js frontend with admin dashboard and public-facing city map pages.
+**Paper Maps** by summar studios — *The anti-Google-Maps.*
+
+Paper Maps is a beautifully curated tourist map platform for Indian cities. It lets travelers experience cities through hand-picked, opinionated maps with a distinct editorial voice — the opposite of algorithm-driven, ad-cluttered navigation apps.
+
+**Brand:** summar studios (lowercase intentional) — a small creative studio making beautifully designed, opinionated travel experiences.
+
+**Core concept:**
+- Each city gets its own curated map with a unique visual identity (colors, fonts, map style)
+- POIs are hand-picked and classified by human curators (not user reviews)
+- AI assists with enrichment (descriptions, tips, season) but humans approve everything before publish
+- Mobile-first public explore pages; admin panel for curation
 
 **Key Features:**
-- Curated city maps with hand-picked points of interest
-- City-based subdomain routing (e.g., mysore.localguide.in)
+- Curated city maps with hand-picked Points of Interest (POIs)
+- Per-city theme system (custom colors, fonts, map tile styles)
 - MapLibre GL-powered interactive maps
-- Clerk authentication with 2FA support
-- Admin panel for city and POI management
-- Mobile-first responsive design
+- Itineraries and Collections for guided exploration
+- AI-assisted POI enrichment (via Anthropic Claude)
+- Google Places integration for POI discovery
+- Sync endpoint for offline/mobile use
+- JWT authentication for the admin/curator dashboard
 
 ---
 
-## Implementation Status (Last Updated: January 2026)
+## Repository Structure
 
-### ✅ IMPLEMENTED
+```
+papermaps/
+├── backend/          # Fastify API server (TypeScript + Prisma + PostgreSQL)
+│   ├── src/
+│   │   ├── index.ts          # Server entry + route registration
+│   │   ├── config.ts         # Environment config with validation
+│   │   ├── lib/              # Shared: prisma client, response helpers
+│   │   ├── middleware/        # JWT auth middleware
+│   │   └── modules/          # Feature modules (see below)
+│   └── prisma/
+│       ├── schema.prisma     # Database schema
+│       └── seed.ts           # Admin user + initial data seed
+└── website/          # Next.js 14 App Router frontend
+    └── app/
+        ├── (main)/           # Public marketing / landing pages
+        ├── (admin-area)/     # Admin panel (curator dashboard)
+        ├── dashboard/        # Curator dashboard
+        ├── explore/          # Public city explore pages
+        └── api/              # Next.js API routes (if any)
+```
 
-**Backend Modules:**
-- `auth` - Clerk + legacy JWT authentication ✅
-- `leads` - CRUD with filtering, pagination, pipeline stages ✅
-- `activities` - Notes, calls, emails, meetings, tasks ✅
-- `tags` - Lead categorization ✅
-- `scraping` - Google Maps/Search/Places scrapers with BullMQ ✅
-- `dashboard` - Stats and analytics ✅
-- `regions` - Predefined city zones ✅
-- `credits` - Balance tracking, transactions ✅
-- `coupons` - Creation, redemption, bulk generation ✅
-- `audit` - Action logging for compliance ✅
-- `gdpr` - Data export, account deletion ✅
-- `admin` - User management, analytics ✅
-- `analysis` - Lighthouse, tech stack, sales intelligence ✅
-- `prospects` - Raw scraped businesses management ✅
-- `contact` - Website contact form handling ✅
+---
 
-**Frontend Pages:**
-- Marketing: Home, About, Services, Pricing, Work, Labs, Contact ✅
-- Auth: /sign-in, /sign-up (Clerk) ✅
-- User Dashboard: Dashboard, Leads, Scrape, Scrape History, Settings, Credits ✅
-- Admin: Dashboard, Leads, Users, Analytics, Prospects, Scraping, Zones, API Logs, Status, Settings ✅
+## Backend Modules
 
-**Database Schema:** Complete with User, Lead (45+ fields), Activity, Tag, ScrapeJob, CreditTransaction, Coupon, AuditLog, etc.
+All modules live in `backend/src/modules/` and follow the routes + service pattern:
+- `{module}.routes.ts` — Fastify route handlers with Zod validation
+- `{module}.service.ts` — Business logic using Prisma client
 
-### ❌ NOT YET IMPLEMENTED (Per PRD)
+### Core Content Modules
 
-**Critical Features:**
-- Follow-up Reminders for leads - PRD 21.4
+| Module | Routes prefix | Purpose |
+|--------|--------------|---------|
+| `cities` | `/api/v1/cities` | City CRUD, status management (DRAFT/PUBLISHED/ARCHIVED) |
+| `themes` | `/api/v1/cities/:cityId/theme` | Per-city visual theme (colors, fonts, map style JSON) |
+| `categories` | `/api/v1/categories`, `/api/v1/cities/:cityId/categories` | POI categories (global + city-specific) |
+| `pois` | `/api/v1/cities/:cityId/pois`, `/api/v1/pois/:id` | Points of Interest CRUD + status workflow |
+| `poi-photos` | `/api/v1/pois/:poiId/photos`, `/api/v1/photos/:id` | POI photo management |
+| `itineraries` | `/api/v1/cities/:cityId/itineraries`, `/api/v1/itineraries/:id` | Guided day/half-day itineraries with ordered stops |
+| `collections` | `/api/v1/cities/:cityId/collections`, `/api/v1/collections/:id` | Curated POI collections (e.g., "Best coffee shops") |
+| `tags` | `/api/v1/tags` | Global tag taxonomy for POIs |
 
-**Nice-to-Have Features:**
-- Keyboard shortcuts - PRD 21.5
-- Command palette (Cmd+K) - PRD 21.6
-- Export to Excel/Google Sheets - PRD 21.8 (CSV only currently)
-- Scrape templates - PRD 21.12
-- Lead decay/aging alerts - PRD 21.14
-- Dark/Light mode toggle - PRD 21.16 (dark only)
-- Onboarding flow - PRD 21.17
+### Discovery & AI Modules
 
-**Deployment (Not Done):**
-- Deploy backend service to Railway
-- Add PostgreSQL database on Railway
-- Add Redis on Railway
-- Configure environment variables
-- Run database migrations
-- Seed admin user
-- Test full system end-to-end
+| Module | Routes prefix | Purpose |
+|--------|--------------|---------|
+| `discovery` | `/api/v1/discovery-jobs`, `/api/v1/cities/:cityId/discover` | DiscoveryJob lifecycle management (create, track status, counts) |
+| `places` | `/api/v1/places` | Google Places API search + place detail fetching; falls back to mock data when `GOOGLE_PLACES_API_KEY` is not set |
+| `ai/enrichment` | `/api/v1/pois/:id/enrich`, `/api/v1/cities/:cityId/enrich-batch` | Claude-powered POI enrichment (descriptions, tips, best time, tags) — only fills empty fields, never overwrites human edits |
+| `sync` | `/api/v1/cities/:slug/sync` | Returns full city payload (POIs, categories, themes, itineraries, collections) for offline/mobile use with ETag caching |
+
+### Platform Modules
+
+| Module | Routes prefix | Purpose |
+|--------|--------------|---------|
+| `auth` | `/api/v1/auth` | JWT login + register; `POST /auth/login`, `GET /auth/me` |
+| `dashboard` | `/api/v1/dashboard` | Curator stats (POI counts by status, recent activity) |
+| `admin` | `/api/v1/{ADMIN_URL_PREFIX}` | User management, analytics (obscure URL for security) |
+| `audit` | `/api/v1/{ADMIN_URL_PREFIX}/audit-logs` | Action logging for compliance |
+
+---
+
+## Database Schema
+
+Key models in `backend/prisma/schema.prisma`:
+
+### Content Models
+
+**`City`** — Core entity. Has `slug`, `centerLat/Lng`, `defaultZoom`, bounding box, `status` (DRAFT/PUBLISHED/ARCHIVED), `sortOrder`.
+
+**`CityTheme`** — 1:1 with City. Stores `colorPrimary/Secondary/Accent/Background/Text`, font families/URLs, `logoUrl`, `emblemUrl`, `mapStyleJson` (full MapLibre style JSON), `iconPack`.
+
+**`POI`** — Points of Interest. References `City` + `Category`. Has `latitude/longitude`, `googlePlaceId` (unique), rich content fields (`shortDescription`, `longDescription`, `localTip`), amenity booleans (`wheelchairAccessible`, `petFriendly`, etc.), `status` (AI_SUGGESTED → UNDER_REVIEW → APPROVED → PUBLISHED → ARCHIVED), `priority` (MUST_VISIT/RECOMMENDED/HIDDEN_GEM/OPTIONAL), `qualityScore`.
+
+**`Category`** — Can be global (`isGlobal: true`) or city-specific. Has `icon`, `color`, `emoji`, `sortOrder`.
+
+**`Tag`** — Global tag taxonomy. Many-to-many with POIs via `TagsOnPOIs` junction.
+
+**`POIPhoto`** — Photos for a POI. Has `isPrimary`, `sortOrder`, `source`.
+
+**`Itinerary`** — Has `duration`, `difficulty`, `estimatedBudget`, ordered `ItineraryStop[]` (each stop links to a POI with `timeOfDay`, `duration`, `transportToNext`).
+
+**`Collection`** — Curated POI list. Has `CollectionItem[]` with `order` + `note`.
+
+**`Media`** — General media uploads (IMAGE/VIDEO/DOCUMENT), linked to city and uploader.
+
+### Discovery Models
+
+**`DiscoveryJob`** — Tracks a POI discovery run. Has `cityId`, `categorySlug`, `searchQuery`, `source` (default: `google_places`), `status` (PENDING/RUNNING/COMPLETED/FAILED/CANCELLED), counts (`candidatesFound`, `approved`, `rejected`, `duplicatesSkipped`), `startedAt/completedAt`.
+
+### Platform Models
+
+**`User`** — `role` (ADMIN/CURATOR/VIEWER). Relations to curated POIs, itineraries, collections, discovery jobs.
+
+**`AuditLog`** — Records all admin/curator actions with `action`, `resource`, `resourceId`, `details`, `ipAddress`, `success`.
+
+**`Setting`** — Key-value store for runtime config.
 
 ---
 
@@ -74,16 +134,21 @@ Local Guide is a curated tourist map platform that helps travelers explore citie
 
 ### Backend (in `backend/`)
 ```bash
-npm run dev              # Start dev server with hot reload (port 3001)
-npm run build            # Build for production (generates Prisma client + tsc)
+npm run dev              # Start dev server with hot reload (tsx watch, port 3001)
+npm run build            # Build for production (prisma generate + tsc)
 npm run start            # Run production build
 
 # Database
-npm run db:push          # Push schema changes (development)
-npm run db:migrate       # Create migration
-npm run db:migrate:deploy # Apply migrations (production)
-npm run db:seed          # Seed admin user + regions
+npm run db:push          # Push schema changes (development, no migration file)
+npm run db:migrate       # Create + apply migration (development)
+npm run db:migrate:deploy # Apply migrations in production
+npm run db:seed          # Seed admin user + initial categories
 npm run db:studio        # Open Prisma Studio GUI
+
+# Testing
+npm test                 # Run Vitest once
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
 ```
 
 ### Frontend (in `website/`)
@@ -93,357 +158,169 @@ npm run build   # Production build
 npm run lint    # Run ESLint
 ```
 
-### Required Services
-- **PostgreSQL 13+**: `brew services start postgresql@16`
-- **Redis 6+**: `brew services start redis` (required for scraping job queue)
-
-### Local Database Setup
+### Local Setup
 ```bash
-createdb local_guide
+createdb papermaps          # or whatever DB name you configure
 cd backend && npm run db:push && npm run db:seed
 ```
 
-## Architecture
+---
 
-### Backend Module Pattern
+## Environment Variables
 
-Each feature module in `backend/src/modules/` follows routes + service pattern:
-- `{module}.routes.ts` - Fastify route handlers with Zod validation schemas
-- `{module}.service.ts` - Business logic using Prisma client
-
-**Core Modules:**
-- `auth` - Authentication (Clerk + legacy JWT)
-- `leads` - Lead CRUD and pipeline management
-- `activities` - Notes, calls, tasks on leads
-- `scraping` - Job creation and management
-- `dashboard` - Stats and analytics
-
-**Monetization Modules:**
-- `credits` - Credit balance and transactions
-- `coupons` - Coupon creation and redemption
-
-**Analysis Modules:**
-- `analysis` - Lighthouse, tech stack, sales intelligence
-
-**Admin Modules:**
-- `admin` - User management and analytics
-- `audit` - Action logging for compliance
-- `gdpr` - Data export and deletion
-
-### Scraping System
-
-The scraping pipeline is orchestrated through BullMQ (`backend/src/jobs/`):
-
-1. **Queue** (`queue.ts`): Redis-backed `'scrape'` queue with 2 worker concurrency
-2. **Worker** (`workers/scrape.worker.ts`): Processes jobs, validates against filters, deduplicates leads
-
-**Smart Scraping Flow:**
-1. User draws rectangle on map or selects city preset
-2. Region divided into 2km x 2km grid cells
-3. Each cell searched via Google Places API
-4. Leads validated against user's pre-filters
-5. Only matching leads saved and charged (1 credit each)
-
-Scrapers in `backend/src/modules/scraping/scrapers/`:
-- `google-places.service.ts` - Google Places API (New) with rectangular bounds
-- `google-maps.scraper.ts` - Playwright with stealth plugin (legacy)
-- `google-search.scraper.ts` - Playwright + Cheerio HTML parsing
-
-### Lead Qualification Logic
-
-Located in `backend/src/modules/qualification/` and `backend/src/modules/analysis/`:
-- Uses Lighthouse CLI to analyze website quality
-- **NO_WEBSITE** or **POOR_WEBSITE** (score <70) = qualified lead (needs web services)
-- **WEBSITE_IS_GOOD** (score >=70) = not qualified (already has good website)
-
-### Credit System
-
-**Costs:**
-- 1 credit = 1 valid lead (matching filters)
-- 1 credit = 1 Lighthouse analysis
-- 1 credit = 1 tech stack detection
-- 1 credit = 1 sales intelligence generation
-
-**Key principle:** NO base cost for scraping - users only pay for results that match their criteria.
-
-### Multi-Tenancy Pattern
-
-All user-owned data queries MUST include `userId` filter:
-```typescript
-// CORRECT - Always filter by userId
-const leads = await prisma.lead.findMany({
-  where: { userId, ...filters }
-});
-
-// WRONG - Never query without userId for user data
-const leads = await prisma.lead.findMany({
-  where: { ...filters }
-});
-```
-
-Return 404 (not 403) for resources belonging to other users to prevent enumeration.
-
-### Frontend Structure
-
-Next.js App Router with route groups:
-- `app/(main)/` - Public marketing website
-- `app/dashboard/` - User dashboard (Clerk protected)
-- `app/(admin-area)/[adminPrefix]/` - Admin panel with obscure URL (requires ADMIN role)
-- `app/sign-in/` - Clerk sign-in page
-- `app/sign-up/` - Clerk sign-up page
-
-**SECURITY NOTE:** Admin panel uses an obscure URL prefix (e.g., `/nucleus-admin-x7k9m2/`) instead of `/admin/` to prevent unauthorized access attempts. See "Admin URL Configuration" section below for details.
-
-API calls go through `website/lib/api-client.ts` - centralized client that handles Clerk tokens and provides typed methods.
-
-### Map-Based Region Selection (Frontend)
-
-The scrape page (`/dashboard/scrape`) uses Leaflet for region selection:
-
-**Components:**
-- `components/dashboard/MapSelector.tsx` - Main wrapper with city presets toolbar and state management
-- `components/dashboard/LeafletMap.tsx` - Leaflet map with react-leaflet-draw for drawing/editing rectangles
-
-**Key Features:**
-- City preset pills (Bangalore, Chennai, etc.) in floating toolbar
-- Draw mode for custom rectangle selection (uses react-leaflet-draw)
-- Resizable rectangles - drag corners to resize after drawing
-- External bounds sync - map zooms to saved regions when selected
-- Grid cell overlay showing 2km x 2km cells
-- ESC key cancels drawing mode
-
-**Libraries:**
-- `react-leaflet` - React wrapper for Leaflet
-- `react-leaflet-draw` - Drawing/editing shapes on map
-- `leaflet-draw` - Underlying draw library
-
-**Props flow:**
-```
-ScrapePanel → MapSelector → LeafletMap
-              ↓
-         externalBounds (from saved regions)
-         onBoundsSelected (callback)
-         onEstimateUpdate (callback)
-```
-
-### Authentication Flow (Clerk)
-
-1. User signs in via Clerk (`/sign-in`)
-2. Clerk provides session token
-3. Frontend gets token via `useAuth().getToken()`
-4. API requests include `Authorization: Bearer {clerk-token}`
-5. Backend verifies with `@clerk/backend`
-6. Webhook syncs user data to local DB
-
-**Legacy JWT fallback** still works for migration:
-- POST `/api/auth/login` returns JWT
-- Token stored in localStorage
-
-## Key Configuration
-
-### Backend Environment (`backend/.env`)
+### Backend (`backend/.env`)
 ```env
-# Database
-DATABASE_URL=postgresql://user@localhost:5432/local_guide
-
-# Clerk Authentication
-CLERK_SECRET_KEY=sk_test_...
-CLERK_WEBHOOK_SECRET=whsec_...
-
-# Legacy JWT (fallback)
+# Required
+DATABASE_URL=postgresql://user@localhost:5432/papermaps
 JWT_SECRET=<random-string>
+FRONTEND_URL=http://localhost:3000
 
-# Redis
-REDIS_URL=redis://localhost:6379
+# Optional — features degrade gracefully without these
+ANTHROPIC_API_KEY=sk-ant-...        # AI enrichment (enrichment.service.ts)
+GOOGLE_PLACES_API_KEY=...           # Places search (falls back to mock data)
+
+# Admin security
+ADMIN_URL_PREFIX=admin-secret-prefix  # Obscure URL for admin routes
 
 # Server
 PORT=3001
 NODE_ENV=development
+LOG_LEVEL=info
 
-# Admin URL Prefix (SECURITY)
-# Change this periodically and keep it secret
-# Must match NEXT_PUBLIC_ADMIN_PREFIX in frontend
-ADMIN_URL_PREFIX=nucleus-admin-x7k9m2
-
-# Optional APIs
-PERPLEXITY_API_KEY=        # For AI sales intelligence
-GOOGLE_PLACES_API_KEY=     # For map-based scraping
+# CORS (production)
+CORS_ORIGINS=https://papermaps.in,https://mysore.papermaps.in
 ```
 
-### Frontend Environment (`website/.env.local`)
+### Frontend (`website/.env.local`)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-
-# Admin URL Prefix (SECURITY)
-# Change this periodically and keep it secret
-# Must match ADMIN_URL_PREFIX in backend
-NEXT_PUBLIC_ADMIN_PREFIX=nucleus-admin-x7k9m2
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+NEXT_PUBLIC_ADMIN_PREFIX=admin-secret-prefix  # Must match backend ADMIN_URL_PREFIX
 ```
 
-## Database Schema
+---
 
-Key models in `backend/prisma/schema.prisma`:
+## Architecture Patterns
 
-**User & Auth:**
-- `User` - clerkId, email, creditBalance, role (USER/ADMIN)
-- `CreditTransaction` - type, amount, reference
-- `Coupon` - code, creditAmount, maxUses, expiresAt
-- `CouponRedemption` - tracks who redeemed what
+### Module Pattern
 
-**Leads:**
-- `Lead` - 45+ fields including Lighthouse scores, contact info, pipeline stage
-- `Activity` - Notes, calls, emails, meetings, tasks on leads
-- `Tag` - Categorization for leads
-
-**Scraping:**
-- `ScrapeJob` - status, filters, bounds, totalFound, matchedFilters
-- `ScrapingRegion` - Predefined regions with city arrays
-
-**Compliance:**
-- `AuditLog` - action, resource, userId, timestamp, details
-
-**Lead Pipeline Stages:** NEW -> CONTACTED -> INTERESTED -> CLOSED
-
-## API Endpoints
-
-Base URL: `http://localhost:3001/api`
+Every module has exactly two files:
+```
+modules/cities/
+  cities.routes.ts   # Fastify routes + Zod schemas (no business logic)
+  cities.service.ts  # Prisma queries + business logic (no HTTP)
+```
 
 ### Authentication
-- `POST /auth/clerk-webhook` - Clerk event handler
-- `GET /auth/me` - Current user profile
-- `POST /auth/login` - Legacy JWT login
 
-### Credits & Coupons
-- `GET /credits/balance` - Current balance
-- `GET /credits/history` - Transaction history
-- `POST /coupons/redeem` - Redeem coupon code
-- `POST /admin/coupons` - Create coupon (admin)
-
-### Leads
-- `GET /leads` - List with filters
-- `POST /leads/:id/analyze/lighthouse` - Run Lighthouse (1 credit)
-- `POST /leads/:id/analyze/techstack` - Detect tech stack (1 credit)
-- `POST /leads/:id/analyze/salesintel` - Generate sales intel (1 credit)
-
-### Scraping
-- `POST /scraping/jobs` - Start scrape with filters and bounds
-- `GET /scraping/jobs` - List user's jobs
-- `POST /scraping/estimate` - Estimate cost for region
-
-### Admin (uses obscure URL prefix)
-All admin endpoints use the configured `ADMIN_URL_PREFIX` (e.g., `nucleus-admin-x7k9m2`):
-- `GET /{ADMIN_URL_PREFIX}/users` - List all users
-- `POST /{ADMIN_URL_PREFIX}/users/:id/credits` - Add credits
-- `GET /{ADMIN_URL_PREFIX}/analytics/overview` - Dashboard stats
-- `GET /{ADMIN_URL_PREFIX}/audit-logs` - Audit trail
-
-### GDPR
-- `GET /user/export` - Export all user data
-- `POST /user/delete` - Request account deletion
-
-## Development Patterns
-
-### When Adding a New Module
-
-1. Create `backend/src/modules/{name}/`
-2. Add `{name}.service.ts` with business logic
-3. Add `{name}.routes.ts` with Fastify routes + Zod schemas
-4. Register in `backend/src/index.ts`
-5. Always include `userId` in queries for user-owned data
-
-### When Adding Credit-Based Features
+JWT-based auth via `@fastify/jwt`. The `fastify.authenticate` decorator is registered globally and used as a `preHandler` hook on protected routes.
 
 ```typescript
-// Check balance first
-const balance = await creditsService.getBalance(userId);
-if (balance < cost) {
-  return reply.status(402).send({ error: 'Insufficient credits' });
-}
+// Protected route example
+fastify.addHook('preHandler', fastify.authenticate);
 
-// Perform action
-const result = await doExpensiveOperation();
-
-// Deduct credits only on success
-await creditsService.deductCredits({
-  userId,
-  amount: cost,
-  type: 'ANALYSIS_CHARGE',
-  description: 'Lighthouse analysis',
-  reference: leadId
-});
+// Get user from request
+const user = (request as any).user; // { userId, email, role }
 ```
 
-### Parallel Agent Development
+### POI Status Workflow
 
-This project was built using parallel Claude Code agents. Key learnings:
-
-1. **Schema changes** - Multiple agents can add to Prisma schema if touching different models
-2. **Route registration** - All agents should add imports/registrations to `index.ts`
-3. **Shared utilities** - Put in `backend/src/utils/` to avoid conflicts
-4. **Test locally** after all agents complete - run `npm run db:push` once
-
-## Default Credentials
-
-After running `npm run db:seed`:
-- **Email:** admin@localguide.in
-- **Password:** admin123
-
-For Clerk authentication, sign up with any email through the UI.
-
-## Admin URL Configuration (SECURITY)
-
-The admin panel uses an obscure URL prefix instead of `/admin` to prevent unauthorized access attempts. This is a security-through-obscurity measure that should be combined with proper authentication.
-
-### How It Works
-
-1. **Frontend:** Admin pages are at `/{NEXT_PUBLIC_ADMIN_PREFIX}/` instead of `/admin/`
-2. **Backend:** Admin API endpoints are at `/api/{ADMIN_URL_PREFIX}/` instead of `/api/admin/`
-3. **Default prefix:** `nucleus-admin-x7k9m2`
-
-### Configuration
-
-Both frontend and backend must use the same prefix:
-
-**Backend (`backend/.env`):**
-```env
-ADMIN_URL_PREFIX=nucleus-admin-x7k9m2
+```
+AI_SUGGESTED → UNDER_REVIEW → APPROVED → PUBLISHED → ARCHIVED
 ```
 
-**Frontend (`website/.env.local`):**
-```env
-NEXT_PUBLIC_ADMIN_PREFIX=nucleus-admin-x7k9m2
+- `AI_SUGGESTED`: Created by discovery pipeline, needs human review
+- `UNDER_REVIEW`: Curator is reviewing
+- `APPROVED`: Curator approved, ready to publish
+- `PUBLISHED`: Live on public map
+- `ARCHIVED`: Removed from map (soft delete)
+
+### Discovery Pipeline (Current State)
+
+⚠️ **Important:** The discovery pipeline is partially implemented.
+
+- `POST /cities/:cityId/discover` — Creates a `DiscoveryJob` record with `PENDING` status
+- The route only creates the DB record. **There is no background worker** that actually runs the discovery against Google Places. The job remains PENDING indefinitely.
+- `discovery.service.ts` has full CRUD for jobs but no `runJob()` or worker implementation
+- Actual Places search logic exists in `places.service.ts` but is not wired into the discovery flow
+
+### AI Enrichment (Implemented)
+
+`enrichment.service.ts` — fully functional:
+- Calls Anthropic Claude (claude-sonnet) to generate descriptions, tips, best time, tags, priority
+- **Only fills empty fields** — never overwrites existing human-curated content
+- `enrichPOI(poiId)` — enriches a single POI
+- `enrichBatch(cityId)` — enriches all `AI_SUGGESTED` POIs in a city sequentially
+- Requires `ANTHROPIC_API_KEY` in env; throws clearly if missing
+
+### Places Search (Implemented with Mock Fallback)
+
+`places.service.ts`:
+- `searchPlaces(query, bounds)` — Google Places Text Search (New API)
+- `getPlaceDetails(placeId)` — Full place details
+- Falls back to `MOCK_PLACES` data when `GOOGLE_PLACES_API_KEY` is not configured
+- `formatPlaceForPOI(place)` — converts Google Place to POI-ready shape
+
+### Sync Endpoint
+
+`GET /cities/:slug/sync` — returns the full city payload for offline/mobile:
+- City + theme
+- All categories (global + city-specific)
+- All published POIs with photos + tags
+- All published itineraries with stops
+- All published collections with items
+- Uses ETag for cache validation
+
+### Admin Security
+
+Admin routes use an obscure URL prefix instead of `/admin` (security through obscurity + proper auth):
+- Backend: `/api/v1/{ADMIN_URL_PREFIX}/...`
+- Both backend and frontend must use the same prefix
+- Invalid prefixes return 404 (not 403) to prevent enumeration
+
+---
+
+## Adding a New Module
+
+1. Create `backend/src/modules/{name}/`
+2. Add `{name}.service.ts` — Prisma + business logic
+3. Add `{name}.routes.ts` — Fastify routes + Zod validation
+4. Import and register in `backend/src/index.ts`:
+   ```typescript
+   import { myRoutes } from './modules/my/my.routes.js';
+   await fastify.register(myRoutes, { prefix: '/api/v1/my' });
+   ```
+5. Add any new Prisma models to `schema.prisma`, then run `npm run db:migrate`
+
+---
+
+## Deployment
+
+**Platform:** Railway
+
+- Backend: Fastify service on Railway
+- Database: PostgreSQL on Railway
+- Frontend: Vercel or Railway static
+
+**Production checklist:**
+- Set all required env vars (DATABASE_URL, JWT_SECRET, FRONTEND_URL)
+- Run `npm run db:migrate:deploy` on first deploy
+- Run `npm run db:seed` to create admin user
+- Set `ADMIN_URL_PREFIX` to a secret random string
+- Configure `CORS_ORIGINS` with all frontend domains
+
+**Default seed credentials:**
 ```
-
-### Security Recommendations
-
-1. **Change periodically:** Rotate the admin URL prefix quarterly
-2. **Use different values:** Use different prefixes for staging and production
-3. **Keep secret:** Never commit the actual prefix to version control
-4. **Generate randomly:** Use a random string like `nucleus-admin-abc123xyz`
-
-### Accessing Admin Panel
-
-After configuration, access the admin panel at:
-- Development: `http://localhost:3000/nucleus-admin-x7k9m2`
-- Production: `https://yourdomain.com/{your-secret-prefix}`
-
-### Technical Implementation
-
-- Frontend: Uses Next.js dynamic route segment `[adminPrefix]`
-- Backend: Route prefix configured in `backend/src/index.ts`
-- Validation: Invalid prefixes return 404 (not 403) to prevent enumeration
-
-## Webhook Testing (Local)
-
-For Clerk webhooks locally, use ngrok:
-```bash
-ngrok http 3001
-# Add the URL to Clerk Dashboard -> Webhooks
-# Endpoint: https://your-ngrok-url.ngrok-free.dev/api/auth/clerk-webhook
+Email: admin@papermaps.in
+Password: admin123
 ```
+Change immediately after first login.
+
+---
+
+## Key Design Decisions
+
+1. **No user accounts on public site** — Paper Maps is read-only for the public. Auth is only for curators/admins.
+2. **Human curation is the product** — AI assists but curators approve. Never auto-publish AI suggestions.
+3. **Per-city themes are first-class** — Each city gets unique branding, not just a color swap.
+4. **Offline-first sync** — The `/sync` endpoint is designed for mobile apps and PWA offline use.
+5. **Google Places as input, not output** — Places search is for discovering candidates; the curator edits and enriches before anything goes live.
