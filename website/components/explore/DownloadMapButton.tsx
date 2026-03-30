@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Download, Check, RefreshCw, X } from "lucide-react";
 import { useOfflineMap } from "@/hooks/useOfflineMap";
 
@@ -165,17 +165,22 @@ export function DownloadMapButton({ citySlug, cityName }: DownloadMapButtonProps
     updateAvailable,
   } = useOfflineMap(citySlug);
 
+  const [mounted, setMounted] = useState(false);
   const [buttonHovered, setButtonHovered] = useState(false);
   const [updateHovered, setUpdateHovered] = useState(false);
   const [removeHovered, setRemoveHovered] = useState(false);
 
-  // Check service worker support
-  if (typeof window !== "undefined" && !("serviceWorker" in navigator)) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Avoid hydration mismatch — render nothing until mounted
+  if (!mounted) {
     return null;
   }
 
-  // SSR — render nothing
-  if (typeof window === "undefined") {
+  // Check service worker support
+  if (!("serviceWorker" in navigator)) {
     return null;
   }
 

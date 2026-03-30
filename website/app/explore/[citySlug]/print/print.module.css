@@ -1,0 +1,272 @@
+/* =================================================================
+   Print Map Page Styles
+   Screen: warm paper aesthetic | Print: clean A4 layout
+   ================================================================= */
+
+/* ----- Layout ----- */
+.page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  background: #fdf6ec;
+  font-family: "DM Sans", sans-serif;
+  color: #2d2926;
+  min-height: 100vh;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: "Kalam", cursive;
+  font-size: 18px;
+  color: #8b7355;
+  background: #fdf6ec;
+}
+
+/* ----- Header ----- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #c4663a;
+  margin-bottom: 20px;
+}
+
+.cityName {
+  font-family: "Kalam", cursive;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #2d2926;
+  margin: 0;
+}
+
+.tagline {
+  font-style: italic;
+  font-size: 14px;
+  color: #8b7355;
+  margin: 4px 0 0;
+}
+
+.brand {
+  font-family: "Kalam", cursive;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c4663a;
+  white-space: nowrap;
+}
+
+/* ----- Map ----- */
+.mapSection { margin-bottom: 20px; }
+
+.mapImage {
+  width: 100%;
+  height: auto;
+  border: 1.5px solid #e8d5b7;
+  border-radius: 4px;
+  display: block;
+}
+
+.mapPlaceholder {
+  width: 100%;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed #e8d5b7;
+  border-radius: 4px;
+  background: #f5ead6;
+  color: #8b7355;
+  font-size: 14px;
+}
+
+/* ----- Legend ----- */
+.legend { margin-bottom: 24px; }
+
+.legendTitle {
+  font-family: "Kalam", cursive;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2d2926;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e8d5b7;
+}
+
+.legendGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+}
+
+.categoryGroup { break-inside: avoid; }
+
+.categoryName {
+  font-family: "Kalam", cursive;
+  font-size: 15px;
+  font-weight: 700;
+  color: #c4663a;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.poiList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.poiItem {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.poiNumber {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: "DM Sans", sans-serif;
+}
+
+.poiName {
+  font-weight: 600;
+  color: #2d2926;
+}
+
+.poiAddress {
+  color: #8b7355;
+  font-size: 11px;
+}
+
+/* ----- Footer ----- */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1.5px solid #e8d5b7;
+}
+
+.qr {
+  flex-shrink: 0;
+  border: 1px solid #e8d5b7;
+}
+
+.footerCta {
+  font-family: "Kalam", cursive;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2d2926;
+  margin: 0;
+}
+
+.footerUrl {
+  font-size: 12px;
+  color: #8b7355;
+  margin: 0;
+}
+
+/* ----- Screen-only controls ----- */
+.screenOnly {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px dashed #e8d5b7;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status {
+  font-size: 13px;
+  color: #8b7355;
+  margin: 0;
+}
+
+.triggerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #c4663a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: "Kalam", cursive;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.triggerBtn:hover { background: #a8552f; }
+
+.backLink {
+  font-size: 13px;
+  color: #c4663a;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* =================================================================
+   PRINT OVERRIDES — clean A4
+   ================================================================= */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 16mm 14mm;
+  }
+
+  .page {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    font-size: 11px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .screenOnly { display: none !important; }
+
+  .header {
+    border-bottom-width: 1.5px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .cityName { font-size: 28px; }
+  .mapImage { border-radius: 0; border-width: 1px; }
+  .mapSection { margin-bottom: 14px; }
+  .legend { margin-bottom: 16px; }
+  .legendTitle { font-size: 16px; margin-bottom: 8px; }
+
+  .categoryGroup {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .poiItem { font-size: 10px; }
+
+  .poiNumber {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    border-width: 1px;
+  }
+}

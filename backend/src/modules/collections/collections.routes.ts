@@ -6,6 +6,8 @@ import { auditService, AuditActions, AuditResources } from '../audit/audit.servi
 
 const listQuerySchema = z.object({
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  type: z.string().optional(),
+  activeMonth: z.coerce.number().int().min(1).max(12).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
@@ -15,6 +17,10 @@ const createCollectionSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().optional(),
   coverImageUrl: z.string().url().optional(),
+  type: z.enum(['curated', 'mood', 'day_trip', 'seasonal', 'locals_week']).optional(),
+  icon: z.string().max(50).optional(),
+  travelTime: z.string().max(100).optional(),
+  activeMonths: z.array(z.number().int().min(1).max(12)).optional(),
 });
 
 const updateCollectionSchema = z.object({
@@ -23,6 +29,10 @@ const updateCollectionSchema = z.object({
   coverImageUrl: z.string().url().optional().nullable(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   sortOrder: z.number().int().optional(),
+  type: z.enum(['curated', 'mood', 'day_trip', 'seasonal', 'locals_week']).optional(),
+  icon: z.string().max(50).optional().nullable(),
+  travelTime: z.string().max(100).optional().nullable(),
+  activeMonths: z.array(z.number().int().min(1).max(12)).optional(),
 });
 
 const addItemSchema = z.object({
@@ -48,6 +58,8 @@ export async function collectionsRoutes(fastify: FastifyInstance) {
 
       const result = await collectionsService.listCollections(cityId, {
         status: query.status as any,
+        type: query.type,
+        activeMonth: query.activeMonth,
         page: query.page,
         limit: query.limit,
       });
@@ -107,6 +119,10 @@ export async function collectionsRoutes(fastify: FastifyInstance) {
         description: data.description,
         coverImageUrl: data.coverImageUrl,
         createdById: user.userId,
+        type: data.type,
+        icon: data.icon,
+        travelTime: data.travelTime,
+        activeMonths: data.activeMonths,
       });
 
       await auditService.logAction({

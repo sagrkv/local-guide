@@ -79,6 +79,110 @@ export interface CulturalTheme {
 }
 
 // ---------------------------------------------------------------------------
+// Simple Design Token System — 5 colors + 2 fonts per city
+// ---------------------------------------------------------------------------
+
+export interface SimpleTheme {
+  primary: string;    // Headlines, CTAs
+  accent: string;     // Highlights, badges
+  surface: string;    // Card backgrounds
+  ink: string;        // Body text
+  muted: string;      // Secondary text, borders
+  fontDisplay: string; // Display font family
+  fontBody: string;    // Body font family
+  fontDisplayUrl?: string;
+  fontBodyUrl?: string;
+  photoFilter?: string; // CSS filter for photos
+}
+
+export const SIMPLE_THEMES: Record<string, SimpleTheme> = {
+  mysore: {
+    primary: '#8B6914',
+    accent: '#D4A574',
+    surface: '#FFF8F0',
+    ink: '#3E2723',
+    muted: '#BFA98A',
+    fontDisplay: "'Fraunces', serif",
+    fontBody: "'DM Sans', sans-serif",
+    fontDisplayUrl:
+      'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700;800;900&display=swap',
+    fontBodyUrl:
+      'https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap',
+    photoFilter: 'saturate(1.15) sepia(0.08)',
+  },
+  goa: {
+    primary: '#0F766E',
+    accent: '#F97316',
+    surface: '#F0FDFA',
+    ink: '#1E3A5F',
+    muted: '#94A3B8',
+    fontDisplay: "'Kalam', cursive",
+    fontBody: "'Inter', sans-serif",
+    fontDisplayUrl:
+      'https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap',
+    fontBodyUrl:
+      'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
+    photoFilter: 'saturate(1.1) brightness(1.02)',
+  },
+  jaipur: {
+    primary: '#C2185B',
+    accent: '#F59E0B',
+    surface: '#FFF1F2',
+    ink: '#4A1A2E',
+    muted: '#C9A0A0',
+    fontDisplay: "'Playfair Display', serif",
+    fontBody: "'Source Sans 3', sans-serif",
+    fontDisplayUrl:
+      'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap',
+    fontBodyUrl:
+      'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&display=swap',
+    photoFilter: 'saturate(1.2) sepia(0.05)',
+  },
+  default: {
+    primary: '#1E3A5F',
+    accent: '#D4A574',
+    surface: '#FAFAF8',
+    ink: '#1A1A1A',
+    muted: '#9CA3AF',
+    fontDisplay: "'Space Grotesk', sans-serif",
+    fontBody: "'DM Sans', sans-serif",
+    fontDisplayUrl:
+      'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap',
+    fontBodyUrl:
+      'https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap',
+    photoFilter: 'saturate(1.05)',
+  },
+};
+
+/** Convert a SimpleTheme into a flat Record of CSS variable names to values. */
+export function injectSimpleTheme(theme: SimpleTheme): Record<string, string> {
+  return {
+    '--pm-primary': theme.primary,
+    '--pm-accent': theme.accent,
+    '--pm-surface': theme.surface,
+    '--pm-ink': theme.ink,
+    '--pm-muted': theme.muted,
+    '--pm-font-display': theme.fontDisplay,
+    '--pm-font-body': theme.fontBody,
+    '--pm-paper': '#FAFAF5',
+    '--pm-photo-filter': theme.photoFilter || 'none',
+  };
+}
+
+/** Retrieve a simple theme by city ID. Falls back to default. */
+export function getSimpleTheme(cityId: string): SimpleTheme {
+  return SIMPLE_THEMES[cityId] ?? SIMPLE_THEMES.default;
+}
+
+/** Get Google Fonts link URLs for a SimpleTheme. */
+export function getSimpleThemeFontLinks(theme: SimpleTheme): string[] {
+  const links: string[] = [];
+  if (theme.fontDisplayUrl) links.push(theme.fontDisplayUrl);
+  if (theme.fontBodyUrl) links.push(theme.fontBodyUrl);
+  return links;
+}
+
+// ---------------------------------------------------------------------------
 // Font Library — Curated fonts organized by cultural region
 // ---------------------------------------------------------------------------
 

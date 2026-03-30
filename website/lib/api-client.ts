@@ -19,6 +19,38 @@ const API_BASE_URL = (() => {
 // Change this periodically and keep it secret
 const ADMIN_API_PREFIX = process.env.NEXT_PUBLIC_ADMIN_PREFIX || "nucleus-admin-x7k9m2";
 
+// City launch readiness types
+interface ReadinessItem {
+  done: boolean;
+  current?: number;
+  required?: number;
+  total?: number;
+}
+
+export interface CityReadiness {
+  score: number;
+  canPublish: boolean;
+  essential: {
+    cityCreated: ReadinessItem;
+    themeDefined: ReadinessItem;
+    minPOIs: ReadinessItem;
+    minCategories: ReadinessItem;
+    poisHaveDescription: ReadinessItem;
+    poisHaveCoordinates: ReadinessItem;
+    minItineraries: ReadinessItem;
+    minMoods: ReadinessItem;
+    taglineWritten: ReadinessItem;
+  };
+  recommended: {
+    fiftyPOIs: ReadinessItem;
+    dayTrip: ReadinessItem;
+    localsWeek: ReadinessItem;
+    poisWithTips: ReadinessItem;
+    poisWithPhotos: ReadinessItem;
+    multipleItineraries: ReadinessItem;
+  };
+}
+
 class ApiClient {
   /**
    * Get authentication token from localStorage
@@ -1108,6 +1140,10 @@ class ApiClient {
       method: "PATCH",
       body: JSON.stringify({ status }),
     });
+  }
+
+  async getCityReadiness(cityId: string) {
+    return this.request<{ data: CityReadiness }>(`/cities/${cityId}/readiness`);
   }
 
   // ===== Local Guide: Themes =====

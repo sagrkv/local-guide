@@ -25,6 +25,7 @@ export interface CityData {
   slug: string;
   tagline?: string;
   description?: string;
+  status?: string;
   heroImageUrl?: string;
   centerLat: number;
   centerLng: number;

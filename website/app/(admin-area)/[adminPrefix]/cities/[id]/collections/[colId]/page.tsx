@@ -5,6 +5,11 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
 
+const MONTH_LABELS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
 export default function CollectionEditorPage() {
   const params = useParams();
   const adminPrefix = params.adminPrefix as string;
@@ -22,6 +27,10 @@ export default function CollectionEditorPage() {
     description: "",
     coverImageUrl: "",
     status: "DRAFT",
+    type: "curated",
+    icon: "",
+    travelTime: "",
+    activeMonths: [] as number[],
   });
 
   // Add item
@@ -40,6 +49,10 @@ export default function CollectionEditorPage() {
         description: col.description ?? "",
         coverImageUrl: col.coverImageUrl ?? "",
         status: col.status ?? "DRAFT",
+        type: col.type ?? "curated",
+        icon: col.icon ?? "",
+        travelTime: col.travelTime ?? "",
+        activeMonths: col.activeMonths ?? [],
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load collection");
@@ -57,17 +70,33 @@ export default function CollectionEditorPage() {
     setSuccess("");
   };
 
+  const toggleMonth = (month: number) => {
+    setForm((prev) => ({
+      ...prev,
+      activeMonths: prev.activeMonths.includes(month)
+        ? prev.activeMonths.filter((m) => m !== month)
+        : [...prev.activeMonths, month],
+    }));
+    setSuccess("");
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
       setError("");
       setSuccess("");
-      await apiClient.updateCollection(colId, {
+      const updatePayload: Record<string, unknown> = {
         title: form.title,
         description: form.description || undefined,
         coverImageUrl: form.coverImageUrl || undefined,
         status: form.status,
-      });
+        type: form.type,
+      };
+      if (form.type === "mood") updatePayload.icon = form.icon || null;
+      if (form.type === "day_trip") updatePayload.travelTime = form.travelTime || null;
+      if (form.type === "seasonal") updatePayload.activeMonths = form.activeMonths;
+
+      await apiClient.updateCollection(colId, updatePayload);
       setSuccess("Collection saved");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
@@ -121,6 +150,7 @@ export default function CollectionEditorPage() {
   }
 
   const inputCls = "h-8 w-full rounded-md border border-gray-700 bg-gray-950 px-3 text-[13px] text-gray-200 focus:border-gray-500 focus:outline-none";
+  const selectCls = "h-8 w-full rounded-md border border-gray-700 bg-gray-900 px-2 text-[13px] text-gray-300 focus:border-gray-500 focus:outline-none";
   const labelCls = "text-xs font-medium text-gray-400";
 
   return (
@@ -180,7 +210,7 @@ export default function CollectionEditorPage() {
               <select
                 value={form.status}
                 onChange={(e) => handleChange("status", e.target.value)}
-                className="h-8 w-full rounded-md border border-gray-700 bg-gray-900 px-2 text-[13px] text-gray-300 focus:border-gray-500 focus:outline-none"
+                className={selectCls}
               >
                 <option value="DRAFT">Draft</option>
                 <option value="PUBLISHED">Published</option>
@@ -188,6 +218,74 @@ export default function CollectionEditorPage() {
               </select>
             </div>
           </div>
+
+          {/* Type field */}
+          <div className="space-y-1">
+            <label className={labelCls}>Type</label>
+            <select
+              value={form.type}
+              onChange={(e) => handleChange("type", e.target.value)}
+              className={selectCls}
+            >
+              <option value="curated">Curated</option>
+              <option value="mood">Mood</option>
+              <option value="day_trip">Day Trip</option>
+              <option value="seasonal">Seasonal</option>
+              <option value="locals_week">Locals Week</option>
+            </select>
+          </div>
+
+          {/* Conditional fields based on type */}
+          {form.type === "mood" && (
+            <div className="space-y-1">
+              <label className={labelCls}>Icon / Emoji</label>
+              <input
+                value={form.icon}
+                onChange={(e) => handleChange("icon", e.target.value)}
+                className={inputCls}
+                placeholder='e.g. "chill", "romantic"'
+              />
+            </div>
+          )}
+          {form.type === "day_trip" && (
+            <div className="space-y-1">
+              <label className={labelCls}>Travel Time</label>
+              <input
+                value={form.travelTime}
+                onChange={(e) => handleChange("travelTime", e.target.value)}
+                className={inputCls}
+                placeholder='e.g. "20 min", "1 hr"'
+              />
+            </div>
+          )}
+          {form.type === "seasonal" && (
+            <div className="space-y-1">
+              <label className={labelCls}>Active Months</label>
+              <div className="flex flex-wrap gap-1.5">
+                {MONTH_LABELS.map((label, i) => {
+                  const month = i + 1;
+                  const active = form.activeMonths.includes(month);
+                  return (
+                    <button
+                      key={month}
+                      type="button"
+                      onClick={() => toggleMonth(month)}
+                      className={`h-7 px-2 rounded text-[11px] font-medium border transition-colors ${
+                        active
+                          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
+                          : "border-gray-700 bg-gray-950 text-gray-500 hover:text-gray-300"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {form.type === "locals_week" && (
+            <p className="text-xs text-amber-400/80">Locals Week collections require exactly 7 items (one per day).</p>
+          )}
         </div>
 
         {/* Items */}

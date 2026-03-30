@@ -1,7 +1,10 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { CityProvider } from "@/lib/city-context";
 import { CulturalProvider } from "@/components/cultural";
 import { getThemePreset, mergeThemeWithOverrides } from "@/lib/cultural-theme";
+import { PreviewGate } from "@/components/explore/PreviewGate";
+import { getAdminPrefix } from "@/lib/admin-config";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002/api/v1";
 
@@ -72,10 +75,23 @@ export default async function CityLayout({
   const baseTheme = getThemePreset(presetId);
   const culturalTheme = mergeThemeWithOverrides(baseTheme, city?.theme);
 
+  const cityId = city?.id || "";
+  const cityStatus = city?.status || "DRAFT";
+  const adminPrefix = getAdminPrefix();
+
   return (
     <CulturalProvider theme={culturalTheme} className="min-h-screen">
       <CityProvider citySlug={citySlug}>
-        {children}
+        <Suspense>
+          <PreviewGate
+            cityId={cityId}
+            citySlug={citySlug}
+            cityStatus={cityStatus}
+            adminPrefix={adminPrefix}
+          >
+            {children}
+          </PreviewGate>
+        </Suspense>
       </CityProvider>
     </CulturalProvider>
   );

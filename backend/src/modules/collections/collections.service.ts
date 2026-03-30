@@ -4,6 +4,8 @@ import { slugify } from '../../utils/slugify.js';
 
 interface ListCollectionsFilters {
   status?: ContentStatus;
+  type?: string;
+  activeMonth?: number;
   page: number;
   limit: number;
 }
@@ -14,6 +16,10 @@ interface CreateCollectionData {
   description?: string;
   coverImageUrl?: string;
   createdById: string;
+  type?: string;
+  icon?: string;
+  travelTime?: string;
+  activeMonths?: number[];
 }
 
 interface UpdateCollectionData {
@@ -22,6 +28,10 @@ interface UpdateCollectionData {
   coverImageUrl?: string;
   status?: ContentStatus;
   sortOrder?: number;
+  type?: string;
+  icon?: string;
+  travelTime?: string;
+  activeMonths?: number[];
 }
 
 interface AddItemData {
@@ -50,13 +60,19 @@ const poiSelectForItem = {
 
 export const collectionsService = {
   async listCollections(cityId: string, filters: ListCollectionsFilters) {
-    const { status, page, limit } = filters;
+    const { status, type, activeMonth, page, limit } = filters;
 
     const where: Prisma.CollectionWhereInput = { cityId };
     if (status) {
       where.status = status;
     } else {
       where.status = 'PUBLISHED';
+    }
+    if (type) {
+      where.type = type;
+    }
+    if (activeMonth !== undefined && type === 'seasonal') {
+      where.activeMonths = { has: activeMonth };
     }
 
     const skip = (page - 1) * limit;
@@ -124,6 +140,10 @@ export const collectionsService = {
         description: data.description,
         coverImageUrl: data.coverImageUrl,
         createdById: data.createdById,
+        type: data.type,
+        icon: data.icon,
+        travelTime: data.travelTime,
+        activeMonths: data.activeMonths,
       },
       include: {
         _count: {
@@ -144,6 +164,10 @@ export const collectionsService = {
     if (data.coverImageUrl !== undefined) updateData.coverImageUrl = data.coverImageUrl;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.icon !== undefined) updateData.icon = data.icon;
+    if (data.travelTime !== undefined) updateData.travelTime = data.travelTime;
+    if (data.activeMonths !== undefined) updateData.activeMonths = data.activeMonths;
 
     try {
       return await prisma.collection.update({

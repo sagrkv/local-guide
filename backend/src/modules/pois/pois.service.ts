@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { Prisma, POIStatus, POIPriority } from '@prisma/client';
 import { slugify } from '../../utils/slugify.js';
+import { imageUrl } from '../../lib/image.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -678,8 +679,15 @@ export const poisService = {
           categoryIcon: poi.category.icon,
           categoryColor: poi.category.color,
           priority: poi.priority,
-          primaryPhotoUrl: poi.photos.find((p) => p.isPrimary)?.url ?? poi.photos[0]?.url ?? null,
+          primaryPhoto: imageUrl(
+            poi.photos.find((p) => p.isPrimary)?.url ?? poi.photos[0]?.url ?? null,
+          ),
+          // Kept for backward-compatibility; prefer primaryPhoto.url instead
+          primaryPhotoUrl: imageUrl(
+            poi.photos.find((p) => p.isPrimary)?.url ?? poi.photos[0]?.url ?? null,
+          )?.url ?? null,
           estimatedTimeToSpend: poi.estimatedTimeToSpend,
+          zone: poi.zone,
         },
       })),
     };

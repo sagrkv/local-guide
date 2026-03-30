@@ -24,6 +24,10 @@ interface CityMapProps {
   onMarkerClick?: (poiId: string, coordinates: [number, number]) => void;
   onMapReady?: (map: maplibregl.Map) => void;
   palette?: MapPalette;
+  /** When set, POIs matching these IDs render at full opacity; others dim to 0.3 */
+  highlightPoiIds?: Set<string> | null;
+  /** When true, POIs with zone=day_trip are shown; otherwise they are hidden */
+  showDayTrips?: boolean;
 }
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
@@ -260,6 +264,8 @@ export default function CityMap({
   onMarkerClick,
   onMapReady,
   palette,
+  highlightPoiIds,
+  showDayTrips,
 }: CityMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -608,6 +614,68 @@ export default function CityMap({
       map.on("load", applyData);
     }
   }, [pois, handleMarkerClick, effectivePalette]);
+
+  // Apply highlight / day-trip filtering via paint opacity
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const poiLayers = [
+      "poi-must-visit",
+      "poi-must-visit-glow",
+      "poi-recommended",
+      "poi-hidden-gem",
+      "poi-default",
+      "poi-hidden-gem-star",
+    ];
+
+    for (const layerId of poiLayers) {
+      if (!map.getLayer(layerId)) continue;
+
+      try {
+        const isText = layerId === "poi-hidden-gem-star";
+        const opacityProp = isText ? "text-opacity" : "circle-opacity";
+
+        // Build an expression: if highlightPoiIds is set, matched = full, rest = dim
+        // Also hide day_trip POIs unless showDayTrips is on
+        if (highlightPoiIds && highlightPoiIds.size > 0) {
+          const ids = Array.from(highlightPoiIds);
+          const expr: maplibregl.ExpressionSpecification = [
+            "case",
+            // Hide day_trip when toggle off
+            ["all", ["==", ["get", "zone"], "day_trip"], ["literal", !showDayTrips]],
+            0,
+            // Highlighted ids get full opacity
+            ["in", ["get", "id"], ["literal", ids]],
+            isText ? 1 : 0.95,
+            // Everything else dims
+            isText ? 0.15 : 0.25,
+          ];
+          map.setPaintProperty(layerId, opacityProp, expr);
+        } else if (!showDayTrips) {
+          // No mood filter, just hide day_trip
+          const expr: maplibregl.ExpressionSpecification = [
+            "case",
+            ["==", ["get", "zone"], "day_trip"],
+            0,
+            isText ? 1 : 0.9,
+          ];
+          map.setPaintProperty(layerId, opacityProp, expr);
+        } else {
+          // Show everything — day trips at slightly lower opacity
+          const expr: maplibregl.ExpressionSpecification = [
+            "case",
+            ["==", ["get", "zone"], "day_trip"],
+            isText ? 0.7 : 0.6,
+            isText ? 1 : 0.9,
+          ];
+          map.setPaintProperty(layerId, opacityProp, expr);
+        }
+      } catch {
+        // Layer may not exist yet
+      }
+    }
+  }, [highlightPoiIds, showDayTrips]);
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: 300 }}>

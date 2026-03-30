@@ -71,8 +71,11 @@ export const config = {
   anthropicApiKey: getOptionalEnv("ANTHROPIC_API_KEY", ""),
   anthropicModel: getOptionalEnv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
 
-  // CDN base URL for media assets
-  cdnBaseUrl: getOptionalEnv("CDN_BASE_URL", ""),
+  // CDN base URL for media assets (falls back to local server URL)
+  cdnBaseUrl: getOptionalEnv(
+    "CDN_BASE_URL",
+    `http://localhost:${parseInt(getOptionalEnv("PORT", "3001"), 10)}`,
+  ),
 
   // Default map tile URL
   defaultMapTileUrl: getOptionalEnv(

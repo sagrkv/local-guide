@@ -10,13 +10,27 @@ interface Collection {
   title: string;
   description?: string;
   status: string;
+  type?: string;
   _count?: { items: number };
 }
+
+const MONTH_LABELS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
 
 const STATUS_STYLES: Record<string, string> = {
   DRAFT: "bg-gray-500/10 text-gray-400",
   PUBLISHED: "bg-emerald-500/10 text-emerald-400",
   ARCHIVED: "bg-red-500/10 text-red-400",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  curated: "Curated",
+  mood: "Mood",
+  day_trip: "Day Trip",
+  seasonal: "Seasonal",
+  locals_week: "Locals Week",
 };
 
 export default function CollectionsListPage() {
@@ -30,6 +44,10 @@ export default function CollectionsListPage() {
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [newType, setNewType] = useState("curated");
+  const [newIcon, setNewIcon] = useState("");
+  const [newTravelTime, setNewTravelTime] = useState("");
+  const [newActiveMonths, setNewActiveMonths] = useState<number[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -47,15 +65,27 @@ export default function CollectionsListPage() {
     fetchData();
   }, [fetchData]);
 
+  const toggleMonth = (month: number) => {
+    setNewActiveMonths((prev) =>
+      prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]
+    );
+  };
+
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
     try {
       setCreating(true);
       setError("");
-      const res = await apiClient.createCollection({
+      const payload: Record<string, unknown> = {
         cityId,
         title: newTitle,
-      });
+        type: newType,
+      };
+      if (newType === "mood" && newIcon.trim()) payload.icon = newIcon.trim();
+      if (newType === "day_trip" && newTravelTime.trim()) payload.travelTime = newTravelTime.trim();
+      if (newType === "seasonal" && newActiveMonths.length > 0) payload.activeMonths = newActiveMonths;
+
+      const res = await apiClient.createCollection(payload);
       const id = res.data?.id;
       if (id) {
         router.push(`/${adminPrefix}/cities/${cityId}/collections/${id}`);
@@ -94,6 +124,20 @@ export default function CollectionsListPage() {
               placeholder="e.g. Best Street Food Spots"
             />
           </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-400">Type</label>
+            <select
+              value={newType}
+              onChange={(e) => setNewType(e.target.value)}
+              className="h-8 rounded-md border border-gray-700 bg-gray-900 px-2 text-[13px] text-gray-300 focus:border-gray-500 focus:outline-none"
+            >
+              <option value="curated">Curated</option>
+              <option value="mood">Mood</option>
+              <option value="day_trip">Day Trip</option>
+              <option value="seasonal">Seasonal</option>
+              <option value="locals_week">Locals Week</option>
+            </select>
+          </div>
           <button
             onClick={handleCreate}
             disabled={creating || !newTitle.trim()}
@@ -102,6 +146,58 @@ export default function CollectionsListPage() {
             {creating ? "Creating..." : "Create"}
           </button>
         </div>
+
+        {/* Conditional fields based on type */}
+        {newType === "mood" && (
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-400">Icon / Emoji</label>
+            <input
+              value={newIcon}
+              onChange={(e) => setNewIcon(e.target.value)}
+              className="h-8 w-48 rounded-md border border-gray-700 bg-gray-950 px-3 text-[13px] text-gray-200 focus:border-gray-500 focus:outline-none"
+              placeholder='e.g. "chill", "romantic"'
+            />
+          </div>
+        )}
+        {newType === "day_trip" && (
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-400">Travel Time</label>
+            <input
+              value={newTravelTime}
+              onChange={(e) => setNewTravelTime(e.target.value)}
+              className="h-8 w-48 rounded-md border border-gray-700 bg-gray-950 px-3 text-[13px] text-gray-200 focus:border-gray-500 focus:outline-none"
+              placeholder='e.g. "20 min", "1 hr"'
+            />
+          </div>
+        )}
+        {newType === "seasonal" && (
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-400">Active Months</label>
+            <div className="flex flex-wrap gap-1.5">
+              {MONTH_LABELS.map((label, i) => {
+                const month = i + 1;
+                const active = newActiveMonths.includes(month);
+                return (
+                  <button
+                    key={month}
+                    type="button"
+                    onClick={() => toggleMonth(month)}
+                    className={`h-7 px-2 rounded text-[11px] font-medium border transition-colors ${
+                      active
+                        ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
+                        : "border-gray-700 bg-gray-950 text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {newType === "locals_week" && (
+          <p className="text-xs text-amber-400/80">Locals Week collections require exactly 7 items (one per day).</p>
+        )}
       </div>
 
       {error && (
@@ -120,6 +216,7 @@ export default function CollectionsListPage() {
             <thead className="bg-gray-900/50 border-b border-gray-800">
               <tr>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Title</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Items</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
               </tr>
@@ -127,7 +224,7 @@ export default function CollectionsListPage() {
             <tbody className="divide-y divide-gray-800/50">
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-3 py-8 text-center text-[13px] text-gray-500">
+                  <td colSpan={4} className="px-3 py-8 text-center text-[13px] text-gray-500">
                     No collections yet
                   </td>
                 </tr>
@@ -143,6 +240,9 @@ export default function CollectionsListPage() {
                     {item.description && (
                       <p className="text-xs text-gray-500 truncate max-w-xs">{item.description}</p>
                     )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="text-[11px] text-gray-400">{TYPE_LABELS[item.type ?? "curated"] ?? item.type}</span>
                   </td>
                   <td className="px-3 py-2 text-[13px] text-gray-400">{item._count?.items ?? 0}</td>
                   <td className="px-3 py-2">

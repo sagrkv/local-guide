@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { CityStatus } from '@prisma/client';
 import { citiesService } from './cities.service.js';
+import { readinessService } from './readiness.service.js';
 import { slugify } from '../../utils/slugify.js';
 import { success, paginated, error, ErrorCodes } from '../../lib/response.js';
 import { auditService, AuditActions, AuditResources } from '../audit/audit.service.js';
@@ -215,6 +216,26 @@ export async function citiesRoutes(fastify: FastifyInstance) {
     });
 
     return success({ message: 'City deleted successfully' });
+  });
+
+  // GET /:id/readiness — get city launch readiness checklist (admin only)
+  fastify.get('/:id/readiness', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    try {
+      const readiness = await readinessService.getCityReadiness(id);
+
+      if (!readiness.essential.cityCreated.done) {
+        return reply.status(404).send(error(ErrorCodes.NOT_FOUND, 'City not found'));
+      }
+
+      return success(readiness);
+    } catch (err) {
+      request.log.error(err, 'Failed to compute city readiness');
+      return reply.status(500).send(error(ErrorCodes.INTERNAL_ERROR, 'Failed to compute readiness'));
+    }
   });
 
   // PATCH /:id/status — update city status (admin only)

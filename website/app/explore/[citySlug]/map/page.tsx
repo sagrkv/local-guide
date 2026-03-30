@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useCity } from "@/lib/city-context";
 import { useCulturalTheme } from "@/components/cultural";
 import CityMap from "@/components/map/CityMap";
 import POIPopup from "@/components/map/POIPopup";
 import CategoryFilter from "@/components/map/CategoryFilter";
+import { SurpriseMe } from "@/components/explore/SurpriseMe";
+import { DownloadMapButton } from "@/components/explore/DownloadMapButton";
+import { OfflineBanner } from "@/components/explore/OfflineBanner";
 import type maplibregl from "maplibre-gl";
 
 const API_BASE =
@@ -36,6 +39,18 @@ interface SelectedPOI {
   lng: number;
 }
 
+interface MoodCollection {
+  id: string;
+  title: string;
+  slug: string;
+  icon?: string;
+  _count: { items: number };
+}
+
+interface MoodCollectionDetail {
+  items: Array<{ poi: { id: string; latitude: number; longitude: number } }>;
+}
+
 export default function CityMapPage() {
   const { city, loading, error } = useCity();
   const theme = useCulturalTheme();
@@ -48,6 +63,14 @@ export default function CityMapPage() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [selectedPOI, setSelectedPOI] = useState<SelectedPOI | null>(null);
   const [geoLoading, setGeoLoading] = useState(true);
+
+  // Mood + day trip filter state
+  const [moods, setMoods] = useState<MoodCollection[]>([]);
+  const [activeMoodSlug, setActiveMoodSlug] = useState<string | null>(null);
+  const [activeMoodTitle, setActiveMoodTitle] = useState<string | null>(null);
+  const [moodPoiIds, setMoodPoiIds] = useState<Set<string> | null>(null);
+  const [showDayTrips, setShowDayTrips] = useState(false);
+  const [surpriseOpen, setSurpriseOpen] = useState(false);
 
   // Fetch categories
   useEffect(() => {
@@ -82,6 +105,117 @@ export default function CityMapPage() {
       .catch(() => setGeojson(null))
       .finally(() => setGeoLoading(false));
   }, [city?.slug, activeFilters]);
+
+  // Fetch mood collections
+  useEffect(() => {
+    if (!city?.id) return;
+    fetch(`${API_BASE}/cities/${city.id}/collections?type=mood&limit=50`)
+      .then((res) => (res.ok ? res.json() : { data: [] }))
+      .then((json) => {
+        const list = json.data || json.collections || [];
+        setMoods(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setMoods([]));
+  }, [city?.id]);
+
+  // When a mood is selected, fetch its POI IDs and fit bounds
+  useEffect(() => {
+    if (!activeMoodSlug || !city?.id) {
+      setMoodPoiIds(null);
+      return;
+    }
+
+    fetch(`${API_BASE}/cities/${city.id}/collections/${activeMoodSlug}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const detail: MoodCollectionDetail | null = json?.data || json;
+        if (!detail?.items) {
+          setMoodPoiIds(null);
+          return;
+        }
+
+        const ids = new Set(detail.items.map((item) => item.poi.id));
+        setMoodPoiIds(ids);
+
+        // Auto-fit bounds to mood POIs
+        const coords = detail.items
+          .map((item) => item.poi)
+          .filter((p) => p.latitude && p.longitude);
+        if (coords.length > 0 && mapInstanceRef.current) {
+          const bounds = coords.reduce(
+            (b, p) => ({
+              minLng: Math.min(b.minLng, p.longitude),
+              maxLng: Math.max(b.maxLng, p.longitude),
+              minLat: Math.min(b.minLat, p.latitude),
+              maxLat: Math.max(b.maxLat, p.latitude),
+            }),
+            { minLng: 180, maxLng: -180, minLat: 90, maxLat: -90 },
+          );
+          mapInstanceRef.current.fitBounds(
+            [
+              [bounds.minLng, bounds.minLat],
+              [bounds.maxLng, bounds.maxLat],
+            ],
+            { padding: 80, duration: 1200 },
+          );
+        }
+      })
+      .catch(() => setMoodPoiIds(null));
+  }, [activeMoodSlug, city?.id]);
+
+  // Build POI list for SurpriseMe from geojson features
+  const surprisePois = useMemo(() => {
+    if (!geojson?.features) return [];
+    return geojson.features
+      .filter((f) => f.properties && f.geometry.type === "Point")
+      .map((f) => ({
+        id: f.properties!.id,
+        name: f.properties!.name,
+        slug: f.properties!.slug,
+        shortDescription: f.properties!.shortDescription,
+        latitude: (f.geometry as GeoJSON.Point).coordinates[1],
+        longitude: (f.geometry as GeoJSON.Point).coordinates[0],
+        priority: f.properties!.priority || "RECOMMENDED",
+        category: f.properties!.category
+          ? { name: f.properties!.category, emoji: f.properties!.categoryIcon }
+          : undefined,
+        photos: f.properties!.primaryPhotoUrl
+          ? [{ url: f.properties!.primaryPhotoUrl }]
+          : [],
+      }));
+  }, [geojson]);
+
+  const handleClearMoodFilter = useCallback(() => {
+    setActiveMoodSlug(null);
+    setActiveMoodTitle(null);
+    setMoodPoiIds(null);
+  }, []);
+
+  const handleSelectMood = useCallback(
+    (slug: string, title: string) => {
+      if (activeMoodSlug === slug) {
+        handleClearMoodFilter();
+      } else {
+        setActiveMoodSlug(slug);
+        setActiveMoodTitle(title);
+      }
+    },
+    [activeMoodSlug, handleClearMoodFilter],
+  );
+
+  const handleToggleDayTrips = useCallback(() => {
+    setShowDayTrips((prev) => {
+      const next = !prev;
+      if (next && mapInstanceRef.current && city) {
+        mapInstanceRef.current.flyTo({
+          center: [city.centerLng, city.centerLat],
+          zoom: Math.max((city.defaultZoom || 13) - 1.5, 8),
+          duration: 1200,
+        });
+      }
+      return next;
+    });
+  }, [city]);
 
   // Handle marker click
   const handleMarkerClick = useCallback(
@@ -139,27 +273,8 @@ export default function CityMapPage() {
   }, []);
 
   const handleSurprise = useCallback(() => {
-    if (!city?.id) return;
-    fetch(`${API_BASE}/cities/${city.id}/pois/random`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        const data = json?.data || json;
-        if (
-          data &&
-          (data.lat || data.latitude) &&
-          (data.lng || data.longitude)
-        ) {
-          const lng = data.lng || data.longitude;
-          const lat = data.lat || data.latitude;
-          const map = mapInstanceRef.current;
-          if (map) {
-            map.flyTo({ center: [lng, lat], zoom: 16, duration: 2000 });
-          }
-          setSelectedPOI({ ...data, lat, lng });
-        }
-      })
-      .catch(() => {});
-  }, [city?.id]);
+    setSurpriseOpen(true);
+  }, []);
 
   const handleMapReady = useCallback((map: maplibregl.Map) => {
     mapInstanceRef.current = map;
@@ -232,6 +347,9 @@ export default function CityMapPage() {
 
   return (
     <div className="h-screen flex flex-col relative overflow-hidden">
+      {/* Offline banner */}
+      <OfflineBanner citySlug={city.slug} />
+
       {/* Full-bleed map */}
       <div className="absolute inset-0">
         <CityMap
@@ -241,6 +359,8 @@ export default function CityMapPage() {
           onMarkerClick={handleMarkerClick}
           onMapReady={handleMapReady}
           palette={mapPalette}
+          highlightPoiIds={moodPoiIds}
+          showDayTrips={showDayTrips}
         />
       </div>
 
@@ -370,6 +490,144 @@ export default function CityMapPage() {
         </div>
       )}
 
+      {/* Mood / Day Trip toolbar */}
+      {geojson && (
+        <div className="relative z-10 mx-3 md:mx-4 mt-2">
+          <div
+            className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-xl shadow-md backdrop-blur-md"
+            style={{
+              backgroundColor: `${theme.palette.surface}E0`,
+              border: `1px solid ${theme.palette.gold}25`,
+            }}
+          >
+            {/* All Spots */}
+            <button
+              onClick={() => {
+                handleClearMoodFilter();
+                setShowDayTrips(false);
+              }}
+              className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={
+                !activeMoodSlug && !showDayTrips
+                  ? {
+                      backgroundColor: theme.palette.primary,
+                      color: "#fff",
+                    }
+                  : {
+                      backgroundColor: "transparent",
+                      color: theme.palette.textMuted,
+                    }
+              }
+            >
+              All Spots
+            </button>
+
+            {/* Mood dropdown */}
+            {moods.length > 0 && (
+              <select
+                value={activeMoodSlug || ""}
+                onChange={(e) => {
+                  const slug = e.target.value;
+                  if (!slug) {
+                    handleClearMoodFilter();
+                  } else {
+                    const mood = moods.find((m) => m.slug === slug);
+                    if (mood) handleSelectMood(slug, mood.title);
+                  }
+                }}
+                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all appearance-none cursor-pointer"
+                style={{
+                  backgroundColor: activeMoodSlug
+                    ? `${theme.palette.gold}30`
+                    : "transparent",
+                  color: activeMoodSlug
+                    ? theme.palette.text
+                    : theme.palette.textMuted,
+                  border: "none",
+                  outline: "none",
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B8070' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 4px center",
+                  paddingRight: "20px",
+                }}
+              >
+                <option value="">Moods</option>
+                {moods.map((mood) => (
+                  <option key={mood.id} value={mood.slug}>
+                    {mood.icon ? `${mood.icon} ` : ""}{mood.title}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Day Trips toggle */}
+            <button
+              onClick={handleToggleDayTrips}
+              className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={
+                showDayTrips
+                  ? {
+                      backgroundColor: `${theme.palette.gold}30`,
+                      color: theme.palette.text,
+                    }
+                  : {
+                      backgroundColor: "transparent",
+                      color: theme.palette.textMuted,
+                    }
+              }
+            >
+              Day Trips
+            </button>
+
+            {/* Divider */}
+            <div
+              className="w-px h-4 mx-0.5"
+              style={{ backgroundColor: `${theme.palette.gold}30` }}
+            />
+
+            {/* Surprise Me */}
+            <button
+              onClick={handleSurprise}
+              className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-105"
+              style={{
+                backgroundColor: `${theme.palette.gold}20`,
+                color: theme.palette.gold,
+              }}
+            >
+              Surprise Me
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Active mood chip */}
+      {activeMoodSlug && activeMoodTitle && (
+        <div className="relative z-10 mx-3 md:mx-4 mt-2">
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={{
+              backgroundColor: `${theme.palette.gold}20`,
+              color: theme.palette.text,
+              border: `1px solid ${theme.palette.gold}40`,
+            }}
+          >
+            <span>
+              Showing: {activeMoodTitle}
+              {moodPoiIds ? ` (${moodPoiIds.size} spots)` : ""}
+            </span>
+            <button
+              onClick={handleClearMoodFilter}
+              className="ml-1 hover:opacity-70 transition-opacity"
+              style={{ color: theme.palette.textMuted }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* POI Popup */}
       {selectedPOI && (
         <>
@@ -392,6 +650,11 @@ export default function CityMapPage() {
           </div>
         </>
       )}
+
+      {/* Offline download button */}
+      <div className="absolute bottom-4 left-4 z-20 hidden md:block">
+        <DownloadMapButton citySlug={city.slug} cityName={city.name} />
+      </div>
 
       {/* Decorative corner accents */}
       <div
@@ -429,6 +692,14 @@ export default function CityMapPage() {
           borderBottomRightRadius: "12px",
           margin: "4px",
         }}
+      />
+
+      {/* Surprise Me overlay */}
+      <SurpriseMe
+        pois={surprisePois}
+        citySlug={city.slug}
+        isOpen={surpriseOpen}
+        onClose={() => setSurpriseOpen(false)}
       />
 
       <style jsx>{`

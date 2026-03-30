@@ -38,6 +38,17 @@
 
   /* Map tiles */
   --map-tile-style: dark_all;
+
+  /* Paper Maps Design Tokens — 5 colors + 2 fonts per city */
+  --pm-paper: #FAFAF5;
+  --pm-primary: #1E3A5F;
+  --pm-accent: #D4A574;
+  --pm-surface: #FAFAF8;
+  --pm-ink: #1A1A1A;
+  --pm-muted: #9CA3AF;
+  --pm-font-display: 'Space Grotesk', sans-serif;
+  --pm-font-body: 'DM Sans', sans-serif;
+  --pm-photo-filter: none;
 }
 
 [data-theme="light"] {

@@ -179,6 +179,8 @@ model CityTheme {
   mapStyleJson Json?
   mapTileUrl   String?
   iconPack     String @default("default")
+  photoFilter  String? // CSS filter string e.g. "saturate(0.9) sepia(0.1) brightness(1.05)"
+  motifIds     String[] // selected motif IDs from the motif library
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -236,6 +238,7 @@ model POI {
   rejectionReason String?
 
   priority      POIPriority @default(RECOMMENDED)
+  zone          String      @default("city_center") // city_center | outskirts | day_trip
   iconOverride  String?
   colorOverride String?
   sortOrder     Int         @default(0)
@@ -395,6 +398,11 @@ model Collection {
   status        ContentStatus @default(DRAFT)
   sortOrder     Int           @default(0)
 
+  type          String        @default("curated") // curated | mood | day_trip | seasonal | locals_week
+  icon          String?       // emoji or icon name for display (e.g. "🌅", "🍛")
+  travelTime    String?       // for day_trip type: "20 min", "1 hr"
+  activeMonths  Int[]         // for seasonal type: [9, 10] = Sept-Oct (empty = always active)
+
   createdById String
 
   createdAt DateTime @default(now())
@@ -407,6 +415,7 @@ model Collection {
   @@unique([cityId, slug])
   @@index([cityId, status])
   @@index([cityId, sortOrder])
+  @@index([cityId, type])
   @@map("collections")
 }
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, CityReadiness } from "@/lib/api-client";
 
 interface City {
   id: string;
@@ -15,6 +15,13 @@ interface City {
   state?: string;
   country?: string;
   _count?: { pois: number; itineraries: number; collections: number };
+}
+
+interface ReadinessItem {
+  done: boolean;
+  current?: number;
+  required?: number;
+  total?: number;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -31,9 +38,19 @@ export default function CityDetailPage() {
 
   const [city, setCity] = useState<City | null>(null);
   const [stats, setStats] = useState<Record<string, number> | null>(null);
+  const [readiness, setReadiness] = useState<CityReadiness | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(false);
+
+  const fetchReadiness = async () => {
+    try {
+      const res = await apiClient.getCityReadiness(cityId);
+      setReadiness(res.data);
+    } catch {
+      // Non-critical — page still works without readiness
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,6 +77,7 @@ export default function CityDetailPage() {
       }
     };
     fetchData();
+    fetchReadiness();
   }, [cityId]);
 
   const handleStatusChange = async (newStatus: string) => {
@@ -68,6 +86,7 @@ export default function CityDetailPage() {
       setStatusUpdating(true);
       const res = await apiClient.updateCityStatus(cityId, newStatus);
       setCity(res.data);
+      fetchReadiness();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update status");
     } finally {
@@ -133,11 +152,21 @@ export default function CityDetailPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href={`/explore/${city.slug}?preview=true`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-7 px-3 inline-flex items-center gap-1.5 rounded-md border border-gray-700 text-gray-300 hover:bg-gray-800 text-[13px] font-medium transition-colors"
+          >
+            <EyeIcon className="h-3.5 w-3.5" />
+            Preview as Public
+          </a>
           {city.status === "DRAFT" && (
             <button
               onClick={() => handleStatusChange("PUBLISHED")}
-              disabled={statusUpdating}
-              className="h-7 px-3 rounded-md bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 text-[13px] font-medium transition-colors disabled:opacity-50"
+              disabled={statusUpdating || (readiness !== null && !readiness.canPublish)}
+              title={readiness && !readiness.canPublish ? "Complete all essential items before publishing" : undefined}
+              className="h-7 px-3 rounded-md bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 text-[13px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Publish
             </button>
@@ -175,6 +204,9 @@ export default function CityDetailPage() {
           </Link>
         ))}
       </div>
+
+      {/* Launch Readiness */}
+      {readiness && <LaunchReadiness readiness={readiness} />}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -252,6 +284,189 @@ function ChevronRight({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+function EyeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  );
+}
+
+// ==================== Launch Readiness ====================
+
+const ESSENTIAL_LABELS: Record<string, string> = {
+  cityCreated: "City created",
+  themeDefined: "Theme defined",
+  minPOIs: "Minimum 30 published POIs",
+  minCategories: "At least 3 different categories",
+  poisHaveDescription: "All published POIs have descriptions",
+  poisHaveCoordinates: "All published POIs have coordinates",
+  minItineraries: "At least 1 published itinerary",
+  minMoods: "At least 3 mood collections",
+  taglineWritten: "City tagline written",
+};
+
+const RECOMMENDED_LABELS: Record<string, string> = {
+  fiftyPOIs: "50+ published POIs",
+  dayTrip: "Day trip collection",
+  localsWeek: "Locals week collection",
+  poisWithTips: "10+ POIs with local tips",
+  poisWithPhotos: "10+ POIs with photos",
+  multipleItineraries: "2+ published itineraries",
+};
+
+function LaunchReadiness({ readiness }: { readiness: CityReadiness }) {
+  const [essentialOpen, setEssentialOpen] = useState(true);
+  const [recommendedOpen, setRecommendedOpen] = useState(false);
+
+  const essentialDone = Object.values(readiness.essential).filter((i) => i.done).length;
+  const essentialTotal = Object.values(readiness.essential).length;
+  const recommendedDone = Object.values(readiness.recommended).filter((i) => i.done).length;
+  const recommendedTotal = Object.values(readiness.recommended).length;
+
+  const barColor = readiness.score === 100
+    ? "bg-emerald-500"
+    : readiness.score >= 60
+      ? "bg-amber-500"
+      : "bg-red-500";
+
+  return (
+    <div className="border border-gray-800 rounded-lg bg-gray-900 overflow-hidden">
+      {/* Progress header */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-medium text-gray-200">Launch Readiness</h2>
+          <span className="text-[13px] font-semibold text-gray-300">{readiness.score}%</span>
+        </div>
+        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+            style={{ width: `${readiness.score}%` }}
+          />
+        </div>
+        {readiness.canPublish ? (
+          <p className="text-[11px] text-emerald-400 mt-1.5">Ready to publish</p>
+        ) : (
+          <p className="text-[11px] text-gray-500 mt-1.5">
+            Complete all essential items to enable publishing
+          </p>
+        )}
+      </div>
+
+      {/* Essential section */}
+      <div className="border-t border-gray-800">
+        <button
+          onClick={() => setEssentialOpen(!essentialOpen)}
+          className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-800/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform ${essentialOpen ? "" : "-rotate-90"}`} />
+            <span className="text-[13px] font-medium text-gray-300">Essential</span>
+          </div>
+          <span className="text-[11px] text-gray-500">
+            {essentialDone}/{essentialTotal}
+          </span>
+        </button>
+        {essentialOpen && (
+          <div className="px-4 pb-3 space-y-1">
+            {Object.entries(readiness.essential).map(([key, item]) => (
+              <ChecklistRow
+                key={key}
+                label={ESSENTIAL_LABELS[key] ?? key}
+                item={item}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Recommended section */}
+      <div className="border-t border-gray-800">
+        <button
+          onClick={() => setRecommendedOpen(!recommendedOpen)}
+          className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-800/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform ${recommendedOpen ? "" : "-rotate-90"}`} />
+            <span className="text-[13px] font-medium text-gray-300">Recommended</span>
+          </div>
+          <span className="text-[11px] text-gray-500">
+            {recommendedDone}/{recommendedTotal}
+          </span>
+        </button>
+        {recommendedOpen && (
+          <div className="px-4 pb-3 space-y-1">
+            {Object.entries(readiness.recommended).map(([key, item]) => (
+              <ChecklistRow
+                key={key}
+                label={RECOMMENDED_LABELS[key] ?? key}
+                item={item}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ChecklistRow({ label, item }: { label: string; item: ReadinessItem }) {
+  const progress = formatProgress(item);
+
+  return (
+    <div className="flex items-center gap-2 py-1">
+      {item.done ? (
+        <CheckIcon className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+      ) : (
+        <XIcon className="h-3.5 w-3.5 text-red-400 shrink-0" />
+      )}
+      <span className={`text-[13px] ${item.done ? "text-gray-400" : "text-gray-300"}`}>
+        {label}
+      </span>
+      {progress && (
+        <span className={`ml-auto text-[11px] tabular-nums ${item.done ? "text-gray-600" : "text-gray-500"}`}>
+          {progress}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function formatProgress(item: ReadinessItem): string | null {
+  if (item.current !== undefined && item.required !== undefined) {
+    return `${item.current}/${item.required}`;
+  }
+  if (item.current !== undefined && item.total !== undefined) {
+    return `${item.current}/${item.total}`;
+  }
+  return null;
+}
+
+function ChevronDown({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
 }

@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { poiPhotosService, AddPhotoData } from './poi-photos.service.js';
 import { success, error, ErrorCodes } from '../../lib/response.js';
+import { transformPhotos } from '../../lib/image.js';
 import { auditService, AuditResources } from '../audit/audit.service.js';
 
 // ---------------------------------------------------------------------------
@@ -36,7 +37,7 @@ export async function poiPhotosRoutes(fastify: FastifyInstance) {
   fastify.get('/pois/:poiId/photos', async (request) => {
     const { poiId } = request.params as { poiId: string };
     const photos = await poiPhotosService.listPhotos(poiId);
-    return success(photos);
+    return success(transformPhotos(photos));
   });
 
   // POST /pois/:poiId/photos - add photo (admin)
