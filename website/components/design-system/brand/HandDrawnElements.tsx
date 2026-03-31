@@ -232,7 +232,7 @@ export default function HandDrawnElements() {
               paddingLeft: 24,
               marginTop: 8,
             }}>
-              — from a local guide
+              — from Paper Maps
             </p>
           </div>
         </div>

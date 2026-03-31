@@ -182,6 +182,33 @@ export function getSimpleThemeFontLinks(theme: SimpleTheme): string[] {
   return links;
 }
 
+/**
+ * Convert DB CityTheme overrides into a SimpleTheme.
+ * Falls back to the preset for the given citySlug for any missing fields.
+ */
+export function mapDbThemeToSimple(
+  dbTheme: CityThemeOverrides,
+  citySlug: string,
+): SimpleTheme {
+  const base = getSimpleTheme(dbTheme.themePresetId || citySlug);
+  return {
+    primary: dbTheme.colorPrimary || base.primary,
+    accent: dbTheme.colorAccent || base.accent,
+    surface: dbTheme.colorSecondary || base.surface,
+    ink: dbTheme.colorText || base.ink,
+    muted: base.muted,
+    fontDisplay: dbTheme.displayFontFamily
+      ? `'${dbTheme.displayFontFamily}', sans-serif`
+      : base.fontDisplay,
+    fontBody: dbTheme.bodyFontFamily
+      ? `'${dbTheme.bodyFontFamily}', sans-serif`
+      : base.fontBody,
+    fontDisplayUrl: dbTheme.displayFontUrl || base.fontDisplayUrl,
+    fontBodyUrl: dbTheme.bodyFontUrl || base.fontBodyUrl,
+    photoFilter: base.photoFilter,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Font Library — Curated fonts organized by cultural region
 // ---------------------------------------------------------------------------
@@ -621,7 +648,7 @@ export const defaultPreset: CulturalTheme = {
     svg: 'M16 2L16 6M16 6L20 10L16 14L12 10L16 6ZM16 14L16 22M8 18L16 22L24 18M16 30A14 14 0 1016 2A14 14 0 1016 30Z',
     width: 32,
     height: 32,
-    alt: 'Local Guide compass',
+    alt: 'Paper Maps compass',
   },
   mapConfig: {
     markerIcons: {},

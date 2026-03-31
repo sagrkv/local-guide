@@ -52,7 +52,7 @@ export default function DashboardHomePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-white">Dashboard</h1>
-          <p className="text-[13px] text-gray-500 mt-0.5">Welcome back! Here&apos;s your Local Guide overview.</p>
+          <p className="text-[13px] text-gray-500 mt-0.5">Welcome back! Here&apos;s your Paper Maps overview.</p>
         </div>
       </div>
 

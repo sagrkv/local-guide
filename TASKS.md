@@ -1,7 +1,7 @@
-# Local Guide - Project Tasks
+# Paper Maps - Project Tasks
 
 ## Overview
-Curated Tourist Map Platform - Local Guide
+Curated Tourist Map Platform - Paper Maps
 
 ---
 
@@ -112,7 +112,7 @@ NEXT_PUBLIC_API_URL=https://your-backend.railway.app/api
 
 ## Default Admin Credentials
 After seeding the database:
-- **Email:** admin@localguide.in
+- **Email:** admin@papermaps.in
 - **Password:** admin123
 
 ⚠️ Change this password immediately after first login!

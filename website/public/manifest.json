@@ -1,6 +1,6 @@
 {
-  "name": "Local Guide",
-  "short_name": "Local Guide",
+  "name": "Paper Maps",
+  "short_name": "Paper Maps",
   "description": "Curated tourist maps for cities that deserve better",
   "start_url": "/",
   "display": "standalone",

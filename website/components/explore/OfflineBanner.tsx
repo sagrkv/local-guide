@@ -17,7 +17,7 @@ export function OfflineBanner({ citySlug }: OfflineBannerProps) {
       style={{
         backgroundColor: isDownloaded ? "#FEF3C7" : "#FEE2E2",
         color: isDownloaded ? "#92400E" : "#991B1B",
-        fontFamily: "var(--c-font-body)",
+        fontFamily: "var(--pm-font-body)",
       }}
     >
       {isDownloaded

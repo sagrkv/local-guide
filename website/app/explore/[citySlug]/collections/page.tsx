@@ -40,18 +40,18 @@ export default function CollectionsListPage() {
 
   if (cityLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--c-bg)]">
-        <div className="w-8 h-8 border-2 border-[var(--c-primary)] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--pm-paper)]">
+        <div className="w-8 h-8 border-2 border-[var(--pm-primary)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (cityError || !city) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--c-bg)]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--pm-paper)]">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[var(--c-text)] mb-2">City not found</h1>
-          <Link href="/" className="text-[var(--c-primary)] hover:underline">
+          <h1 className="text-2xl font-bold text-[var(--pm-ink)] mb-2">City not found</h1>
+          <Link href="/" className="text-[var(--pm-primary)] hover:underline">
             Back to home
           </Link>
         </div>
@@ -59,16 +59,16 @@ export default function CollectionsListPage() {
     );
   }
 
-  const primaryColor = "var(--c-primary)";
+  const primaryColor = "var(--pm-primary)";
 
   return (
-    <div className="min-h-screen bg-[var(--c-bg)]">
+    <div className="min-h-screen bg-[var(--pm-paper)]">
       {/* Header */}
       <div className={`${SPACING.headerPadding} px-6`}>
         <div className={LAYOUT.container}>
           <Link
             href={`/explore/${city.slug}`}
-            className="inline-flex items-center gap-2 text-sm text-[var(--c-text-muted)] hover:text-[var(--c-text)] transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-sm text-[var(--pm-muted)] hover:text-[var(--pm-ink)] transition-colors mb-6"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -76,12 +76,12 @@ export default function CollectionsListPage() {
             {city.name}
           </Link>
           <h1
-            className={`${TYPOGRAPHY.h1} text-[var(--c-text)] mb-2`}
-            style={{ fontFamily: "var(--c-font-display)" }}
+            className={`${TYPOGRAPHY.h1} text-[var(--pm-ink)] mb-2`}
+            style={{ fontFamily: "var(--pm-font-display)" }}
           >
             Collections
           </h1>
-          <p className="text-[var(--c-text-muted)]">
+          <p className="text-[var(--pm-muted)]">
             Themed guides for {city.name}
           </p>
         </div>
@@ -91,11 +91,11 @@ export default function CollectionsListPage() {
       <div className={`${LAYOUT.container} ${SPACING.contentBottom}`}>
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-[var(--c-border)] border-t-[var(--c-primary)] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-[var(--pm-muted)] border-t-[var(--pm-primary)] rounded-full animate-spin" />
           </div>
         ) : collections.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-[var(--c-text-muted)]">
+            <p className="text-[var(--pm-muted)]">
               No collections available for {city.name} yet.
             </p>
           </div>
@@ -122,25 +122,25 @@ export default function CollectionsListPage() {
                           <div
                             className="w-full h-full flex items-center justify-center text-4xl"
                             style={{
-                              background: `linear-gradient(135deg, ${primaryColor}25, var(--c-border))`,
+                              background: `linear-gradient(135deg, ${primaryColor}25, var(--pm-muted))`,
                             }}
                           >
                             {"\uD83D\uDCDA"}
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--c-surface)] via-transparent to-transparent opacity-60" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--pm-surface)] via-transparent to-transparent opacity-60" />
                       </div>
                       <div className={CARD.padding}>
-                        <h3 className={`${TYPOGRAPHY.h3} text-[var(--c-text)] mb-1 line-clamp-2`}>
+                        <h3 className={`${TYPOGRAPHY.h3} text-[var(--pm-ink)] mb-1 line-clamp-2`}>
                           {col.title}
                         </h3>
                         {col.description && (
-                          <p className="text-xs text-[var(--c-text-muted)] line-clamp-2 mb-2">
+                          <p className="text-xs text-[var(--pm-muted)] line-clamp-2 mb-2">
                             {col.description}
                           </p>
                         )}
                         {count > 0 && (
-                          <span className="text-xs text-[var(--c-text-muted)]">
+                          <span className="text-xs text-[var(--pm-muted)]">
                             {count} {count === 1 ? "place" : "places"}
                           </span>
                         )}

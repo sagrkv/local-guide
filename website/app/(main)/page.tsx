@@ -130,15 +130,16 @@ function FeatureCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="group relative p-6 rounded-2xl bg-[var(--gray-850)] border border-[var(--gray-700)] hover:border-[var(--gray-600)] transition-all duration-300"
+      className="group relative p-6 rounded-2xl border border-[var(--pm-accent)]/30 hover:border-[var(--pm-accent)]/60 transition-all duration-300"
+      style={{ background: 'var(--pm-surface)' }}
     >
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--accent)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--pm-accent)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       <div className="relative">
-        <div className="w-12 h-12 rounded-xl bg-[var(--gray-800)] border border-[var(--gray-700)] flex items-center justify-center text-[var(--accent)] mb-4 group-hover:scale-110 transition-transform duration-300">
+        <div className="w-12 h-12 rounded-xl border border-[var(--pm-accent)]/20 flex items-center justify-center text-[var(--pm-accent)] mb-4 group-hover:scale-110 transition-transform duration-300" style={{ background: 'color-mix(in srgb, var(--pm-accent) 8%, var(--pm-paper))' }}>
           {icon}
         </div>
-        <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-        <p className="text-[var(--gray-400)] text-sm leading-relaxed">
+        <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--pm-ink)' }}>{title}</h3>
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--pm-muted)' }}>
           {description}
         </p>
       </div>
@@ -161,9 +162,10 @@ function CityCard({ city, index }: { city: City; index: number }) {
     >
       <Link
         href={`/explore/${city.slug}`}
-        className="group block relative p-6 rounded-2xl border border-[var(--gray-700)] hover:border-[var(--gray-600)] transition-all duration-300 overflow-hidden h-full"
+        className="group block relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden h-full hover:-translate-y-0.5"
         style={{
-          background: `linear-gradient(135deg, ${color}15, var(--gray-850))`,
+          background: 'var(--pm-surface)',
+          borderColor: `${color}30`,
         }}
       >
         {/* Color accent bar */}
@@ -172,17 +174,11 @@ function CityCard({ city, index }: { city: City; index: number }) {
           style={{ background: color }}
         />
 
-        {/* Glow on hover */}
-        <div
-          className="absolute -top-20 -right-20 w-40 h-40 rounded-full blur-[80px] opacity-0 group-hover:opacity-20 transition-opacity duration-500"
-          style={{ background: color }}
-        />
-
         <div className="relative">
           {/* City icon */}
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
-            style={{ background: `${color}20`, border: `1px solid ${color}30` }}
+            style={{ background: `${color}12`, border: `1.5px solid ${color}25` }}
           >
             <svg
               className="w-5 h-5"
@@ -206,21 +202,22 @@ function CityCard({ city, index }: { city: City; index: number }) {
             </svg>
           </div>
 
-          <h3 className="text-xl font-semibold text-white mb-1">
+          <h3 className="text-xl font-semibold mb-1" style={{ color: 'var(--pm-ink)' }}>
             {city.name}
           </h3>
           {city.tagline && (
-            <p className="text-[var(--gray-400)] text-sm mb-3">
+            <p className="text-sm mb-3" style={{ color: 'var(--pm-muted)' }}>
               {city.tagline}
             </p>
           )}
 
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[var(--gray-500)]">
+            <span className="text-xs" style={{ color: 'var(--pm-muted)' }}>
               {city.poiCount ? `${city.poiCount} places` : "Coming soon"}
             </span>
             <svg
-              className="w-4 h-4 text-[var(--gray-500)] group-hover:text-white group-hover:translate-x-1 transition-all duration-300"
+              className="w-4 h-4 group-hover:translate-x-1 transition-all duration-300"
+              style={{ color: 'var(--pm-muted)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -259,17 +256,19 @@ function FAQItem({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
-      className="border-b border-[var(--gray-700)]"
+      className="border-b"
+      style={{ borderColor: 'color-mix(in srgb, var(--pm-ink) 12%, transparent)' }}
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-5 text-left"
       >
-        <span className="text-white font-medium pr-8">{question}</span>
+        <span className="font-medium pr-8" style={{ color: 'var(--pm-ink)' }}>{question}</span>
         <motion.span
           animate={{ rotate: isOpen ? 45 : 0 }}
           transition={{ duration: 0.2 }}
-          className="text-[var(--gray-400)] text-xl shrink-0"
+          className="text-xl shrink-0"
+          style={{ color: 'var(--pm-muted)' }}
         >
           +
         </motion.span>
@@ -280,7 +279,7 @@ function FAQItem({
         transition={{ duration: 0.3 }}
         className="overflow-hidden"
       >
-        <p className="pb-5 text-[var(--gray-400)] text-sm leading-relaxed">
+        <p className="pb-5 text-sm leading-relaxed" style={{ color: 'var(--pm-muted)' }}>
           {answer}
         </p>
       </motion.div>
@@ -351,7 +350,7 @@ export default function Home() {
       ),
       title: "Curated Maps",
       description:
-        "Every city gets a beautifully designed, interactive map with hand-picked places. No algorithm noise -- just the spots locals actually love.",
+        "Every city gets a hand-crafted map with places chosen by people, not algorithms. No sponsored pins. No star ratings. Just the spots that matter.",
     },
     {
       icon: (
@@ -377,7 +376,7 @@ export default function Home() {
       ),
       title: "City-Themed Design",
       description:
-        "Each city gets its own unique visual identity -- colors, typography, and vibe that capture the character of the place.",
+        "Each city has its own visual identity -- colors, typography, and character. Mysore looks different from Goa. Because they are different.",
     },
     {
       icon: (
@@ -397,7 +396,7 @@ export default function Home() {
       ),
       title: "Ready-Made Itineraries",
       description:
-        "One-day, two-day, or weekend itineraries crafted by people who know the city. Just follow the route and enjoy.",
+        "One-day, two-day, or weekend routes made by people who actually live there. Follow the route. Enjoy the city.",
     },
     {
       icon: (
@@ -417,7 +416,7 @@ export default function Home() {
       ),
       title: "Mobile-First",
       description:
-        "Maps and guides that work perfectly on your phone. Pull up a map while walking, find nearby spots, and navigate with ease.",
+        "Open the map on your phone. Walk around. Find the next spot. Paper Maps works where it matters -- in your hand, on the street.",
     },
     {
       icon: (
@@ -435,9 +434,9 @@ export default function Home() {
           />
         </svg>
       ),
-      title: "100% Free",
+      title: "Free, Forever",
       description:
-        "No subscriptions, no hidden paywalls. Every map and itinerary is free to use, forever. Open source and community-driven.",
+        "No subscriptions. No paywalls. No catch. Every map and itinerary is free to use. We believe travel knowledge should not cost money.",
     },
     {
       icon: (
@@ -455,9 +454,9 @@ export default function Home() {
           />
         </svg>
       ),
-      title: "Local First",
+      title: "Human Curation",
       description:
-        "Every recommendation comes from people who live there. No sponsored listings, no paid placements. Just honest, local knowledge.",
+        "AI helps us find places. Humans decide what makes the cut. No business pays for placement. If it is on the map, someone real vouches for it.",
     },
   ];
 
@@ -466,52 +465,52 @@ export default function Home() {
       number: "01",
       title: "Pick a City",
       description:
-        "Browse our growing collection of curated city maps. From Mysore to Goa, find the destination you are heading to.",
+        "Browse our growing collection of curated city guides. Each one is made with care by people who actually know the place.",
     },
     {
       number: "02",
-      title: "Explore the Map",
+      title: "Open the Map",
       description:
-        "Discover hand-picked cafes, temples, viewpoints, and hidden gems placed on a beautiful interactive map.",
+        "Hand-picked cafes, temples, viewpoints, and hidden gems -- placed on a beautiful map. No clutter. No noise.",
     },
     {
       number: "03",
-      title: "Travel Like a Local",
+      title: "Go Explore",
       description:
-        "Follow ready-made itineraries or build your own. Navigate on your phone and enjoy the city like someone who lives there.",
+        "Follow a ready-made itinerary or wander on your own. Pull up the map on your phone and go.",
     },
   ];
 
   const faqs = [
     {
-      question: "Is Local Guide really free?",
+      question: "Is Paper Maps really free?",
       answer:
-        "Yes, completely free. All maps, curated places, and itineraries are available without any payment or subscription. We believe travel information should be accessible to everyone.",
+        "Yes. Free, forever. All maps, curated places, and itineraries are available without payment or accounts. Travel knowledge should not cost money.",
     },
     {
-      question: "How are places curated?",
+      question: "How are places selected?",
       answer:
-        "Every place is hand-picked by locals who know the city. We don't accept paid listings or sponsored placements. If a place is on our map, it's because someone who lives there genuinely recommends it.",
+        "AI helps us discover places. Humans decide what makes the cut. We don't accept paid listings or sponsored placements. If a place is on our map, someone who actually knows the city vouches for it.",
     },
     {
       question: "Which cities are available?",
       answer:
-        "We're starting with cities across India and expanding continuously. Each city launch includes a curated map, categorized places, and at least one ready-made itinerary.",
+        "We are starting with cities across India and expanding continuously. Each city gets a curated map, categorized places, and at least one ready-made itinerary.",
     },
     {
       question: "Can I suggest a place or city?",
       answer:
-        "Absolutely! We welcome suggestions from locals and travelers. Open an issue on our GitHub repository or contribute directly.",
+        "Yes. We welcome suggestions from locals and travelers. Reach out through the contact page or contribute directly on GitHub.",
     },
     {
       question: "Do I need an account?",
       answer:
-        "No account is needed to browse maps and itineraries. Just open a map and start exploring.",
+        "No. Just open a map and start exploring. No sign-up, no login, no friction.",
     },
     {
-      question: "Is Local Guide open source?",
+      question: "What makes this different from Google Maps?",
       answer:
-        "Yes. Our platform is open source and community-driven. The code is on GitHub and contributions are welcome -- whether that's code, city data, or local knowledge.",
+        "Google Maps shows everything. Paper Maps shows what matters. No algorithms deciding what you see. No sponsored pins. No fake reviews. Just honest, human-curated recommendations.",
     },
   ];
 
@@ -537,19 +536,15 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={{ background: 'var(--pm-paper)' }}>
       {/* ==================== HERO SECTION ==================== */}
       <section
         ref={heroRef}
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
+        style={{ background: 'var(--pm-paper)' }}
       >
-        {/* Background Effects */}
-        <div className="absolute inset-0 grid-pattern opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--background)]" />
-
-        {/* Glow Orbs */}
-        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[var(--accent)]/10 rounded-full blur-[120px] animate-pulse-glow" />
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px]" />
+        {/* Subtle warm radial glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full blur-[150px] opacity-30" style={{ background: 'var(--pm-accent)' }} />
 
         <motion.div
           style={{ opacity: heroOpacity, scale: heroScale }}
@@ -562,9 +557,16 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="mb-6"
           >
-            <span className="badge badge-accent">
-              <span className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse" />
-              Free &amp; Open Source
+            <span
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full"
+              style={{
+                background: 'color-mix(in srgb, var(--pm-accent) 12%, var(--pm-paper))',
+                border: '1px solid color-mix(in srgb, var(--pm-accent) 30%, transparent)',
+                color: 'color-mix(in srgb, var(--pm-accent) 80%, var(--pm-ink))',
+              }}
+            >
+              <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--pm-accent)' }} />
+              Free, forever
             </span>
           </motion.div>
 
@@ -574,10 +576,11 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-balance"
+            style={{ color: 'var(--pm-ink)', fontFamily: 'var(--pm-font-display)' }}
           >
-            Travel like
+            The anti-
             <br />
-            <span className="text-accent-gradient">a local.</span>
+            <span style={{ color: 'var(--pm-accent)' }}>Google Maps.</span>
           </motion.h1>
 
           {/* Subheadline */}
@@ -585,11 +588,11 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg md:text-xl text-[var(--gray-400)] max-w-2xl mx-auto mb-10 leading-relaxed"
+            className="text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
+            style={{ color: 'var(--pm-muted)' }}
           >
-            Beautifully curated, city-themed tourist maps. Hand-picked places,
-            ready-made itineraries, and local knowledge.{" "}
-            <span className="text-white">Completely free, forever.</span>
+            Beautifully curated city guides. Hand-picked by locals.{" "}
+            <span style={{ color: 'var(--pm-ink)' }}>No algorithms, no ads, no star ratings.</span>
           </motion.p>
 
           {/* CTA Buttons */}
@@ -599,8 +602,15 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
-            <Link href="/explore" className="btn-primary text-lg px-8 py-4">
-              Explore Cities
+            <Link
+              href="/explore"
+              className="inline-flex items-center gap-2 text-lg px-8 py-4 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: 'var(--pm-ink)',
+                color: 'var(--pm-paper)',
+              }}
+            >
+              Explore a City
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -617,9 +627,13 @@ export default function Home() {
             </Link>
             <Link
               href="#how-it-works"
-              className="btn-secondary text-lg px-8 py-4"
+              className="inline-flex items-center gap-2 text-lg px-8 py-4 rounded-lg font-medium transition-all duration-200"
+              style={{
+                border: '1.5px solid color-mix(in srgb, var(--pm-ink) 20%, transparent)',
+                color: 'var(--pm-ink)',
+              }}
             >
-              See How It Works
+              How It Works
             </Link>
           </motion.div>
 
@@ -636,10 +650,10 @@ export default function Home() {
               { value: 100, suffix: "%", label: "Free Forever" },
             ].map((stat, i) => (
               <div key={i} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-white">
+                <div className="text-3xl md:text-4xl font-bold" style={{ color: 'var(--pm-ink)' }}>
                   <AnimatedCounter value={stat.value} suffix={stat.suffix} />
                 </div>
-                <div className="text-sm text-[var(--gray-500)]">
+                <div className="text-sm" style={{ color: 'var(--pm-muted)' }}>
                   {stat.label}
                 </div>
               </div>
@@ -657,20 +671,21 @@ export default function Home() {
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 1.5, repeat: Infinity }}
-            className="w-6 h-10 border-2 border-[var(--gray-600)] rounded-full flex justify-center p-2"
+            className="w-6 h-10 border-2 rounded-full flex justify-center p-2"
+            style={{ borderColor: 'color-mix(in srgb, var(--pm-ink) 20%, transparent)' }}
           >
             <motion.div
               animate={{ y: [0, 12, 0] }}
               transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-1 h-2 bg-[var(--gray-400)] rounded-full"
+              className="w-1 h-2 rounded-full"
+              style={{ background: 'var(--pm-muted)' }}
             />
           </motion.div>
         </motion.div>
       </section>
 
       {/* ==================== CITY GRID SECTION ==================== */}
-      <section className="section relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-[var(--gray-900)] to-[var(--background)]" />
+      <section className="section relative" style={{ background: 'var(--pm-surface)' }}>
         <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -678,15 +693,25 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <span className="badge mb-4">Cities</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Explore curated
+            <span
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full mb-4"
+              style={{
+                background: 'color-mix(in srgb, var(--pm-accent) 10%, var(--pm-paper))',
+                border: '1px solid color-mix(in srgb, var(--pm-accent) 25%, transparent)',
+                color: 'var(--pm-muted)',
+              }}
+            >Cities</span>
+            <h2
+              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
+              style={{ color: 'var(--pm-ink)', fontFamily: 'var(--pm-font-display)' }}
+            >
+              Pick a city.
               <br />
-              <span className="text-gradient">city maps</span>
+              <span style={{ color: 'var(--pm-accent)' }}>Start exploring.</span>
             </h2>
-            <p className="text-[var(--gray-400)] max-w-2xl mx-auto">
-              Each city gets its own identity, curated places, and hand-crafted
-              itineraries. Pick a city and start exploring.
+            <p className="max-w-2xl mx-auto" style={{ color: 'var(--pm-muted)' }}>
+              Each city has its own curated map, hand-picked places, and
+              ready-made itineraries. No sign-up required.
             </p>
           </motion.div>
 
@@ -704,7 +729,11 @@ export default function Home() {
           >
             <Link
               href="/explore"
-              className="btn-secondary px-8 py-3 inline-flex items-center gap-2"
+              className="px-8 py-3 inline-flex items-center gap-2 rounded-lg font-medium transition-all duration-200"
+              style={{
+                border: '1.5px solid color-mix(in srgb, var(--pm-ink) 20%, transparent)',
+                color: 'var(--pm-ink)',
+              }}
             >
               View All Cities
               <svg
@@ -726,7 +755,7 @@ export default function Home() {
       </section>
 
       {/* ==================== FEATURES SECTION ==================== */}
-      <section className="section relative">
+      <section className="section relative" style={{ background: 'var(--pm-paper)' }}>
         <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -734,15 +763,25 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <span className="badge mb-4">Features</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Everything you need to
+            <span
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full mb-4"
+              style={{
+                background: 'color-mix(in srgb, var(--pm-accent) 10%, var(--pm-paper))',
+                border: '1px solid color-mix(in srgb, var(--pm-accent) 25%, transparent)',
+                color: 'var(--pm-muted)',
+              }}
+            >Why Paper Maps</span>
+            <h2
+              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
+              style={{ color: 'var(--pm-ink)', fontFamily: 'var(--pm-font-display)' }}
+            >
+              What makes this
               <br />
-              <span className="text-gradient">explore any city</span>
+              <span style={{ color: 'var(--pm-accent)' }}>different</span>
             </h2>
-            <p className="text-[var(--gray-400)] max-w-2xl mx-auto">
-              Curated maps, local recommendations, and ready-made itineraries.
-              Travel smarter, not harder.
+            <p className="max-w-2xl mx-auto" style={{ color: 'var(--pm-muted)' }}>
+              No algorithms. No sponsored pins. No star ratings.
+              Just human taste and local knowledge.
             </p>
           </motion.div>
 
@@ -755,8 +794,7 @@ export default function Home() {
       </section>
 
       {/* ==================== HOW IT WORKS SECTION ==================== */}
-      <section id="how-it-works" className="section relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-[var(--gray-900)] to-[var(--background)]" />
+      <section id="how-it-works" className="section relative" style={{ background: 'var(--pm-surface)' }}>
         <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -764,11 +802,21 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <span className="badge mb-4">How It Works</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Three steps to
+            <span
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full mb-4"
+              style={{
+                background: 'color-mix(in srgb, var(--pm-accent) 10%, var(--pm-paper))',
+                border: '1px solid color-mix(in srgb, var(--pm-accent) 25%, transparent)',
+                color: 'var(--pm-muted)',
+              }}
+            >How It Works</span>
+            <h2
+              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
+              style={{ color: 'var(--pm-ink)', fontFamily: 'var(--pm-font-display)' }}
+            >
+              How it
               <br />
-              <span className="text-gradient">your best trip</span>
+              <span style={{ color: 'var(--pm-accent)' }}>works</span>
             </h2>
           </motion.div>
 
@@ -784,16 +832,19 @@ export default function Home() {
               >
                 {/* Connector Line */}
                 {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px bg-gradient-to-r from-[var(--gray-600)] to-transparent" />
+                  <div
+                    className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px"
+                    style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--pm-ink) 15%, transparent), transparent)' }}
+                  />
                 )}
 
-                <div className="text-6xl font-bold text-[var(--gray-800)] mb-4">
+                <div className="text-6xl font-bold mb-4" style={{ color: 'color-mix(in srgb, var(--pm-accent) 25%, var(--pm-paper))' }}>
                   {step.number}
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">
+                <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--pm-ink)' }}>
                   {step.title}
                 </h3>
-                <p className="text-[var(--gray-400)] text-sm leading-relaxed">
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--pm-muted)' }}>
                   {step.description}
                 </p>
               </motion.div>
@@ -803,7 +854,7 @@ export default function Home() {
       </section>
 
       {/* ==================== TESTIMONIALS SECTION ==================== */}
-      <section className="section relative">
+      <section className="section relative" style={{ background: 'var(--pm-paper)' }}>
         <div className="container">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -811,11 +862,21 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <span className="badge mb-4">Testimonials</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Loved by travelers
+            <span
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full mb-4"
+              style={{
+                background: 'color-mix(in srgb, var(--pm-accent) 10%, var(--pm-paper))',
+                border: '1px solid color-mix(in srgb, var(--pm-accent) 25%, transparent)',
+                color: 'var(--pm-muted)',
+              }}
+            >Testimonials</span>
+            <h2
+              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
+              style={{ color: 'var(--pm-ink)', fontFamily: 'var(--pm-font-display)' }}
+            >
+              What travelers
               <br />
-              <span className="text-gradient">across India</span>
+              <span style={{ color: 'var(--pm-accent)' }}>are saying</span>
             </h2>
           </motion.div>
 
@@ -827,23 +888,33 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="p-6 rounded-2xl bg-[var(--gray-850)] border border-[var(--gray-700)]"
+                className="p-6 rounded-2xl border"
+                style={{
+                  background: 'var(--pm-surface)',
+                  borderColor: 'color-mix(in srgb, var(--pm-accent) 20%, transparent)',
+                }}
               >
-                <div className="text-[var(--accent)] text-4xl mb-4">
+                <div className="text-4xl mb-4" style={{ color: 'var(--pm-accent)' }}>
                   &ldquo;
                 </div>
-                <p className="text-[var(--gray-300)] mb-6 leading-relaxed">
+                <p className="mb-6 leading-relaxed" style={{ color: 'var(--pm-ink)', opacity: 0.8 }}>
                   {testimonial.quote}
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent)] to-[#FF8C40] flex items-center justify-center text-white font-semibold text-sm">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm"
+                    style={{
+                      background: 'var(--pm-accent)',
+                      color: 'var(--pm-paper)',
+                    }}
+                  >
                     {testimonial.author.charAt(0)}
                   </div>
                   <div>
-                    <div className="text-white font-medium text-sm">
+                    <div className="font-medium text-sm" style={{ color: 'var(--pm-ink)' }}>
                       {testimonial.author}
                     </div>
-                    <div className="text-[var(--gray-500)] text-xs">
+                    <div className="text-xs" style={{ color: 'var(--pm-muted)' }}>
                       {testimonial.role}
                     </div>
                   </div>
@@ -855,8 +926,7 @@ export default function Home() {
       </section>
 
       {/* ==================== OPEN SOURCE SECTION ==================== */}
-      <section className="section relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-[var(--gray-900)] to-[var(--background)]" />
+      <section className="section relative" style={{ background: 'var(--pm-surface)' }}>
         <div className="container relative">
           <div className="max-w-4xl mx-auto">
             <motion.div
@@ -865,16 +935,26 @@ export default function Home() {
               viewport={{ once: true }}
               className="text-center mb-12"
             >
-              <span className="badge mb-4">Open Source</span>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+              <span
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full mb-4"
+                style={{
+                  background: 'color-mix(in srgb, var(--pm-accent) 10%, var(--pm-paper))',
+                  border: '1px solid color-mix(in srgb, var(--pm-accent) 25%, transparent)',
+                  color: 'var(--pm-muted)',
+                }}
+              >Open Source</span>
+              <h2
+                className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
+                style={{ color: 'var(--pm-ink)', fontFamily: 'var(--pm-font-display)' }}
+              >
                 Built in
                 <br />
-                <span className="text-gradient">the open</span>
+                <span style={{ color: 'var(--pm-accent)' }}>the open</span>
               </h2>
-              <p className="text-[var(--gray-400)] max-w-2xl mx-auto text-lg leading-relaxed">
-                Local Guide is fully open source. We believe travel information
-                should be free and community-driven. Our code, our data, our
-                process -- everything is transparent and open to contributions.
+              <p className="max-w-2xl mx-auto text-lg leading-relaxed" style={{ color: 'var(--pm-muted)' }}>
+                Paper Maps is open source. Travel information should not be
+                locked behind paywalls or controlled by a single company. Our
+                code and data are public. Contributions welcome.
               </p>
             </motion.div>
 
@@ -883,40 +963,40 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="relative p-8 md:p-12 rounded-2xl border border-[var(--gray-700)] overflow-hidden"
+              className="relative p-8 md:p-12 rounded-2xl border overflow-hidden"
               style={{
-                background:
-                  "linear-gradient(135deg, rgba(30,58,95,0.15), var(--gray-850))",
+                background: 'var(--pm-paper)',
+                borderColor: 'color-mix(in srgb, var(--pm-ink) 10%, transparent)',
               }}
             >
-              {/* Subtle glow */}
-              <div className="absolute -top-32 -right-32 w-64 h-64 bg-[var(--accent)]/5 rounded-full blur-[100px]" />
 
               <div className="relative grid md:grid-cols-2 gap-8 items-center">
                 <div>
                   <div className="flex items-center gap-3 mb-4">
                     <svg
-                      className="w-8 h-8 text-white"
+                      className="w-8 h-8"
+                      style={{ color: 'var(--pm-ink)' }}
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
                       <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                     </svg>
-                    <span className="text-white font-semibold text-lg">
-                      sagrkv/local-guide
+                    <span className="font-semibold text-lg" style={{ color: 'var(--pm-ink)' }}>
+                      summar-studios/paper-maps
                     </span>
                   </div>
-                  <p className="text-[var(--gray-400)] text-sm leading-relaxed mb-6">
+                  <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--pm-muted)' }}>
                     The entire platform -- frontend, backend, city data, and map
                     configurations -- lives in a single repository. Fork it, run
                     it locally, contribute a city, or improve the code.
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <a
-                      href="https://github.com/sagrkv/local-guide"
+                      href="https://github.com/summar-studios/paper-maps"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-[#0d1117] font-semibold text-sm hover:bg-gray-200 transition-colors"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors"
+                      style={{ background: 'var(--pm-ink)', color: 'var(--pm-paper)' }}
                     >
                       <svg
                         className="w-5 h-5"
@@ -928,10 +1008,14 @@ export default function Home() {
                       Star on GitHub
                     </a>
                     <a
-                      href="https://github.com/sagrkv/local-guide#contributing"
+                      href="https://github.com/summar-studios/paper-maps#contributing"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-[var(--gray-600)] text-white font-semibold text-sm hover:bg-[var(--gray-800)] transition-colors"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border font-semibold text-sm transition-colors"
+                      style={{
+                        borderColor: 'color-mix(in srgb, var(--pm-ink) 20%, transparent)',
+                        color: 'var(--pm-ink)',
+                      }}
                     >
                       <svg
                         className="w-4 h-4"
@@ -966,13 +1050,17 @@ export default function Home() {
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.2 + i * 0.1 }}
-                        className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[var(--gray-800)]/80 border border-[var(--gray-700)]"
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-lg border"
+                        style={{
+                          background: 'var(--pm-surface)',
+                          borderColor: 'color-mix(in srgb, var(--pm-ink) 10%, transparent)',
+                        }}
                       >
                         <div
                           className="w-2 h-2 rounded-full"
                           style={{ background: tech.color }}
                         />
-                        <span className="text-sm text-[var(--gray-300)]">
+                        <span className="text-sm" style={{ color: 'var(--pm-ink)', opacity: 0.7 }}>
                           {tech.label}
                         </span>
                       </motion.div>
@@ -986,7 +1074,7 @@ export default function Home() {
       </section>
 
       {/* ==================== FAQ SECTION ==================== */}
-      <section className="section relative">
+      <section className="section relative" style={{ background: 'var(--pm-paper)' }}>
         <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -994,11 +1082,21 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <span className="badge mb-4">FAQ</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+            <span
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full mb-4"
+              style={{
+                background: 'color-mix(in srgb, var(--pm-accent) 10%, var(--pm-paper))',
+                border: '1px solid color-mix(in srgb, var(--pm-accent) 25%, transparent)',
+                color: 'var(--pm-muted)',
+              }}
+            >FAQ</span>
+            <h2
+              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
+              style={{ color: 'var(--pm-ink)', fontFamily: 'var(--pm-font-display)' }}
+            >
               Frequently asked
               <br />
-              <span className="text-gradient">questions</span>
+              <span style={{ color: 'var(--pm-accent)' }}>questions</span>
             </h2>
           </motion.div>
 
@@ -1011,9 +1109,8 @@ export default function Home() {
       </section>
 
       {/* ==================== CTA SECTION ==================== */}
-      <section className="section relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] to-[var(--gray-900)]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[var(--accent)]/10 rounded-full blur-[150px]" />
+      <section className="section relative overflow-hidden" style={{ background: 'var(--pm-surface)' }}>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[150px] opacity-20" style={{ background: 'var(--pm-accent)' }} />
 
         <div className="container relative">
           <motion.div
@@ -1022,18 +1119,24 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center max-w-3xl mx-auto"
           >
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
+            <h2
+              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6"
+              style={{ color: 'var(--pm-ink)', fontFamily: 'var(--pm-font-display)' }}
+            >
               Ready to explore
               <br />
-              <span className="text-accent-gradient">your next city?</span>
+              <span style={{ color: 'var(--pm-accent)' }}>your next city?</span>
             </h2>
-            <p className="text-lg text-[var(--gray-400)] mb-10 leading-relaxed">
-              Pick a city, open the map, and discover places you never knew
-              existed. No sign-up required.
+            <p className="text-lg mb-10 leading-relaxed" style={{ color: 'var(--pm-muted)' }}>
+              Pick a city. Open the map. No sign-up. No catch. Just go.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/explore" className="btn-primary text-lg px-8 py-4">
-                Explore Cities
+              <Link
+                href="/explore"
+                className="inline-flex items-center gap-2 text-lg px-8 py-4 rounded-lg font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                style={{ background: 'var(--pm-ink)', color: 'var(--pm-paper)' }}
+              >
+                Explore a City
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -1049,10 +1152,14 @@ export default function Home() {
                 </svg>
               </Link>
               <a
-                href="https://github.com/sagrkv/local-guide"
+                href="https://github.com/summar-studios/paper-maps"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-secondary text-lg px-8 py-4 inline-flex items-center gap-2"
+                className="inline-flex items-center gap-2 text-lg px-8 py-4 rounded-lg font-medium transition-all duration-200"
+                style={{
+                  border: '1.5px solid color-mix(in srgb, var(--pm-ink) 20%, transparent)',
+                  color: 'var(--pm-ink)',
+                }}
               >
                 <svg
                   className="w-5 h-5"

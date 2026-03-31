@@ -8,12 +8,12 @@ import { Clock, Footprints, X } from "lucide-react";
 // ---------------------------------------------------------------------------
 
 const COLORS = {
-  inkBlack: "#2D2926",
-  paperCream: "#FDF6EC",
-  brightPaper: "#FFF9F0",
-  terraCotta: "#C4663A",
+  inkBlack: "var(--pm-ink, #2D2926)",
+  paperCream: "var(--pm-paper, #FDF6EC)",
+  brightPaper: "var(--pm-surface, #FFF9F0)",
+  terraCotta: "var(--pm-accent, #C4663A)",
   oceanBlue: "#4A7FB5",
-  mutedText: "#8B7D6B",
+  mutedText: "var(--pm-muted, #8B7D6B)",
   white: "#FFFFFF",
   lightBorder: "rgba(45, 41, 38, 0.12)",
   faintBg: "rgba(45, 41, 38, 0.04)",
@@ -146,7 +146,7 @@ function PillButton({
         color: isSelected ? COLORS.white : COLORS.inkBlack,
         cursor: "pointer",
         fontSize: "13px",
-        fontFamily: "'Kalam', cursive",
+        fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
         fontWeight: isSelected ? 700 : 400,
         transition:
           "background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease",
@@ -178,7 +178,7 @@ function ToggleChip({
         color: isSelected ? COLORS.terraCotta : COLORS.inkBlack,
         cursor: "pointer",
         fontSize: "13px",
-        fontFamily: "'Kalam', cursive",
+        fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
         fontWeight: isSelected ? 700 : 400,
         transition:
           "background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease",
@@ -260,7 +260,7 @@ function LoadingAnimation() {
       </svg>
       <p
         style={{
-          fontFamily: "'Kalam', cursive",
+          fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
           fontSize: "20px",
           color: COLORS.terraCotta,
           margin: 0,
@@ -279,7 +279,7 @@ function LoadingAnimation() {
           textAlign: "center",
         }}
       >
-        Our local guide is crafting the perfect itinerary
+        Paper Maps is crafting the perfect itinerary
       </p>
     </div>
   );
@@ -321,7 +321,7 @@ function TimelineStop({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontFamily: "'Kalam', cursive",
+            fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
             fontSize: "16px",
             fontWeight: 700,
             flexShrink: 0,
@@ -401,7 +401,7 @@ function TimelineStop({
             cursor: onPOISelect ? "pointer" : "default",
             padding: 0,
             margin: "0 0 6px",
-            fontFamily: "'Fraunces', serif",
+            fontFamily: "var(--pm-font-display, 'Fraunces', serif)",
             fontSize: "17px",
             fontWeight: 600,
             color: COLORS.inkBlack,
@@ -435,7 +435,7 @@ function TimelineStop({
         <p
           style={{
             margin: "0 0 4px",
-            fontFamily: "'Kalam', cursive",
+            fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
             fontSize: "15px",
             color: COLORS.terraCotta,
             lineHeight: 1.4,
@@ -461,7 +461,7 @@ function TimelineStop({
               style={{
                 fontSize: "12px",
                 color: COLORS.mutedText,
-                fontFamily: "'Kalam', cursive",
+                fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
               }}
             >
               {stop.transportToNext}
@@ -569,7 +569,7 @@ export default function ItineraryGenerator({
             <h2
               style={{
                 margin: 0,
-                fontFamily: "'Fraunces', serif",
+                fontFamily: "var(--pm-font-display, 'Fraunces', serif)",
                 fontSize: "20px",
                 fontWeight: 700,
                 color: COLORS.inkBlack,
@@ -583,7 +583,7 @@ export default function ItineraryGenerator({
               style={{
                 margin: "2px 0 0",
                 fontSize: "13px",
-                fontFamily: "'Kalam', cursive",
+                fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                 color: COLORS.terraCotta,
               }}
             >
@@ -626,7 +626,7 @@ export default function ItineraryGenerator({
                 <label
                   style={{
                     display: "block",
-                    fontFamily: "'Kalam', cursive",
+                    fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                     fontSize: "17px",
                     fontWeight: 700,
                     color: COLORS.inkBlack,
@@ -658,7 +658,7 @@ export default function ItineraryGenerator({
                 <label
                   style={{
                     display: "block",
-                    fontFamily: "'Kalam', cursive",
+                    fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                     fontSize: "17px",
                     fontWeight: 700,
                     color: COLORS.inkBlack,
@@ -690,7 +690,7 @@ export default function ItineraryGenerator({
                 <label
                   style={{
                     display: "block",
-                    fontFamily: "'Kalam', cursive",
+                    fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                     fontSize: "17px",
                     fontWeight: 700,
                     color: COLORS.inkBlack,
@@ -719,7 +719,7 @@ export default function ItineraryGenerator({
                     border: "none",
                     borderBottom: `2px solid ${COLORS.lightBorder}`,
                     backgroundColor: "transparent",
-                    fontFamily: "'Kalam', cursive",
+                    fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                     fontSize: "15px",
                     color: COLORS.inkBlack,
                     outline: "none",
@@ -739,7 +739,7 @@ export default function ItineraryGenerator({
                 <label
                   style={{
                     display: "block",
-                    fontFamily: "'Kalam', cursive",
+                    fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                     fontSize: "17px",
                     fontWeight: 700,
                     color: COLORS.inkBlack,
@@ -773,11 +773,11 @@ export default function ItineraryGenerator({
                   style={{
                     padding: "10px 14px",
                     borderRadius: "12px",
-                    backgroundColor: "#FFF0EE",
+                    backgroundColor: "var(--pm-surface, #FFF0EE)",
                     border: "1px solid rgba(196, 102, 58, 0.2)",
                     fontSize: "13px",
                     color: COLORS.terraCotta,
-                    fontFamily: "'Kalam', cursive",
+                    fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                   }}
                 >
                   {errorMsg}
@@ -798,7 +798,7 @@ export default function ItineraryGenerator({
                   color: COLORS.paperCream,
                   border: `1.5px solid ${interests.length === 0 ? "rgba(45, 41, 38, 0.15)" : "rgba(45, 41, 38, 0.3)"}`,
                   cursor: interests.length === 0 ? "default" : "pointer",
-                  fontFamily: "'Fraunces', serif",
+                  fontFamily: "var(--pm-font-display, 'Fraunces', serif)",
                   fontSize: "16px",
                   fontWeight: 600,
                   letterSpacing: "-0.01em",
@@ -833,7 +833,7 @@ export default function ItineraryGenerator({
                 <h3
                   style={{
                     margin: "0 0 6px",
-                    fontFamily: "'Fraunces', serif",
+                    fontFamily: "var(--pm-font-display, 'Fraunces', serif)",
                     fontSize: "22px",
                     fontWeight: 700,
                     color: COLORS.inkBlack,
@@ -869,7 +869,7 @@ export default function ItineraryGenerator({
                     style={{
                       fontSize: "12px",
                       color: COLORS.mutedText,
-                      fontFamily: "'Kalam', cursive",
+                      fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                       fontWeight: 700,
                     }}
                   >
@@ -916,7 +916,7 @@ export default function ItineraryGenerator({
                     color: COLORS.inkBlack,
                     border: "1.5px solid rgba(45, 41, 38, 0.3)",
                     cursor: "pointer",
-                    fontFamily: "'Kalam', cursive",
+                    fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                     fontSize: "15px",
                     fontWeight: 700,
                     transition: "background-color 0.15s ease",
@@ -942,7 +942,7 @@ export default function ItineraryGenerator({
                     color: COLORS.paperCream,
                     border: "1.5px solid rgba(45, 41, 38, 0.3)",
                     cursor: "pointer",
-                    fontFamily: "'Kalam', cursive",
+                    fontFamily: "var(--pm-font-display, 'Kalam', cursive)",
                     fontSize: "15px",
                     fontWeight: 700,
                     transition: "transform 0.1s ease",

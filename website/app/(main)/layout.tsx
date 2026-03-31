@@ -9,7 +9,7 @@ export default function MainLayout({
   return (
     <>
       <Navigation />
-      <main>{children}</main>
+      <main style={{ background: 'var(--pm-paper)' }}>{children}</main>
       <Footer />
     </>
   );

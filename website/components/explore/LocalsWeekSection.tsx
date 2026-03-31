@@ -71,13 +71,13 @@ export default function LocalsWeekSection({ cityId, citySlug }: LocalsWeekSectio
         <div className="flex items-center gap-3 mb-8">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: "var(--c-primary, #1E3A5F)", color: "var(--c-text-on-primary, #FAFAF5)" }}
+            style={{ backgroundColor: "var(--pm-primary, #1E3A5F)", color: "var(--pm-paper, #FAFAF5)" }}
           >
             <Coffee size={20} strokeWidth={1.5} />
           </div>
           <h2
             className="text-2xl md:text-3xl font-bold"
-            style={{ fontFamily: "var(--c-font-display)", color: "var(--c-text)" }}
+            style={{ fontFamily: "var(--pm-font-display)", color: "var(--pm-ink)" }}
           >
             A Week Like a Local
           </h2>
@@ -85,23 +85,23 @@ export default function LocalsWeekSection({ cityId, citySlug }: LocalsWeekSectio
 
         <div
           className="rounded-2xl overflow-hidden"
-          style={{ backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)" }}
+          style={{ backgroundColor: "var(--pm-surface)", border: "1px solid var(--pm-muted)" }}
         >
           {entries.map((entry, i) => (
             <div
               key={i}
               className="flex items-baseline gap-4 px-5 py-4 md:px-6"
-              style={{ borderBottom: i < entries.length - 1 ? "1px solid var(--c-border)" : "none" }}
+              style={{ borderBottom: i < entries.length - 1 ? "1px solid var(--pm-muted)" : "none" }}
             >
               <span
                 className="shrink-0 w-10 text-sm font-bold uppercase tracking-wide"
-                style={{ fontFamily: "var(--c-font-display)", color: "var(--c-primary, #1E3A5F)" }}
+                style={{ fontFamily: "var(--pm-font-display)", color: "var(--pm-primary, #1E3A5F)" }}
               >
                 {DAY_NAMES[i] ?? `Day ${i + 1}`}
               </span>
               <span
                 className="flex-1 text-sm leading-relaxed"
-                style={{ fontFamily: "var(--c-font-body)", color: "var(--c-text)" }}
+                style={{ fontFamily: "var(--pm-font-body)", color: "var(--pm-ink)" }}
               >
                 {entry.note || "\u2014"}
               </span>
@@ -109,7 +109,7 @@ export default function LocalsWeekSection({ cityId, citySlug }: LocalsWeekSectio
                 <Link
                   href={`/explore/${citySlug}/poi/${entry.poi.slug}`}
                   className="shrink-0 text-sm font-semibold hover:underline transition-colors duration-200"
-                  style={{ color: "var(--c-gold, #D4A574)", fontFamily: "var(--c-font-body)" }}
+                  style={{ color: "var(--pm-accent, #D4A574)", fontFamily: "var(--pm-font-body)" }}
                 >
                   {entry.poi.name}
                 </Link>

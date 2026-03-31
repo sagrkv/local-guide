@@ -1,6 +1,6 @@
 # Railway Deployment Guide
 
-This document covers deploying the Local Guide backend to Railway, including common issues and their solutions.
+This document covers deploying the Paper Maps backend to Railway, including common issues and their solutions.
 
 ## Prerequisites
 

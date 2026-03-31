@@ -167,7 +167,7 @@ function buildItineraryPrompt(
     ? `The traveler wants to start at ${input.startTime}.`
     : 'The traveler has a flexible start time. Suggest reasonable morning start times.';
 
-  return `You are an expert local guide creating a personalized walking itinerary for ${cityName}.
+  return `You are an expert travel guide for Paper Maps, creating a personalized walking itinerary for ${cityName}.
 
 RULES:
 1. You MUST ONLY use POIs from the list below. Never invent or suggest places not in this list.

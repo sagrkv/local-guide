@@ -6,8 +6,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = [
-  { href: "/", label: "Home" },
   { href: "/explore", label: "Explore" },
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
 ];
 
@@ -55,13 +55,13 @@ export default function Navigation() {
             <Link
               href="/"
               className="flex items-center gap-2 group"
-              aria-label="Local Guide Home"
+              aria-label="Paper Maps Home"
             >
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[#FF8C40] flex items-center justify-center">
-                <span className="text-[var(--background)] font-bold text-sm">LG</span>
+                <span className="text-[var(--background)] font-bold text-sm">PM</span>
               </div>
               <span className="text-xl font-semibold text-white">
-                Local Guide
+                Paper Maps
               </span>
             </Link>
 
@@ -91,7 +91,7 @@ export default function Navigation() {
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-4">
               <a
-                href="https://github.com/sagrkv/local-guide"
+                href="https://github.com/summar-studios/paper-maps"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm font-medium text-[var(--gray-300)] hover:text-white transition-colors"
@@ -207,7 +207,7 @@ export default function Navigation() {
                 }}
               >
                 <a
-                  href="https://github.com/sagrkv/local-guide"
+                  href="https://github.com/summar-studios/paper-maps"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 py-4 text-2xl font-semibold border-b border-[var(--gray-800)] text-white"

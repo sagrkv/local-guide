@@ -53,7 +53,7 @@ const packages = [
 
 const faqs = [
   {
-    question: "Is Local Guide really free?",
+    question: "Is Paper Maps really free?",
     answer:
       "Yes, 100% free. No hidden costs, no premium tiers, no subscriptions. All maps and itineraries are available to everyone.",
   },

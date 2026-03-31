@@ -1,6 +1,6 @@
 # Railway Deployment Guide
 
-This guide walks you through deploying Local Guide to Railway.
+This guide walks you through deploying Paper Maps to Railway.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ This guide walks you through deploying Local Guide to Railway.
 
 1. Go to [Railway Dashboard](https://railway.app/dashboard)
 2. Click **New Project** → **Deploy from GitHub repo**
-3. Select your Local Guide repository
+3. Select your Paper Maps repository
 
 ### 2. Add Database (PostgreSQL)
 
@@ -149,7 +149,7 @@ npx prisma migrate deploy
 ### Default Login Credentials
 
 After first deployment, the database is seeded with:
-- **Email**: `admin@localguide.in`
+- **Email**: `admin@papermaps.in`
 - **Password**: `admin123`
 
 **Important**: Change these credentials immediately after first login!

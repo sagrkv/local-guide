@@ -154,7 +154,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             />
           </svg>
         </button>
-        <span className="font-semibold text-accent">Local Guide</span>
+        <span className="font-semibold text-accent">Paper Maps</span>
         <div className="w-8" />
       </div>
 
@@ -167,7 +167,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-b border-gray-700">
           <h1 className="text-lg font-semibold">
             <span className="text-accent">[</span>
-            Local Guide
+            Paper Maps
             <span className="text-accent">]</span>
             <span className="text-gray-400 ml-2 text-sm font-normal">Admin</span>
           </h1>

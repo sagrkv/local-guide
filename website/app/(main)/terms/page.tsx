@@ -51,7 +51,7 @@ export default function TermsPage() {
               Terms of Service
             </h1>
             <p className="text-lg text-[var(--gray-400)] leading-relaxed">
-              Please read these terms carefully before using Local Guide. By
+              Please read these terms carefully before using Paper Maps. By
               accessing or using our service, you agree to be bound by these
               terms.
             </p>
@@ -102,14 +102,14 @@ export default function TermsPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  By accessing or using Local Guide (&quot;the Service&quot;),
+                  By accessing or using Paper Maps (&quot;the Service&quot;),
                   you agree to be bound by these Terms of Service
                   (&quot;Terms&quot;). If you do not agree to these Terms, you
                   may not access or use the Service.
                 </p>
                 <p>
-                  Local Guide is a free, open-source platform. These Terms apply
-                  to all visitors and users who access the Service.
+                  Paper Maps by summar studios is a free platform. These Terms
+                  apply to all visitors and users who access the Service.
                 </p>
               </div>
             </section>
@@ -121,7 +121,7 @@ export default function TermsPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  Local Guide is a curated tourist map platform that provides:
+                  Paper Maps is a curated tourist map platform that provides:
                 </p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>
@@ -168,7 +168,7 @@ export default function TermsPage() {
                     Attempt to disrupt or overload the Service infrastructure
                   </li>
                   <li>
-                    Misrepresent Local Guide content as your own proprietary
+                    Misrepresent Paper Maps content as your own proprietary
                     work
                   </li>
                   <li>
@@ -188,7 +188,7 @@ export default function TermsPage() {
                   4.1 Place Information
                 </h3>
                 <p>
-                  Place information on Local Guide (names, locations,
+                  Place information on Paper Maps (names, locations,
                   descriptions) is curated from publicly available sources and
                   local knowledge. While we strive for accuracy, information
                   may change -- opening hours, closures, and conditions may
@@ -200,7 +200,7 @@ export default function TermsPage() {
                 </h3>
                 <p>
                   You are responsible for verifying information before making
-                  travel decisions. Local Guide provides recommendations, not
+                  travel decisions. Paper Maps provides recommendations, not
                   guarantees. Always confirm details directly with businesses
                   or venues.
                 </p>
@@ -209,7 +209,7 @@ export default function TermsPage() {
                   4.3 No Endorsement
                 </h3>
                 <p>
-                  The inclusion of a place on Local Guide does not constitute a
+                  The inclusion of a place on Paper Maps does not constitute a
                   paid endorsement. No business pays for placement. All
                   recommendations are based on genuine local knowledge and
                   curation.
@@ -224,9 +224,9 @@ export default function TermsPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  The Local Guide source code is open source and available on{" "}
+                  The Paper Maps source code is open source and available on{" "}
                   <a
-                    href="https://github.com/sagrkv/local-guide"
+                    href="https://github.com/summar-studios/paper-maps"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[var(--accent)] hover:underline"
@@ -252,7 +252,7 @@ export default function TermsPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  Local Guide uses third-party services for map rendering and
+                  Paper Maps uses third-party services for map rendering and
                   hosting. When you use our maps, requests may be sent to map
                   tile providers (such as Mapbox or OpenStreetMap). These
                   services have their own terms of use and privacy policies.
@@ -293,7 +293,7 @@ export default function TermsPage() {
                   </li>
                 </ul>
                 <p>
-                  Always exercise your own judgment when traveling. Local Guide
+                  Always exercise your own judgment when traveling. Paper Maps
                   is a starting point for exploration, not a substitute for
                   personal responsibility.
                 </p>
@@ -307,7 +307,7 @@ export default function TermsPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  TO THE MAXIMUM EXTENT PERMITTED BY LAW, LOCAL GUIDE AND ITS
+                  TO THE MAXIMUM EXTENT PERMITTED BY LAW, PAPER MAPS AND ITS
                   CONTRIBUTORS SHALL NOT BE LIABLE FOR ANY INDIRECT,
                   INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES
                   ARISING FROM YOUR USE OF THE SERVICE.
@@ -349,16 +349,16 @@ export default function TermsPage() {
                   <li>
                     <strong className="text-[var(--gray-300)]">Email:</strong>{" "}
                     <a
-                      href="mailto:hello@localguide.in"
+                      href="mailto:hello@papermaps.in"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      hello@localguide.in
+                      hello@papermaps.in
                     </a>
                   </li>
                   <li>
                     <strong className="text-[var(--gray-300)]">GitHub:</strong>{" "}
                     <a
-                      href="https://github.com/sagrkv/local-guide/issues"
+                      href="https://github.com/summar-studios/paper-maps/issues"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[var(--accent)] hover:underline"

@@ -65,8 +65,8 @@ export default function MoodsSection({ cityId, citySlug }: MoodsSectionProps) {
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{
-              backgroundColor: "var(--c-primary, #1E3A5F)",
-              color: "var(--c-text-on-primary, #FAFAF5)",
+              backgroundColor: "var(--pm-primary, #1E3A5F)",
+              color: "var(--pm-paper, #FAFAF5)",
             }}
           >
             <Compass size={20} strokeWidth={1.5} />
@@ -74,8 +74,8 @@ export default function MoodsSection({ cityId, citySlug }: MoodsSectionProps) {
           <h2
             className="text-2xl md:text-3xl font-bold"
             style={{
-              fontFamily: "var(--c-font-display)",
-              color: "var(--c-text)",
+              fontFamily: "var(--pm-font-display)",
+              color: "var(--pm-ink)",
             }}
           >
             What Kind of Day Is It?
@@ -97,8 +97,8 @@ export default function MoodsSection({ cityId, citySlug }: MoodsSectionProps) {
                 <div
                   className="group w-36 h-40 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all duration-300 hover:-translate-y-1"
                   style={{
-                    backgroundColor: "var(--c-surface)",
-                    border: "1px solid var(--c-border)",
+                    backgroundColor: "var(--pm-surface)",
+                    border: "1px solid var(--pm-muted)",
                     boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                   }}
                 >
@@ -111,8 +111,8 @@ export default function MoodsSection({ cityId, citySlug }: MoodsSectionProps) {
                   <span
                     className="text-sm font-semibold text-center leading-tight px-3"
                     style={{
-                      fontFamily: "var(--c-font-display)",
-                      color: "var(--c-text)",
+                      fontFamily: "var(--pm-font-display)",
+                      color: "var(--pm-ink)",
                     }}
                   >
                     {mood.title}
@@ -122,7 +122,7 @@ export default function MoodsSection({ cityId, citySlug }: MoodsSectionProps) {
                   {spotCount > 0 && (
                     <span
                       className="text-xs font-medium"
-                      style={{ color: "var(--c-text-muted)" }}
+                      style={{ color: "var(--pm-muted)" }}
                     >
                       {spotCount} {spotCount === 1 ? "spot" : "spots"}
                     </span>
@@ -132,7 +132,7 @@ export default function MoodsSection({ cityId, citySlug }: MoodsSectionProps) {
                 {/* Gold accent on hover */}
                 <div
                   className="h-0.5 mx-4 mt-1 w-0 group-hover:w-[calc(100%-2rem)] transition-all duration-500 rounded-full"
-                  style={{ backgroundColor: "var(--c-gold)" }}
+                  style={{ backgroundColor: "var(--pm-accent)" }}
                 />
               </Link>
             );

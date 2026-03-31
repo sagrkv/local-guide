@@ -287,18 +287,18 @@ export default function CityMapPage() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: "var(--c-bg)" }}
+        style={{ background: "var(--pm-paper, #FFF9F0)" }}
       >
         <div className="flex flex-col items-center gap-3">
           <div
             className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin"
-            style={{ borderColor: "var(--c-gold)" }}
+            style={{ borderColor: "var(--pm-accent, #D4A574)" }}
           />
           <span
             className="text-xs tracking-wide uppercase"
             style={{
-              color: "var(--c-text-muted)",
-              fontFamily: "var(--c-font-body)",
+              color: "var(--pm-muted, #8B7D6B)",
+              fontFamily: "var(--pm-font-body, 'DM Sans', sans-serif)",
             }}
           >
             Loading map...
@@ -312,25 +312,25 @@ export default function CityMapPage() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: "var(--c-bg)" }}
+        style={{ background: "var(--pm-paper, #FFF9F0)" }}
       >
         <div className="text-center">
           <h1
             className="text-2xl font-bold mb-2"
             style={{
-              color: "var(--c-text)",
-              fontFamily: "var(--c-font-display)",
+              color: "var(--pm-ink, #2D2926)",
+              fontFamily: "var(--pm-font-display, 'Fraunces', serif)",
             }}
           >
             City not found
           </h1>
-          <p className="mb-6" style={{ color: "var(--c-text-muted)" }}>
+          <p className="mb-6" style={{ color: "var(--pm-muted, #8B7D6B)" }}>
             {error || "We couldn't find this city."}
           </p>
           <Link
             href="/"
             className="hover:underline"
-            style={{ color: "var(--c-primary)" }}
+            style={{ color: "var(--pm-primary, #1E3A5F)" }}
           >
             Back to home
           </Link>
@@ -406,7 +406,7 @@ export default function CityMapPage() {
             className="text-sm font-semibold tracking-wide"
             style={{
               color: theme.palette.text,
-              fontFamily: "var(--c-font-display)",
+              fontFamily: "var(--pm-font-display, 'Fraunces', serif)",
             }}
           >
             {city.name}

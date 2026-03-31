@@ -4,6 +4,7 @@ import { CityProvider } from "@/lib/city-context";
 import { CulturalProvider } from "@/components/cultural";
 import { getThemePreset, mergeThemeWithOverrides } from "@/lib/cultural-theme";
 import { PreviewGate } from "@/components/explore/PreviewGate";
+import { CityThemeInjector } from "@/components/explore/CityThemeInjector";
 import { getAdminPrefix } from "@/lib/admin-config";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002/api/v1";
@@ -37,7 +38,7 @@ export async function generateMetadata({
 
   const presetId = city.theme?.themePresetId || citySlug;
   const preset = getThemePreset(presetId);
-  const title = `${city.name} — Local Guide`;
+  const title = `${city.name} — Paper Maps`;
   const description =
     city.tagline || preset.tagline || `Explore curated places and itineraries in ${city.name}`;
   const primaryColor = city.theme?.colorPrimary || "#1E3A5F";
@@ -81,6 +82,7 @@ export default async function CityLayout({
 
   return (
     <CulturalProvider theme={culturalTheme} className="min-h-screen">
+      <CityThemeInjector citySlug={citySlug} dbTheme={city?.theme ?? null} />
       <CityProvider citySlug={citySlug}>
         <Suspense>
           <PreviewGate

@@ -99,11 +99,11 @@ export default function ContactPage() {
             transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Let&apos;s Talk
+              Get in Touch
             </h1>
             <p className="text-xl text-[var(--gray-400)] max-w-2xl leading-relaxed">
-              Have a project in mind? Tell us about it. We&apos;ll respond
-              within 24 hours.
+              Have a suggestion, want to contribute a city, or just want to say
+              hello? We&apos;d love to hear from you.
             </p>
           </motion.div>
         </div>
@@ -240,10 +240,10 @@ export default function ContactPage() {
                         Email
                       </h3>
                       <a
-                        href="mailto:hello@localguide.in"
+                        href="mailto:hello@papermaps.in"
                         className="text-[var(--accent)] hover:text-white transition-colors"
                       >
-                        hello@localguide.in
+                        hello@papermaps.in
                       </a>
                     </div>
 
@@ -273,7 +273,7 @@ export default function ContactPage() {
                     </h3>
                     <div className="flex gap-4">
                       <a
-                        href="https://twitter.com/localguide_in"
+                        href="https://twitter.com/papermaps_in"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[var(--gray-400)] hover:text-white transition-colors"
@@ -281,7 +281,7 @@ export default function ContactPage() {
                         Twitter / X
                       </a>
                       <a
-                        href="https://linkedin.com/company/localguide_in"
+                        href="https://linkedin.com/company/papermaps_in"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[var(--gray-400)] hover:text-white transition-colors"

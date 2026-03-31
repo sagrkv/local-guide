@@ -78,10 +78,10 @@ export default function CollectionViewPage({
 
   if (cityLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--c-bg)]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--pm-paper)]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[var(--c-primary)] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-[var(--c-text-muted)]">Loading collection...</p>
+          <div className="w-8 h-8 border-2 border-[var(--pm-primary)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-[var(--pm-muted)]">Loading collection...</p>
         </div>
       </div>
     );
@@ -89,15 +89,15 @@ export default function CollectionViewPage({
 
   if (error || !collection) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--c-bg)]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--pm-paper)]">
         <div className="text-center px-6">
-          <h1 className="text-2xl font-bold text-[var(--c-text)] mb-2">
+          <h1 className="text-2xl font-bold text-[var(--pm-ink)] mb-2">
             Collection not found
           </h1>
-          <p className="text-[var(--c-text-muted)] mb-6">{error}</p>
+          <p className="text-[var(--pm-muted)] mb-6">{error}</p>
           <Link
             href={`/explore/${citySlug}/collections`}
-            className="text-[var(--c-primary)] hover:underline font-medium"
+            className="text-[var(--pm-primary)] hover:underline font-medium"
           >
             Back to collections
           </Link>
@@ -106,19 +106,19 @@ export default function CollectionViewPage({
     );
   }
 
-  const primaryColor = city?.theme?.colorPrimary || "var(--c-primary)";
+  const primaryColor = city?.theme?.colorPrimary || "var(--pm-primary)";
   const items = [...(collection.items || [])].sort(
     (a, b) => (a.order || 0) - (b.order || 0),
   );
 
   return (
-    <div className="min-h-screen bg-[var(--c-bg)]">
+    <div className="min-h-screen bg-[var(--pm-paper)]">
       {/* Header */}
       <div className={`${SPACING.headerPadding} px-6`}>
         <div className={LAYOUT.container}>
           <Link
             href={`/explore/${citySlug}/collections`}
-            className="inline-flex items-center gap-2 text-sm text-[var(--c-text-muted)] hover:text-[var(--c-text)] transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-sm text-[var(--pm-muted)] hover:text-[var(--pm-ink)] transition-colors mb-6"
           >
             <svg
               className="w-4 h-4"
@@ -137,18 +137,18 @@ export default function CollectionViewPage({
           </Link>
 
           <h1
-            className={`${TYPOGRAPHY.h1} text-[var(--c-text)] mb-2`}
-            style={{ fontFamily: "var(--c-font-display)" }}
+            className={`${TYPOGRAPHY.h1} text-[var(--pm-ink)] mb-2`}
+            style={{ fontFamily: "var(--pm-font-display)" }}
           >
             {collection.title}
           </h1>
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-sm text-[var(--c-text-muted)]">
+            <span className="text-sm text-[var(--pm-muted)]">
               {items.length} {items.length === 1 ? "place" : "places"}
             </span>
           </div>
           {collection.description && (
-            <p className="text-[var(--c-text-muted)] leading-relaxed max-w-2xl">
+            <p className="text-[var(--pm-muted)] leading-relaxed max-w-2xl">
               {collection.description}
             </p>
           )}
@@ -159,7 +159,7 @@ export default function CollectionViewPage({
       <div className={`${LAYOUT.container} ${SPACING.contentBottom}`}>
         {items.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-[var(--c-text-muted)]">
+            <p className="text-[var(--pm-muted)]">
               This collection is empty.
             </p>
           </div>
@@ -186,13 +186,13 @@ export default function CollectionViewPage({
                         <div
                           className="w-full h-full flex items-center justify-center text-4xl"
                           style={{
-                            background: `linear-gradient(135deg, ${item.poi.categoryColor || primaryColor}25, var(--c-border))`,
+                            background: `linear-gradient(135deg, ${item.poi.categoryColor || primaryColor}25, var(--pm-muted))`,
                           }}
                         >
                           {item.poi.categoryEmoji || "\uD83D\uDCCD"}
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[var(--c-surface)] via-transparent to-transparent opacity-60" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[var(--pm-surface)] via-transparent to-transparent opacity-60" />
                     </div>
                     <div className={CARD.padding}>
                       {item.poi.categoryName && (
@@ -212,11 +212,11 @@ export default function CollectionViewPage({
                           {item.poi.categoryName}
                         </span>
                       )}
-                      <h3 className={`${TYPOGRAPHY.h3} text-[var(--c-text)] mb-1 line-clamp-2`}>
+                      <h3 className={`${TYPOGRAPHY.h3} text-[var(--pm-ink)] mb-1 line-clamp-2`}>
                         {item.poi.name}
                       </h3>
                       {item.curatorNote && (
-                        <p className="text-xs text-[var(--c-text-muted)] line-clamp-2 italic mt-1">
+                        <p className="text-xs text-[var(--pm-muted)] line-clamp-2 italic mt-1">
                           &ldquo;{item.curatorNote}&rdquo;
                         </p>
                       )}

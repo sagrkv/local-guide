@@ -56,7 +56,7 @@ export function PreviewGate({
 
     const token =
       typeof window !== "undefined"
-        ? localStorage.getItem("lg_token")
+        ? localStorage.getItem("pm_token")
         : null;
 
     if (!token) {

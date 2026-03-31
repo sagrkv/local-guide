@@ -17,14 +17,14 @@ interface PrintMapButtonProps {
 // ---------------------------------------------------------------------------
 
 const COLORS = {
-  ink: "#2D2926",
-  paper: "#FDF6EC",
-  terraCotta: "#C4663A",
-  border: "#E8D5B7",
+  ink: "var(--pm-ink, #2D2926)",
+  paper: "var(--pm-paper, #FDF6EC)",
+  terraCotta: "var(--pm-accent, #C4663A)",
+  border: "var(--pm-muted, #E8D5B7)",
 };
 
 const FONT = {
-  decorative: "'Kalam', cursive",
+  decorative: "var(--pm-font-display, 'Kalam', cursive)",
 };
 
 // ---------------------------------------------------------------------------

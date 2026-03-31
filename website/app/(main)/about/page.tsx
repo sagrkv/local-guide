@@ -13,14 +13,14 @@ import {
 const howItWorks = [
   {
     step: "01",
-    title: "AI Suggests",
+    title: "AI Assists",
     description:
       "We use AI to scan cities and generate an initial list of interesting places -- cafes, temples, viewpoints, restaurants, and hidden gems.",
     color: "#3B82F6",
   },
   {
     step: "02",
-    title: "Humans Curate",
+    title: "Humans Decide",
     description:
       "Locals review, refine, and add context. They remove the noise, verify quality, and add the places that only someone who lives there would know.",
     color: "#10B981",
@@ -38,7 +38,7 @@ const stats = [
   { value: "10+", label: "Cities Mapped" },
   { value: "500+", label: "Curated Places" },
   { value: "50+", label: "Itineraries" },
-  { value: "100%", label: "Free & Open" },
+  { value: "100%", label: "Free, Forever" },
 ];
 
 export default function AboutPage() {
@@ -73,11 +73,11 @@ export default function AboutPage() {
             transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              About Local Guide
+              About Paper Maps
             </h1>
             <p className="text-xl text-[var(--gray-400)] max-w-2xl leading-relaxed">
-              We are building the travel maps we wish existed -- curated by
-              locals, themed for each city, and free for everyone.
+              The anti-Google Maps. Curated city guides made by people who
+              actually know.
             </p>
           </motion.div>
         </div>
@@ -103,17 +103,17 @@ export default function AboutPage() {
                 <p>
                   You land in a new city. You open Google Maps. You see
                   thousands of pins -- restaurants with fake reviews, tourist
-                  traps with paid placements, and no way to tell what is
-                  actually worth your time.
+                  traps with paid placements, sponsored listings disguised as
+                  recommendations. No way to tell what is actually worth your
+                  time.
                 </p>
                 <p>
                   Travel forums are outdated. Blog posts are SEO-stuffed
                   listicles. Instagram is beautiful but useless for navigation.
-                  None of these tools help you experience a city the way a local
-                  does.
+                  Star ratings are meaningless when every place has 4.2 stars.
                 </p>
                 <p className="text-white font-medium">
-                  Every city deserves a better guide.
+                  We built Paper Maps because we were tired of this.
                 </p>
               </div>
             </motion.div>
@@ -158,14 +158,15 @@ export default function AboutPage() {
             transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
             className="text-center mb-16"
           >
-            <span className="badge mb-4">Our Solution</span>
+            <span className="badge mb-4">Our Philosophy</span>
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-              Human-curated, city-themed maps
+              Human taste beats algorithms
             </h2>
             <p className="text-[var(--gray-400)] text-lg max-w-2xl mx-auto">
               Instead of showing everything, we show what matters. Each city
               gets a carefully curated map with places that locals genuinely
-              recommend -- designed with the city&apos;s unique character.
+              vouch for. No sponsored pins. No paid placements. No star
+              ratings.
             </p>
           </motion.div>
 
@@ -210,11 +211,11 @@ export default function AboutPage() {
           >
             <span className="badge mb-4">How It Works</span>
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-              AI suggests. Humans curate. You explore.
+              AI assists. Humans decide.
             </h2>
             <p className="text-[var(--gray-400)] text-lg max-w-2xl mx-auto">
-              The best of both worlds: AI efficiency with human taste and local
-              knowledge.
+              We use AI to scan and discover places. But every recommendation
+              is reviewed and approved by a human who knows the city.
             </p>
           </motion.div>
 
@@ -265,9 +266,9 @@ export default function AboutPage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
             >
-              <span className="badge mb-4">Open Source</span>
+              <span className="badge mb-4">Free, Forever</span>
               <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-                Why we build in the open
+                Why Paper Maps is free
               </h2>
               <div className="space-y-4 text-[var(--gray-400)] text-lg leading-relaxed">
                 <p>
@@ -275,19 +276,18 @@ export default function AboutPage() {
                   locked behind paywalls or controlled by a single company.
                 </p>
                 <p>
-                  By making Local Guide open source, we ensure that city data
-                  belongs to the community. Anyone can verify the
-                  recommendations, improve the maps, or fork the project for
-                  their own city.
+                  Paper Maps is free and open source. City data belongs to the
+                  community. Anyone can verify the recommendations, improve the
+                  maps, or fork the project for their own city.
                 </p>
                 <p>
-                  Transparency builds trust. When our code and data are public,
-                  you can see exactly how we curate places and make decisions.
+                  We will never charge for access. We will never run ads. We
+                  will never accept paid placements. That is the whole point.
                 </p>
               </div>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
-                  href="https://github.com/sagrkv/local-guide"
+                  href="https://github.com/summar-studios/paper-maps"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-[#0d1117] font-semibold text-sm hover:bg-gray-200 transition-colors"
@@ -334,10 +334,10 @@ export default function AboutPage() {
                     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                   </svg>
                   <p className="text-[var(--gray-500)] text-lg font-medium">
-                    100% Open Source
+                    Free, Forever
                   </p>
                   <p className="text-[var(--gray-600)] text-sm mt-1">
-                    MIT License
+                    Open Source
                   </p>
                 </div>
                 <GlowOrb
@@ -362,13 +362,14 @@ export default function AboutPage() {
             transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
             className="text-center mb-12"
           >
-            <span className="badge mb-4">Contribute</span>
+            <span className="badge mb-4">summar studios</span>
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-              Add your city
+              Who we are
             </h2>
             <p className="text-[var(--gray-400)] text-lg max-w-2xl mx-auto">
-              Know a city inside and out? Help us build its guide. Here is how
-              contributors add new cities to Local Guide.
+              Paper Maps is made by summar studios, a small team in India. We
+              build things we wish existed. Know a city inside out? Help us
+              build its guide.
             </p>
           </motion.div>
 
@@ -483,15 +484,14 @@ export default function AboutPage() {
               Ready to explore?
             </h2>
             <p className="text-[var(--gray-400)] text-lg mb-8 max-w-xl mx-auto">
-              Pick a city, open the map, and travel like a local. No account
-              needed.
+              Pick a city. Open the map. No account needed. No catch.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/explore"
                 className="btn-primary text-lg px-8 py-4"
               >
-                Explore Cities
+                Explore a City
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -507,7 +507,7 @@ export default function AboutPage() {
                 </svg>
               </Link>
               <a
-                href="https://github.com/sagrkv/local-guide"
+                href="https://github.com/summar-studios/paper-maps"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-secondary text-lg px-8 py-4 inline-flex items-center gap-2"

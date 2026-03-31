@@ -54,7 +54,7 @@ const API_BASE =
 const styles = {
   page: {
     minHeight: '100vh',
-    backgroundColor: '#FFF9F0',
+    backgroundColor: 'var(--pm-surface, #FFF9F0)',
     fontFamily: "'DM Sans', sans-serif",
   } as React.CSSProperties,
   container: {
@@ -68,7 +68,7 @@ const styles = {
     gap: '6px',
     fontSize: '14px',
     fontFamily: "'DM Sans', sans-serif",
-    color: '#8B7355',
+    color: 'var(--pm-muted, #8B7D6B)',
     textDecoration: 'none',
     marginBottom: '32px',
     transition: 'color 0.2s ease',
@@ -96,7 +96,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F5E6D3',
-    color: '#C4663A',
+    color: 'var(--pm-accent, #C4663A)',
     fontSize: '32px',
     fontWeight: 700,
     fontFamily: "'DM Sans', sans-serif",
@@ -105,7 +105,7 @@ const styles = {
   curatedByLabel: {
     fontSize: '16px',
     fontFamily: "'Kalam', cursive",
-    color: '#C4663A',
+    color: 'var(--pm-accent, #C4663A)',
     transform: 'rotate(-1deg)',
     display: 'inline-block',
   } as React.CSSProperties,
@@ -113,7 +113,7 @@ const styles = {
     fontSize: '28px',
     fontWeight: 700,
     fontFamily: "'DM Sans', sans-serif",
-    color: '#2D2926',
+    color: 'var(--pm-ink, #2D2926)',
     lineHeight: 1.2,
     margin: 0,
   } as React.CSSProperties,
@@ -127,7 +127,7 @@ const styles = {
   metaItem: {
     fontSize: '14px',
     fontFamily: "'DM Sans', sans-serif",
-    color: '#8B7355',
+    color: 'var(--pm-muted, #8B7D6B)',
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
@@ -162,7 +162,7 @@ const styles = {
     height: '36px',
     borderRadius: '50%',
     backgroundColor: '#F5E6D3',
-    color: '#8B7355',
+    color: 'var(--pm-muted, #8B7D6B)',
     textDecoration: 'none',
     transition: 'background-color 0.2s ease, color 0.2s ease',
   } as React.CSSProperties,
@@ -174,7 +174,7 @@ const styles = {
   sectionTitle: {
     fontSize: '14px',
     fontFamily: "'Kalam', cursive",
-    color: '#C4663A',
+    color: 'var(--pm-accent, #C4663A)',
     letterSpacing: '0.04em',
     marginBottom: '20px',
     transform: 'rotate(-0.5deg)',
@@ -196,7 +196,7 @@ const styles = {
     transition: 'border-color 0.2s ease, transform 0.2s ease',
   } as React.CSSProperties,
   cityCardHover: {
-    borderColor: '#C4663A',
+    borderColor: 'var(--pm-accent, #C4663A)',
     transform: 'translateY(-2px)',
   } as React.CSSProperties,
   cityCardImage: {
@@ -212,7 +212,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#C4663A',
+    color: 'var(--pm-accent, #C4663A)',
     fontFamily: "'Kalam', cursive",
     fontSize: '20px',
   } as React.CSSProperties,
@@ -223,13 +223,13 @@ const styles = {
     fontSize: '16px',
     fontWeight: 700,
     fontFamily: "'DM Sans', sans-serif",
-    color: '#2D2926',
+    color: 'var(--pm-ink, #2D2926)',
     margin: '0 0 4px',
   } as React.CSSProperties,
   cityCardTagline: {
     fontSize: '13px',
     fontFamily: "'DM Sans', sans-serif",
-    color: '#8B7355',
+    color: 'var(--pm-muted, #8B7D6B)',
     margin: 0,
     lineHeight: 1.4,
   } as React.CSSProperties,
@@ -242,7 +242,7 @@ const styles = {
     backgroundColor: '#F5E6D3',
     fontSize: '15px',
     fontFamily: "'Kalam', cursive",
-    color: '#C4663A',
+    color: 'var(--pm-accent, #C4663A)',
     fontWeight: 700,
   } as React.CSSProperties,
   loading: {
@@ -252,7 +252,7 @@ const styles = {
     minHeight: '60vh',
     fontSize: '16px',
     fontFamily: "'Kalam', cursive",
-    color: '#8B7355',
+    color: 'var(--pm-muted, #8B7D6B)',
   } as React.CSSProperties,
   notFound: {
     display: 'flex',
@@ -266,12 +266,12 @@ const styles = {
   notFoundTitle: {
     fontSize: '24px',
     fontFamily: "'Kalam', cursive",
-    color: '#C4663A',
+    color: 'var(--pm-accent, #C4663A)',
   } as React.CSSProperties,
   notFoundText: {
     fontSize: '15px',
     fontFamily: "'DM Sans', sans-serif",
-    color: '#8B7355',
+    color: 'var(--pm-muted, #8B7D6B)',
   } as React.CSSProperties,
 } as const;
 

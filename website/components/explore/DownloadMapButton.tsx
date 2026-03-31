@@ -18,20 +18,20 @@ interface DownloadMapButtonProps {
 // ---------------------------------------------------------------------------
 
 const COLORS = {
-  ink: "#2D2926",
-  paper: "#FDF6EC",
-  terraCotta: "#C4663A",
+  ink: "var(--pm-ink, #2D2926)",
+  paper: "var(--pm-paper, #FDF6EC)",
+  terraCotta: "var(--pm-accent, #C4663A)",
   terraCottaLight: "#D4835E",
   forestGreen: "#5B8C5A",
   forestGreenLight: "#6FA06E",
-  warmGray: "#8B7355",
-  border: "#E8D5B7",
+  warmGray: "var(--pm-muted, #8B7355)",
+  border: "var(--pm-muted, #E8D5B7)",
   borderLight: "#F0E6D4",
 };
 
 const FONT = {
-  decorative: "'Kalam', cursive",
-  body: "'DM Sans', sans-serif",
+  decorative: "var(--pm-font-display, 'Kalam', cursive)",
+  body: "var(--pm-font-body, 'DM Sans', sans-serif)",
 };
 
 // Removed sketchy border-radius in favor of soft rounded corners

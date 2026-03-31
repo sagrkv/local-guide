@@ -12,11 +12,11 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "Local Guide — Curated Tourist Maps",
-    template: "%s | Local Guide",
+    default: "Paper Maps — Curated City Guides",
+    template: "%s | Paper Maps",
   },
   description:
-    "Beautifully curated, city-themed tourist maps. Travel like a local.",
+    "Beautifully curated tourist maps for Indian cities. Hand-picked by locals who actually know.",
   keywords: [
     "tourist maps",
     "curated travel",
@@ -25,32 +25,34 @@ export const metadata: Metadata = {
     "itineraries",
     "travel maps",
     "explore cities",
+    "paper maps",
+    "india travel",
   ],
-  authors: [{ name: "Local Guide" }],
-  creator: "Local Guide",
+  authors: [{ name: "Paper Maps by summar studios" }],
+  creator: "summar studios",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://localguide.in",
-    siteName: "Local Guide",
-    title: "Local Guide — Curated Tourist Maps",
+    url: "https://papermaps.in",
+    siteName: "Paper Maps",
+    title: "Paper Maps — Curated City Guides",
     description:
-      "Beautifully curated, city-themed tourist maps. Travel like a local.",
+      "Beautifully curated tourist maps for Indian cities. Hand-picked by locals who actually know.",
     images: [
       {
-        url: "/api/og?title=Local+Guide&subtitle=Curated+Tourist+Maps",
+        url: "/api/og?title=Paper+Maps&subtitle=Curated+City+Guides",
         width: 1200,
         height: 630,
-        alt: "Local Guide",
+        alt: "Paper Maps",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Local Guide — Curated Tourist Maps",
+    title: "Paper Maps — Curated City Guides",
     description:
-      "Beautifully curated, city-themed tourist maps. Travel like a local.",
-    images: ["/api/og?title=Local+Guide&subtitle=Curated+Tourist+Maps"],
+      "Beautifully curated tourist maps for Indian cities. Hand-picked by locals who actually know.",
+    images: ["/api/og?title=Paper+Maps&subtitle=Curated+City+Guides"],
   },
   robots: {
     index: true,

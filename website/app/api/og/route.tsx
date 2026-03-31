@@ -6,9 +6,9 @@ export const runtime = "edge";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const title = searchParams.get("title") || "Local Guide";
+    const title = searchParams.get("title") || "Paper Maps";
     const subtitle =
-      searchParams.get("subtitle") || "Curated Tourist Maps";
+      searchParams.get("subtitle") || "Curated City Guides";
     const color = searchParams.get("color") || "#1E3A5F";
 
     return new ImageResponse(
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
                 color: "#1a1a2e",
               }}
             >
-              LG
+              PM
             </div>
           </div>
 
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
               letterSpacing: "0.05em",
             }}
           >
-            localguide.in
+            papermaps.in
           </div>
         </div>
       ),

@@ -27,7 +27,7 @@ export default function DashboardLayout({
 
   // Check authentication on mount
   useEffect(() => {
-    const token = localStorage.getItem("lg_token");
+    const token = localStorage.getItem("pm_token");
     if (!token) {
       router.push("/sign-in");
       setLoading(false);
@@ -49,7 +49,7 @@ export default function DashboardLayout({
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("lg_token");
+    localStorage.removeItem("pm_token");
     router.push("/sign-in");
   };
 

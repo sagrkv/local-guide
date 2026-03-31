@@ -23,9 +23,9 @@ interface Category {
 // ---------------------------------------------------------------------------
 
 const COLORS = {
-  paperCream: "#FDF6EC",
-  inkBlack: "#2D2926",
-  pencilGray: "#6B6560",
+  paperCream: "var(--pm-surface, #FDF6EC)",
+  inkBlack: "var(--pm-ink, #2D2926)",
+  pencilGray: "var(--pm-muted, #6B6560)",
   pencilLight: "#B8B2AB",
   successGreen: "#5B8C5A",
   errorRed: "#C4453C",

@@ -1,4 +1,4 @@
-const CACHE_NAME = "local-guide-v1";
+const CACHE_NAME = "papermaps-v1";
 const STATIC_ASSETS = ["/", "/manifest.json"];
 
 self.addEventListener("install", (event) => {

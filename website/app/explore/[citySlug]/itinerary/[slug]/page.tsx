@@ -122,10 +122,10 @@ export default function ItineraryViewPage({
 
   if (cityLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--c-bg)]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--pm-paper)]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[var(--c-primary)] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-[var(--c-text-muted)]">Loading itinerary...</p>
+          <div className="w-8 h-8 border-2 border-[var(--pm-primary)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-[var(--pm-muted)]">Loading itinerary...</p>
         </div>
       </div>
     );
@@ -133,15 +133,15 @@ export default function ItineraryViewPage({
 
   if (error || !itinerary) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--c-bg)]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--pm-paper)]">
         <div className="text-center px-6">
-          <h1 className="text-2xl font-bold text-[var(--c-text)] mb-2">
+          <h1 className="text-2xl font-bold text-[var(--pm-ink)] mb-2">
             Itinerary not found
           </h1>
-          <p className="text-[var(--c-text-muted)] mb-6">{error}</p>
+          <p className="text-[var(--pm-muted)] mb-6">{error}</p>
           <Link
             href={`/explore/${citySlug}/itineraries`}
-            className="text-[var(--c-primary)] hover:underline font-medium"
+            className="text-[var(--pm-primary)] hover:underline font-medium"
           >
             Back to itineraries
           </Link>
@@ -150,7 +150,7 @@ export default function ItineraryViewPage({
     );
   }
 
-  const primaryColor = city?.theme?.colorPrimary || "var(--c-primary)";
+  const primaryColor = city?.theme?.colorPrimary || "var(--pm-primary)";
   const sortedStops = [...(itinerary.stops || [])].sort(
     (a, b) => a.order - b.order,
   );
@@ -159,7 +159,7 @@ export default function ItineraryViewPage({
   const firstPoi = sortedStops[0]?.poi;
 
   return (
-    <div className="min-h-screen bg-[var(--c-bg)]">
+    <div className="min-h-screen bg-[var(--pm-paper)]">
       {/* Cover */}
       <div className="relative">
         {itinerary.coverImageUrl ? (
@@ -169,13 +169,13 @@ export default function ItineraryViewPage({
               alt={itinerary.title}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--c-bg)] via-[var(--c-bg)]/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--pm-paper)] via-[var(--pm-paper)]/40 to-transparent" />
           </div>
         ) : (
           <div
             className="h-48 md:h-64"
             style={{
-              background: `linear-gradient(160deg, ${primaryColor}25, var(--c-bg), ${primaryColor}10)`,
+              background: `linear-gradient(160deg, ${primaryColor}25, var(--pm-paper), ${primaryColor}10)`,
             }}
           />
         )}
@@ -184,7 +184,7 @@ export default function ItineraryViewPage({
         <div className="absolute top-4 left-4 z-10">
           <Link
             href={`/explore/${citySlug}/itineraries`}
-            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-[var(--c-text)]/90 hover:text-[var(--c-text)] transition-colors"
+            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-[var(--pm-ink)]/90 hover:text-[var(--pm-ink)] transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -207,17 +207,17 @@ export default function ItineraryViewPage({
       <div className={`${LAYOUT.containerNarrow} -mt-8 relative z-10 ${SPACING.contentBottom}`}>
         {/* Title + meta */}
         <h1
-          className={`${TYPOGRAPHY.h1} text-[var(--c-text)] mb-4 leading-tight`}
-          style={{ fontFamily: "var(--c-font-display)" }}
+          className={`${TYPOGRAPHY.h1} text-[var(--pm-ink)] mb-4 leading-tight`}
+          style={{ fontFamily: "var(--pm-font-display)" }}
         >
           {itinerary.title}
         </h1>
 
         <div className="flex items-center gap-3 mb-6 flex-wrap">
           {itinerary.durationMinutes && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] text-xs text-[var(--c-text)]">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--pm-surface)] border border-[var(--pm-muted)] text-xs text-[var(--pm-ink)]">
               <svg
-                className="w-3.5 h-3.5 text-[var(--c-text-muted)]"
+                className="w-3.5 h-3.5 text-[var(--pm-muted)]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -233,13 +233,13 @@ export default function ItineraryViewPage({
             </span>
           )}
           {itinerary.difficulty && (
-            <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] text-xs text-[var(--c-text)]">
+            <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-[var(--pm-surface)] border border-[var(--pm-muted)] text-xs text-[var(--pm-ink)]">
               {itinerary.difficulty}
             </span>
           )}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] text-xs text-[var(--c-text)]">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--pm-surface)] border border-[var(--pm-muted)] text-xs text-[var(--pm-ink)]">
             <svg
-              className="w-3.5 h-3.5 text-[var(--c-text-muted)]"
+              className="w-3.5 h-3.5 text-[var(--pm-muted)]"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -256,7 +256,7 @@ export default function ItineraryViewPage({
         </div>
 
         {itinerary.description && (
-          <p className="text-[var(--c-text)] leading-relaxed mb-10 whitespace-pre-line">
+          <p className="text-[var(--pm-ink)] leading-relaxed mb-10 whitespace-pre-line">
             {itinerary.description}
           </p>
         )}
@@ -264,7 +264,7 @@ export default function ItineraryViewPage({
         {/* Timeline */}
         {sortedStops.length > 0 && (
           <div className="mb-10">
-            <h2 className="text-lg font-semibold text-[var(--c-text)] mb-6">Route</h2>
+            <h2 className="text-lg font-semibold text-[var(--pm-ink)] mb-6">Route</h2>
             <div className="relative">
               {/* Timeline line */}
               <div
@@ -286,7 +286,7 @@ export default function ItineraryViewPage({
                           style={{
                             backgroundColor: primaryColor,
                             color:
-                              city?.theme?.colorBackground || "var(--c-bg)",
+                              city?.theme?.colorBackground || "var(--pm-paper)",
                           }}
                         >
                           {stop.order}
@@ -309,24 +309,24 @@ export default function ItineraryViewPage({
                               {stop.poi?.slug ? (
                                 <Link
                                   href={`/explore/${citySlug}/poi/${stop.poi.slug}`}
-                                  className="text-base font-semibold text-[var(--c-text)] hover:underline"
+                                  className="text-base font-semibold text-[var(--pm-ink)] hover:underline"
                                 >
                                   {stopName}
                                 </Link>
                               ) : (
-                                <span className="text-base font-semibold text-[var(--c-text)]">
+                                <span className="text-base font-semibold text-[var(--pm-ink)]">
                                   {stopName}
                                 </span>
                               )}
 
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 {stop.timeOfDay && (
-                                  <span className="text-xs text-[var(--c-text-muted)] bg-[var(--c-surface)] px-2 py-0.5 rounded">
+                                  <span className="text-xs text-[var(--pm-muted)] bg-[var(--pm-surface)] px-2 py-0.5 rounded">
                                     {stop.timeOfDay}
                                   </span>
                                 )}
                                 {stop.durationMinutes && (
-                                  <span className="text-xs text-[var(--c-text-muted)]">
+                                  <span className="text-xs text-[var(--pm-muted)]">
                                     {formatDuration(stop.durationMinutes)}
                                   </span>
                                 )}
@@ -338,7 +338,7 @@ export default function ItineraryViewPage({
                               </div>
 
                               {stop.note && (
-                                <p className="text-xs text-[var(--c-text-muted)] mt-2 leading-relaxed">
+                                <p className="text-xs text-[var(--pm-muted)] mt-2 leading-relaxed">
                                   {stop.note}
                                 </p>
                               )}
@@ -353,7 +353,7 @@ export default function ItineraryViewPage({
                           <div className="w-10 flex items-center justify-center text-lg z-10">
                             {transportIcon(stop.transportMode)}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-[var(--c-text-muted)]">
+                          <div className="flex items-center gap-2 text-xs text-[var(--pm-muted)]">
                             <span className="capitalize">
                               {stop.transportMode}
                             </span>
@@ -364,7 +364,7 @@ export default function ItineraryViewPage({
                               </span>
                             )}
                             {stop.transportNote && (
-                              <span className="text-[var(--c-text-muted)]">
+                              <span className="text-[var(--pm-muted)]">
                                 &middot; {stop.transportNote}
                               </span>
                             )}
@@ -381,10 +381,10 @@ export default function ItineraryViewPage({
 
         {/* Budget estimate */}
         {itinerary.budgetEstimate && (
-          <div className="mb-8 p-4 rounded-xl bg-[var(--c-surface)] border border-[var(--c-border)]">
+          <div className="mb-8 p-4 rounded-xl bg-[var(--pm-surface)] border border-[var(--pm-muted)]">
             <div className="flex items-center gap-3">
               <svg
-                className="w-5 h-5 text-[var(--c-text-muted)]"
+                className="w-5 h-5 text-[var(--pm-muted)]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -397,10 +397,10 @@ export default function ItineraryViewPage({
                 />
               </svg>
               <div>
-                <span className="text-xs text-[var(--c-text-muted)] uppercase tracking-wider font-medium">
+                <span className="text-xs text-[var(--pm-muted)] uppercase tracking-wider font-medium">
                   Budget Estimate
                 </span>
-                <p className="text-sm text-[var(--c-text)] font-semibold">
+                <p className="text-sm text-[var(--pm-ink)] font-semibold">
                   {itinerary.budgetEstimate}
                 </p>
               </div>
@@ -417,7 +417,7 @@ export default function ItineraryViewPage({
             className="w-full flex items-center justify-center gap-3 py-4 rounded-xl text-base font-semibold transition-all hover:scale-[1.01] active:scale-[0.99]"
             style={{
               backgroundColor: primaryColor,
-              color: city?.theme?.colorBackground || "var(--c-bg)",
+              color: city?.theme?.colorBackground || "var(--pm-paper)",
             }}
           >
             <svg

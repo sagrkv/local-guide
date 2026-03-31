@@ -46,7 +46,7 @@ export default function LoginPage() {
         <div className="text-center mb-10">
           <h1 className="text-2xl font-semibold tracking-tight text-white">
             <span className="text-indigo-400">[</span>
-            &nbsp;Local Guide&nbsp;
+            &nbsp;Paper Maps&nbsp;
             <span className="text-indigo-400">]</span>
           </h1>
           <p className="mt-2 text-sm text-gray-500 tracking-wide uppercase">
@@ -73,7 +73,7 @@ export default function LoginPage() {
                 autoFocus
                 autoComplete="email"
                 className="w-full px-3.5 py-2.5 bg-gray-800/80 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 transition-all"
-                placeholder="admin@localguide.in"
+                placeholder="admin@papermaps.in"
               />
             </div>
 

@@ -76,18 +76,18 @@ export default function FavoritesPage() {
 
   if (cityLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--c-bg)]">
-        <div className="w-8 h-8 border-2 border-[var(--c-primary)] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--pm-paper)]">
+        <div className="w-8 h-8 border-2 border-[var(--pm-primary)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (cityError || !city) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--c-bg)]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--pm-paper)]">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[var(--c-text)] mb-2">City not found</h1>
-          <Link href="/" className="text-[var(--c-primary)] hover:underline">
+          <h1 className="text-2xl font-bold text-[var(--pm-ink)] mb-2">City not found</h1>
+          <Link href="/" className="text-[var(--pm-primary)] hover:underline">
             Back to home
           </Link>
         </div>
@@ -95,16 +95,16 @@ export default function FavoritesPage() {
     );
   }
 
-  const primaryColor = "var(--c-primary)";
+  const primaryColor = "var(--pm-primary)";
 
   return (
-    <div className="min-h-screen bg-[var(--c-bg)]">
+    <div className="min-h-screen bg-[var(--pm-paper)]">
       {/* Header */}
       <div className={`${SPACING.headerPadding} px-6`}>
         <div className={LAYOUT.container}>
           <Link
             href={`/explore/${city.slug}`}
-            className="inline-flex items-center gap-2 text-sm text-[var(--c-text-muted)] hover:text-[var(--c-text)] transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-sm text-[var(--pm-muted)] hover:text-[var(--pm-ink)] transition-colors mb-6"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -115,12 +115,12 @@ export default function FavoritesPage() {
           <div className="flex items-end justify-between">
             <div>
               <h1
-                className={`${TYPOGRAPHY.h1} text-[var(--c-text)] mb-2`}
-                style={{ fontFamily: "var(--c-font-display)" }}
+                className={`${TYPOGRAPHY.h1} text-[var(--pm-ink)] mb-2`}
+                style={{ fontFamily: "var(--pm-font-display)" }}
               >
                 Favorites
               </h1>
-              <p className="text-[var(--c-text-muted)]">
+              <p className="text-[var(--pm-muted)]">
                 {cityFavorites.length > 0
                   ? `${cityFavorites.length} saved ${cityFavorites.length === 1 ? "place" : "places"} in ${city.name}`
                   : `Your saved places in ${city.name}`}
@@ -142,13 +142,13 @@ export default function FavoritesPage() {
       <div className={`${LAYOUT.container} ${SPACING.contentBottom}`}>
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-[var(--c-border)] border-t-[var(--c-primary)] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-[var(--pm-muted)] border-t-[var(--pm-primary)] rounded-full animate-spin" />
           </div>
         ) : pois.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--pm-surface)] border border-[var(--pm-muted)] flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-8 h-8 text-[var(--c-border)]"
+                className="w-8 h-8 text-[var(--pm-muted)]"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -157,18 +157,18 @@ export default function FavoritesPage() {
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-[var(--c-text)] mb-2">
+            <h3 className="text-lg font-semibold text-[var(--pm-ink)] mb-2">
               No favorites yet
             </h3>
-            <p className="text-sm text-[var(--c-text-muted)] mb-6 max-w-sm mx-auto">
+            <p className="text-sm text-[var(--pm-muted)] mb-6 max-w-sm mx-auto">
               Tap the heart icon on any place to save it here for quick access.
             </p>
             <Link
               href={`/explore/${city.slug}/map`}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
               style={{
-                backgroundColor: "var(--c-primary)",
-                color: "var(--c-text-on-primary, var(--c-bg))",
+                backgroundColor: "var(--pm-primary)",
+                color: "var(--pm-text-on-primary, var(--pm-paper))",
               }}
             >
               Explore the map
@@ -215,13 +215,13 @@ export default function FavoritesPage() {
                         <div
                           className="w-full h-full flex items-center justify-center text-4xl"
                           style={{
-                            background: `linear-gradient(135deg, ${poi.categoryColor || primaryColor}25, var(--c-border))`,
+                            background: `linear-gradient(135deg, ${poi.categoryColor || primaryColor}25, var(--pm-muted))`,
                           }}
                         >
                           {poi.categoryEmoji || "\uD83D\uDCCD"}
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[var(--c-surface)] via-transparent to-transparent opacity-60" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[var(--pm-surface)] via-transparent to-transparent opacity-60" />
                     </div>
                     <div className={CARD.padding}>
                       {poi.categoryName && (
@@ -240,7 +240,7 @@ export default function FavoritesPage() {
                           {poi.categoryName}
                         </span>
                       )}
-                      <h3 className={`${TYPOGRAPHY.h3} text-[var(--c-text)] line-clamp-2`}>
+                      <h3 className={`${TYPOGRAPHY.h3} text-[var(--pm-ink)] line-clamp-2`}>
                         {poi.name}
                       </h3>
                     </div>

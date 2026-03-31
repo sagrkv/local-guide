@@ -100,7 +100,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-semibold">Dashboard</h1>
-        <p className="text-gray-400 text-[13px]">Overview of your Local Guide platform</p>
+        <p className="text-gray-400 text-[13px]">Overview of your Paper Maps platform</p>
       </div>
 
       {/* Stats Grid */}

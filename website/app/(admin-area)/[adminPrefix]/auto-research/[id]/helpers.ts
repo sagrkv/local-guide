@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002/a
 const ADMIN_PREFIX = process.env.NEXT_PUBLIC_ADMIN_PREFIX || "nucleus-admin-x7k9m2";
 
 export async function adminFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("lg_token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("pm_token") : null;
   const hasBody = options.body !== undefined;
   const res = await fetch(`${API_BASE_URL}/${ADMIN_PREFIX}${endpoint}`, {
     ...options,

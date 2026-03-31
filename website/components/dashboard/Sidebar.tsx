@@ -75,7 +75,7 @@ export default function Sidebar({
           <Link href="/dashboard" className="block">
             <h1 className="text-xl font-bold">
               <span className="text-accent">[</span>
-              Local Guide
+              Paper Maps
               <span className="text-accent">]</span>
             </h1>
           </Link>

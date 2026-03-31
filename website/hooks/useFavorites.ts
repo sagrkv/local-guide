@@ -8,7 +8,7 @@ interface Favorite {
   addedAt: string;
 }
 
-const STORAGE_KEY = "localguide_favorites";
+const STORAGE_KEY = "pm_favorites";
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);

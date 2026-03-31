@@ -50,8 +50,8 @@ export default function PrivacyPage() {
               Privacy Policy
             </h1>
             <p className="text-lg text-[var(--gray-400)] leading-relaxed">
-              Local Guide is a free, open-source tourist map platform. We
-              respect your privacy and collect minimal data. This policy
+              Paper Maps by summar studios is a free tourist map platform.
+              We respect your privacy and collect minimal data. This policy
               explains what we collect and why.
             </p>
           </motion.div>
@@ -101,7 +101,7 @@ export default function PrivacyPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  Local Guide is designed to work without requiring user
+                  Paper Maps is designed to work without requiring user
                   accounts. We collect minimal information:
                 </p>
 
@@ -109,7 +109,7 @@ export default function PrivacyPage() {
                   1.1 Browsing Data
                 </h3>
                 <p>
-                  When you visit Local Guide, we may collect basic analytics
+                  When you visit Paper Maps, we may collect basic analytics
                   data:
                 </p>
                 <ul className="list-disc pl-6 space-y-2">
@@ -127,7 +127,7 @@ export default function PrivacyPage() {
                   1.2 Map Data
                 </h3>
                 <p>
-                  All city maps, curated places, and itineraries on Local Guide
+                  All city maps, curated places, and itineraries on Paper Maps
                   are publicly available. We do not collect personal data when
                   you view maps or browse places.
                 </p>
@@ -181,7 +181,7 @@ export default function PrivacyPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  Local Guide uses the following third-party services:
+                  Paper Maps uses the following third-party services:
                 </p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>
@@ -208,7 +208,7 @@ export default function PrivacyPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  Local Guide uses minimal cookies:
+                  Paper Maps uses minimal cookies:
                 </p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>
@@ -275,10 +275,10 @@ export default function PrivacyPage() {
                     <strong>Contact:</strong> For any privacy-related requests,
                     email{" "}
                     <a
-                      href="mailto:hello@localguide.in"
+                      href="mailto:hello@papermaps.in"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      hello@localguide.in
+                      hello@papermaps.in
                     </a>
                     . We will respond within 30 days.
                   </p>
@@ -293,7 +293,7 @@ export default function PrivacyPage() {
               </h2>
               <div className="text-[var(--gray-400)] leading-relaxed space-y-4">
                 <p>
-                  Local Guide is a general-audience website. We do not
+                  Paper Maps is a general-audience website. We do not
                   knowingly collect personal information from children. Since
                   our platform does not require account creation or personal
                   data input, children can safely browse maps and itineraries.
@@ -331,16 +331,16 @@ export default function PrivacyPage() {
                   <li>
                     <strong className="text-[var(--gray-300)]">Email:</strong>{" "}
                     <a
-                      href="mailto:hello@localguide.in"
+                      href="mailto:hello@papermaps.in"
                       className="text-[var(--accent)] hover:underline"
                     >
-                      hello@localguide.in
+                      hello@papermaps.in
                     </a>
                   </li>
                   <li>
                     <strong className="text-[var(--gray-300)]">GitHub:</strong>{" "}
                     <a
-                      href="https://github.com/sagrkv/local-guide/issues"
+                      href="https://github.com/summar-studios/paper-maps/issues"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[var(--accent)] hover:underline"

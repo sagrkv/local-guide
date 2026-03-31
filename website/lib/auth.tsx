@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002/api/v1";
 
   useEffect(() => {
-    const savedToken = localStorage.getItem("lg_token");
+    const savedToken = localStorage.getItem("pm_token");
     if (savedToken) {
       setToken(savedToken);
       // Verify token
@@ -36,9 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then(r => r.json())
         .then(data => {
           if (data.data?.user) setUser(data.data.user);
-          else { localStorage.removeItem("lg_token"); setToken(null); }
+          else { localStorage.removeItem("pm_token"); setToken(null); }
         })
-        .catch(() => { localStorage.removeItem("lg_token"); setToken(null); })
+        .catch(() => { localStorage.removeItem("pm_token"); setToken(null); })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -55,13 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!res.ok) throw new Error(data.error?.message || "Login failed");
     setToken(data.data.token);
     setUser(data.data.user);
-    localStorage.setItem("lg_token", data.data.token);
+    localStorage.setItem("pm_token", data.data.token);
   }, [apiUrl]);
 
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem("lg_token");
+    localStorage.removeItem("pm_token");
   }, []);
 
   return (

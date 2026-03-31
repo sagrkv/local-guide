@@ -22,21 +22,21 @@ const sections = [
 
 export default function DesignPage() {
   return (
-    <div style={{ minHeight: "100vh", background: "#FDF6EC" }}>
+    <div style={{ minHeight: "100vh", background: "var(--pm-paper)" }}>
       {/* Hero — Sketchbook cover */}
       <section style={{ paddingTop: 120, paddingBottom: 48, position: "relative" }}>
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px", textAlign: "center" }}>
           <div style={{
-            border: "1.5px solid #8B7D6B",
+            border: "1.5px solid var(--pm-muted)",
             borderRadius: "16px",
             padding: "48px 40px",
-            background: "#FFF9F0",
+            background: "var(--pm-surface)",
             position: "relative",
           }}>
             <p style={{
               fontFamily: "Kalam, cursive",
               fontSize: 18,
-              color: "#6B6560",
+              color: "var(--pm-muted)",
               marginBottom: 8,
               letterSpacing: "0.05em",
             }}>
@@ -46,7 +46,7 @@ export default function DesignPage() {
               fontFamily: "Fraunces, serif",
               fontSize: "clamp(40px, 7vw, 64px)",
               fontWeight: 700,
-              color: "#2D2926",
+              color: "var(--pm-ink)",
               lineHeight: 1.1,
               letterSpacing: "-0.02em",
               marginBottom: 16,
@@ -56,7 +56,7 @@ export default function DesignPage() {
             <p style={{
               fontFamily: "Kalam, cursive",
               fontSize: 24,
-              color: "#C4663A",
+              color: "var(--pm-accent)",
               fontWeight: 700,
             }}>
               &quot;Everything is hand-drawn&quot;
@@ -74,16 +74,16 @@ export default function DesignPage() {
                 style={{ position: "absolute", ...pos, width: 24, height: 24 }}
                 aria-hidden="true"
               >
-                <path d={pos.d} fill="none" stroke="#2D2926" strokeWidth="1.5" strokeLinecap="round" />
+                <path d={pos.d} fill="none" stroke="var(--pm-ink)" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             ))}
           </div>
 
           <p style={{
-            fontFamily: "var(--m-font-body, DM Sans, sans-serif)",
+            fontFamily: "var(--pm-font-body, DM Sans, sans-serif)",
             fontSize: 16,
             lineHeight: 1.7,
-            color: "#6B6560",
+            color: "var(--pm-muted)",
             maxWidth: 520,
             margin: "32px auto 0",
           }}>
@@ -98,10 +98,10 @@ export default function DesignPage() {
         position: "sticky",
         top: 72,
         zIndex: 40,
-        background: "rgba(253, 246, 236, 0.95)",
+        background: "color-mix(in srgb, var(--pm-paper) 95%, transparent)",
         backdropFilter: "blur(8px)",
-        borderTop: "1.5px solid #8B7D6B",
-        borderBottom: "1.5px solid #8B7D6B",
+        borderTop: "1.5px solid var(--pm-muted)",
+        borderBottom: "1.5px solid var(--pm-muted)",
       }}>
         <div style={{
           maxWidth: 900,
@@ -119,10 +119,10 @@ export default function DesignPage() {
                 padding: "14px 20px",
                 fontFamily: "Kalam, cursive",
                 fontSize: 18,
-                color: "#2D2926",
+                color: "var(--pm-ink)",
                 textDecoration: "none",
                 whiteSpace: "nowrap",
-                borderRight: i < sections.length - 1 ? "1px solid rgba(45, 41, 38, 0.15)" : "none",
+                borderRight: i < sections.length - 1 ? "1px solid color-mix(in srgb, var(--pm-ink) 15%, transparent)" : "none",
               }}
             >
               {s.label}
@@ -154,17 +154,17 @@ export default function DesignPage() {
               <div
                 key={item.word}
                 style={{
-                  border: "1.5px solid #8B7D6B",
+                  border: "1.5px solid var(--pm-muted)",
                   borderRadius: "12px",
                   padding: "24px 20px",
-                  background: "#FFF9F0",
+                  background: "var(--pm-surface)",
                 }}
               >
                 <p style={{
                   fontFamily: "Fraunces, serif",
                   fontSize: 22,
                   fontWeight: 600,
-                  color: "#2D2926",
+                  color: "var(--pm-ink)",
                   marginBottom: 8,
                 }}>
                   {item.word}
@@ -172,7 +172,7 @@ export default function DesignPage() {
                 <p style={{
                   fontFamily: "Kalam, cursive",
                   fontSize: 16,
-                  color: "#6B6560",
+                  color: "var(--pm-muted)",
                   lineHeight: 1.4,
                 }}>
                   {item.desc}
@@ -277,9 +277,9 @@ export default function DesignPage() {
 }
 
 const listStyle: React.CSSProperties = {
-  fontFamily: "var(--m-font-body, DM Sans, sans-serif)",
+  fontFamily: "var(--pm-font-body, DM Sans, sans-serif)",
   fontSize: 14,
-  color: "#6B6560",
+  color: "var(--pm-muted)",
   lineHeight: 1.8,
   listStyle: "none",
   padding: 0,
@@ -291,7 +291,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <p style={{
       fontFamily: "Kalam, cursive",
       fontSize: 20,
-      color: "#C4663A",
+      color: "var(--pm-accent)",
       letterSpacing: "0.02em",
       fontWeight: 700,
     }}>
@@ -307,7 +307,7 @@ function SketchDivider() {
         <path
           d="M 5,6 C 30,3 50,9 80,6 C 110,3 130,8 160,5 C 175,4 190,7 195,6"
           fill="none"
-          stroke="#2D2926"
+          stroke="var(--pm-ink)"
           strokeWidth="1.5"
           strokeLinecap="round"
           opacity={0.3}

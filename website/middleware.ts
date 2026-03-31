@@ -11,8 +11,8 @@ export default function middleware(req: NextRequest) {
   let citySlug: string | null = null;
 
   // Production: parse city slug from subdomain
-  // e.g., mysore.localguide.in -> citySlug = "mysore"
-  const productionDomain = "localguide.in";
+  // e.g., mysore.papermaps.in -> citySlug = "mysore"
+  const productionDomain = "papermaps.in";
   if (hostname.endsWith(`.${productionDomain}`)) {
     const subdomain = hostname.replace(`.${productionDomain}`, "");
     // Ignore www and other system subdomains

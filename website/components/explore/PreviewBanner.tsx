@@ -55,7 +55,7 @@ export function PreviewBanner({
   const handlePublish = useCallback(async () => {
     const token =
       typeof window !== "undefined"
-        ? localStorage.getItem("lg_token")
+        ? localStorage.getItem("pm_token")
         : null;
 
     if (!token || publishing) return;

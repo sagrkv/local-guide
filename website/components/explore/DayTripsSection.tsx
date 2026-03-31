@@ -60,13 +60,13 @@ export default function DayTripsSection({ cityId, citySlug }: DayTripsSectionPro
         <div className="flex items-center gap-3 mb-8">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: "var(--c-primary, #1E3A5F)", color: "var(--c-text-on-primary, #FAFAF5)" }}
+            style={{ backgroundColor: "var(--pm-primary, #1E3A5F)", color: "var(--pm-paper, #FAFAF5)" }}
           >
             <MapPin size={20} strokeWidth={1.5} />
           </div>
           <h2
             className="text-2xl md:text-3xl font-bold"
-            style={{ fontFamily: "var(--c-font-display)", color: "var(--c-text)" }}
+            style={{ fontFamily: "var(--pm-font-display)", color: "var(--pm-ink)" }}
           >
             Beyond the City
           </h2>
@@ -79,14 +79,14 @@ export default function DayTripsSection({ cityId, citySlug }: DayTripsSectionPro
               <Link key={trip.id} href={`/explore/${citySlug}/collection/${trip.slug}`}>
                 <div
                   className="group rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
-                  style={{ backgroundColor: "var(--c-surface)", border: "1px solid var(--c-border)", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+                  style={{ backgroundColor: "var(--pm-surface)", border: "1px solid var(--pm-muted)", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
                 >
                   <div className="relative h-44 overflow-hidden">
                     {trip.coverImageUrl ? (
                       <img src={trip.coverImageUrl} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--c-primary, #1E3A5F)20, var(--c-gold, #D4A574)20)" }}>
-                        <MapPin size={32} strokeWidth={1.5} style={{ color: "var(--c-text-muted)" }} />
+                      <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--pm-primary, #1E3A5F)20, var(--pm-accent, #D4A574)20)" }}>
+                        <MapPin size={32} strokeWidth={1.5} style={{ color: "var(--pm-muted)" }} />
                       </div>
                     )}
                     {trip.travelTime && (
@@ -95,24 +95,24 @@ export default function DayTripsSection({ cityId, citySlug }: DayTripsSectionPro
                         {trip.travelTime}
                       </span>
                     )}
-                    <div className="absolute inset-0 opacity-40" style={{ background: "linear-gradient(to top, var(--c-surface), transparent 50%)" }} />
+                    <div className="absolute inset-0 opacity-40" style={{ background: "linear-gradient(to top, var(--pm-surface), transparent 50%)" }} />
                   </div>
                   <div className="p-4">
-                    <h3 className="text-base font-semibold leading-tight mb-1" style={{ fontFamily: "var(--c-font-display)", color: "var(--c-text)" }}>
+                    <h3 className="text-base font-semibold leading-tight mb-1" style={{ fontFamily: "var(--pm-font-display)", color: "var(--pm-ink)" }}>
                       {trip.title}
                     </h3>
                     {spots > 0 && (
-                      <span className="text-xs font-medium block mb-2" style={{ color: "var(--c-text-muted)" }}>
+                      <span className="text-xs font-medium block mb-2" style={{ color: "var(--pm-muted)" }}>
                         {spots} {spots === 1 ? "spot" : "spots"}
                       </span>
                     )}
                     {trip.description && (
-                      <p className="text-sm line-clamp-2 leading-relaxed" style={{ fontFamily: "var(--c-font-body)", color: "var(--c-text-muted)" }}>
+                      <p className="text-sm line-clamp-2 leading-relaxed" style={{ fontFamily: "var(--pm-font-body)", color: "var(--pm-muted)" }}>
                         {trip.description}
                       </p>
                     )}
                   </div>
-                  <div className="h-0.5 w-0 group-hover:w-full transition-all duration-500" style={{ backgroundColor: "var(--c-gold)" }} />
+                  <div className="h-0.5 w-0 group-hover:w-full transition-all duration-500" style={{ backgroundColor: "var(--pm-accent)" }} />
                 </div>
               </Link>
             );

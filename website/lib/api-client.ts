@@ -57,7 +57,7 @@ class ApiClient {
    */
   private async getToken(): Promise<string | null> {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("lg_token");
+    return localStorage.getItem("pm_token");
   }
 
   private async request<T>(
@@ -1102,7 +1102,7 @@ class ApiClient {
     });
   }
 
-  // ===== Local Guide: Cities =====
+  // ===== Paper Maps: Cities =====
 
   async getCities(params?: { status?: string; search?: string; page?: number; limit?: number }) {
     const searchParams = new URLSearchParams();
@@ -1146,7 +1146,7 @@ class ApiClient {
     return this.request<{ data: CityReadiness }>(`/cities/${cityId}/readiness`);
   }
 
-  // ===== Local Guide: Themes =====
+  // ===== Paper Maps: Themes =====
 
   async getCityTheme(cityId: string) {
     return this.request<{ data: any }>(`/cities/${cityId}/theme`);
@@ -1159,7 +1159,7 @@ class ApiClient {
     });
   }
 
-  // ===== Local Guide: Categories =====
+  // ===== Paper Maps: Categories =====
 
   async getCategories(params?: { cityId?: string; isGlobal?: boolean; page?: number; limit?: number }) {
     const searchParams = new URLSearchParams();
@@ -1194,7 +1194,7 @@ class ApiClient {
     });
   }
 
-  // ===== Local Guide: POIs =====
+  // ===== Paper Maps: POIs =====
 
   async getCityPOIs(cityId: string, params?: Record<string, string | number | undefined>) {
     const searchParams = new URLSearchParams();
@@ -1263,7 +1263,7 @@ class ApiClient {
     });
   }
 
-  // ===== Local Guide: POI Photos =====
+  // ===== Paper Maps: POI Photos =====
 
   async getPOIPhotos(poiId: string) {
     return this.request<{ data: any[] }>(`/pois/${poiId}/photos`);
@@ -1282,7 +1282,7 @@ class ApiClient {
     });
   }
 
-  // ===== Local Guide: Places Search =====
+  // ===== Paper Maps: Places Search =====
 
   async searchPlaces(query: string, bounds: { northLat: number; southLat: number; eastLng: number; westLng: number }) {
     return this.request<{ data: any[] }>("/places/search", {
@@ -1291,7 +1291,7 @@ class ApiClient {
     });
   }
 
-  // ===== Local Guide: Itineraries =====
+  // ===== Paper Maps: Itineraries =====
 
   async getCityItineraries(cityId: string, params?: Record<string, string | number | undefined>) {
     const searchParams = new URLSearchParams();
@@ -1343,7 +1343,7 @@ class ApiClient {
     });
   }
 
-  // ===== Local Guide: Collections =====
+  // ===== Paper Maps: Collections =====
 
   async getCityCollections(cityId: string, params?: Record<string, string | number | undefined>) {
     const searchParams = new URLSearchParams();
@@ -1395,7 +1395,7 @@ class ApiClient {
     });
   }
 
-  // ===== Local Guide: Discovery =====
+  // ===== Paper Maps: Discovery =====
 
   async getDiscoveryJobs(params?: Record<string, string | number | undefined>) {
     const searchParams = new URLSearchParams();

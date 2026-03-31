@@ -64,7 +64,7 @@ const services = [
     id: 4,
     title: "Open & Community-Driven",
     description:
-      "Local Guide is open source and free forever. Anyone can suggest places, contribute data, or help expand to new cities.",
+      "Paper Maps is open source and free forever. Anyone can suggest places, contribute data, or help expand to new cities.",
     features: [
       "100% free to use",
       "Open source codebase",
@@ -125,7 +125,7 @@ export default function ServicesPage() {
               Features
             </h1>
             <p className="text-xl text-[var(--gray-400)] max-w-2xl leading-relaxed">
-              Everything that makes Local Guide the best way to explore
+              Everything that makes Paper Maps the best way to explore
               a new city.
             </p>
           </motion.div>
