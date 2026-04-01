@@ -117,6 +117,13 @@ export const citiesService = {
       where: { id },
       include: {
         theme: true,
+        _count: {
+          select: {
+            pois: true,
+            itineraries: true,
+            collections: true,
+          },
+        },
       },
     });
   },

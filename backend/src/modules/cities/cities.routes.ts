@@ -67,6 +67,15 @@ export async function citiesRoutes(fastify: FastifyInstance) {
     const query = listQuerySchema.parse(request.query);
     const userRequest = request as any;
 
+    // Try optional auth — decode token if present but don't reject
+    if (!userRequest.user && request.headers.authorization) {
+      try {
+        const token = request.headers.authorization.replace('Bearer ', '');
+        const decoded = (request as any).server.jwt.verify(token) as { userId: string; role: string };
+        userRequest.user = { userId: decoded.userId, role: decoded.role };
+      } catch { /* ignore — treat as unauthenticated */ }
+    }
+
     // If no authenticated user, force PUBLISHED only
     let statusFilter = query.status;
     if (!userRequest.user) {
@@ -83,10 +92,11 @@ export async function citiesRoutes(fastify: FastifyInstance) {
     return paginated(cities, { page: query.page, limit: query.limit, total });
   });
 
-  // GET /:slug — get city by slug (public)
-  fastify.get('/:slug', async (request, reply) => {
-    const { slug } = request.params as { slug: string };
-    const city = await citiesService.getCityBySlug(slug);
+  // GET /:slugOrId — get city by slug or ID (public)
+  fastify.get('/:slugOrId', async (request, reply) => {
+    const { slugOrId } = request.params as { slugOrId: string };
+    const city = await citiesService.getCityBySlug(slugOrId)
+      ?? await citiesService.getCityById(slugOrId);
 
     if (!city) {
       return reply.status(404).send(error(ErrorCodes.NOT_FOUND, 'City not found'));

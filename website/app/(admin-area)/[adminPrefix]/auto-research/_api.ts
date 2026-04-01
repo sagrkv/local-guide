@@ -25,7 +25,11 @@ async function apiFetch<T>(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Request failed" }));
-    throw new Error(err.error || err.message || "Request failed");
+    const message =
+      typeof err.error === "string"
+        ? err.error
+        : err.error?.message ?? err.message ?? "Request failed";
+    throw new Error(message);
   }
   return res.json();
 }
@@ -44,18 +48,32 @@ export interface FetchProposalsResponse {
   stats: ProposalStats;
 }
 
+const PROPOSAL_TYPE_MAP: Record<string, string> = {
+  ADD: "add_poi",
+  REMOVE: "remove_poi",
+  FLAG: "flag_review",
+};
+
 export async function fetchProposals(
   params: FetchProposalsParams,
 ): Promise<FetchProposalsResponse> {
   const sp = new URLSearchParams();
   if (params.citySlug) sp.set("citySlug", params.citySlug);
-  if (params.status) sp.set("status", params.status);
-  if (params.type) sp.set("type", params.type);
+  if (params.status) sp.set("status", params.status.toLowerCase());
+  if (params.type) sp.set("proposalType", PROPOSAL_TYPE_MAP[params.type] ?? params.type.toLowerCase());
   if (params.minScore) sp.set("minScore", String(params.minScore));
   sp.set("page", String(params.page || 1));
-  return apiFetch<FetchProposalsResponse>(
-    `/auto-research/proposals?${sp}`,
-  );
+  const raw = await apiFetch<any>(`/auto-research/proposals?${sp}`);
+  // Normalize response — API returns `meta` not `pagination`
+  return {
+    data: raw.data ?? [],
+    pagination: raw.pagination ?? {
+      page: raw.meta?.page ?? 1,
+      totalPages: raw.meta?.totalPages ?? 1,
+      total: raw.meta?.total ?? 0,
+    },
+    stats: raw.stats ?? { pending: 0, approvedToday: 0, rejectedToday: 0, averageScore: 0 },
+  };
 }
 
 export async function reviewProposal(
@@ -63,8 +81,8 @@ export async function reviewProposal(
   action: "approve" | "reject" | "defer",
   note?: string,
 ): Promise<void> {
-  await apiFetch(`/auto-research/proposals/${id}/review`, {
+  await apiFetch(`/auto-research/proposals/${id}/${action}`, {
     method: "POST",
-    body: JSON.stringify({ action, note }),
+    body: JSON.stringify({ reviewNote: note }),
   });
 }

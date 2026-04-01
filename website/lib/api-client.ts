@@ -380,11 +380,12 @@ class ApiClient {
     return this.request<{
       totalUsers: number;
       activeUsers: number;
-      totalLeads: number;
-      totalCreditsUsed: number;
-      totalCreditsAdded: number;
-      activeJobs: number;
-      completedJobs: number;
+      totalCities: number;
+      publishedCities: number;
+      totalPOIs: number;
+      publishedPOIs: number;
+      totalItineraries: number;
+      totalCollections: number;
     }>(`/${ADMIN_API_PREFIX}/analytics/overview`);
   }
 
@@ -393,57 +394,6 @@ class ApiClient {
     return this.request<Array<{ date: string; count: number }>>(
       `/${ADMIN_API_PREFIX}/analytics/users${params}`
     );
-  }
-
-  async getAdminCreditUsage(days?: number) {
-    const params = days ? `?days=${days}` : "";
-    return this.request<Array<{ date: string; used: number; added: number }>>(
-      `/${ADMIN_API_PREFIX}/analytics/usage${params}`
-    );
-  }
-
-  async getAdminLeadGrowth(days?: number) {
-    const params = days ? `?days=${days}` : "";
-    return this.request<Array<{ date: string; count: number }>>(
-      `/${ADMIN_API_PREFIX}/analytics/leads${params}`
-    );
-  }
-
-  async getAdminTopUsers(limit?: number) {
-    const params = limit ? `?limit=${limit}` : "";
-    return this.request<
-      Array<{
-        id: string;
-        name: string;
-        email: string;
-        leadsCount: number;
-        creditsUsed: number;
-      }>
-    >(`/${ADMIN_API_PREFIX}/analytics/top-users${params}`);
-  }
-
-  async getAdminScrapeJobStats(days?: number) {
-    const params = days ? `?days=${days}` : "";
-    return this.request<{
-      totalJobs: number;
-      successRate: number;
-      avgLeadsPerJob: number;
-      byStatus: Array<{ status: string; count: number }>;
-      byType: Array<{ type: string; count: number }>;
-    }>(`/${ADMIN_API_PREFIX}/analytics/scrape-jobs${params}`);
-  }
-
-  async getAdminCategoryDistribution() {
-    return this.request<Array<{ category: string; count: number }>>(
-      `/${ADMIN_API_PREFIX}/analytics/categories`
-    );
-  }
-
-  async getAdminGeographicDistribution() {
-    return this.request<{
-      cities: Array<{ city: string; count: number }>;
-      states: Array<{ state: string; count: number }>;
-    }>(`/${ADMIN_API_PREFIX}/analytics/geography`);
   }
 
   // Get all saved regions across all users (admin only)
